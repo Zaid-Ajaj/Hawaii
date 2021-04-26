@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fantomas" Version="4.4.0" />
+    <PackageReference Include="FsAst" Version="0.7.0" />
+    <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.2.3" />
+  </ItemGroup>
+</Project>
