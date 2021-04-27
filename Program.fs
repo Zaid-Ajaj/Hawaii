@@ -1,5 +1,3 @@
-// Learn more about F# at http://docs.microsoft.com/dotnet/fsharp
-
 open System
 open Microsoft.OpenApi.Readers
 open System.Net.Http
@@ -9,78 +7,67 @@ open FSharp.Compiler.SyntaxTree
 open FSharp.Compiler.Range
 open FSharp.Compiler.XmlDoc
 open Microsoft.OpenApi.Models
-
-[<AutoOpen>]
-module Extensions =
-    type SynFieldRcd with
-        static member Create(name: string, fieldType: SynType) =
-            {
-                Access = None
-                Attributes = [ ]
-                Id = Some (Ident.Create name)
-                IsMutable = false
-                IsStatic = false
-                Range = range0
-                Type = fieldType
-                XmlDoc= PreXmlDoc.Empty
-            }
-
-        static member Create(name: string, fieldType: string) =
-            {
-                Access = None
-                Attributes = [ ]
-                Id = Some (Ident.Create name)
-                IsMutable = false
-                IsStatic = false
-                Range = range0
-                Type = SynType.Create fieldType
-                XmlDoc= PreXmlDoc.Empty
-            }
-
-// Define a function to construct a message to print
-let from whom =
-    sprintf "from %s" whom
+open System.Linq
+open Microsoft.OpenApi.Interfaces
 
 let schema = "https://petstore.swagger.io/v2/swagger.json"
 let project = "PetStore"
-
-let createNamespace (names: seq<string>) declarations =
-    let nameParts =
-        names
-        |> Seq.collect (fun name ->
-            if name.Contains "."
-            then name.Split('.')
-            else [| name |]
-        )
-
-    let xmlDoc = PreXmlDoc.Create [ ]
-    SynModuleOrNamespace.SynModuleOrNamespace([ for name in nameParts -> Ident.Create name ], true, SynModuleOrNamespaceKind.DeclaredNamespace,declarations,  xmlDoc, [ ], None, range.Zero)
-
-let createQualifiedModule (idens: seq<string>) declarations =
-    let nameParts =
-        idens
-        |> Seq.collect (fun name ->
-            if name.Contains "."
-            then name.Split('.')
-            else [| name |]
-        )
-
-    let xmlDoc = PreXmlDoc.Create [ ]
-    SynModuleOrNamespace.SynModuleOrNamespace([ for ident in nameParts -> Ident.Create ident ], true, SynModuleOrNamespaceKind.NamedModule,declarations,  xmlDoc, [ SynAttributeList.Create [ SynAttribute.RequireQualifiedAccess()  ]  ], None, range.Zero)
-
-let createFile modules =
-    let qualfiedNameOfFile = QualifiedNameOfFile.QualifiedNameOfFile(Ident.Create "IrrelevantFileName")
-    ParsedImplFileInput.ParsedImplFileInput("IrrelevantFileName", false, qualfiedNameOfFile, [], [], modules, (false, false))
-
-let formatAstInternal ast =
-    let cfg = { FormatConfig.FormatConfig.Default with StrictMode = true } // do not format comments
-    CodeFormatter.FormatASTAsync(ast, "temp.fsx", [], None, cfg)
-
-let formatAst file =
-    formatAstInternal (ParsedInput.ImplFile file)
-    |> Async.RunSynchronously
-
 let client = new HttpClient()
+
+let capitalize (input: string) =
+    if String.IsNullOrWhiteSpace input
+    then ""
+    else input.First().ToString().ToUpper() + String.Join("", input.Skip(1))
+
+let rec createFSharpType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
+    if not required then
+        let optionalType : SynType = createFSharpType recordName true propertyName propertySchema
+        SynType.Option(optionalType)
+    else
+        match propertySchema.Type with
+        | "integer" when propertySchema.Format = "int64" -> SynType.Int64()
+        | "integer" when propertySchema.Format = "int32" -> SynType.Int()
+        | "boolean" -> SynType.Bool()
+        | "string" when propertySchema.Format = "uuid" -> SynType.CreateLongIdent(LongIdentWithDots.Create [ "System"; "Guid" ])
+        | "string" when propertySchema.Format = "date-time" -> SynType.DateTimeOffset()
+        | "array" ->
+            let arrayItemsType = createFSharpType recordName required propertyName propertySchema.Items
+            SynType.List(arrayItemsType)
+        | "string" when not (isNull propertySchema.Enum) && propertySchema.Enum.Count > 0 ->
+            SynType.Create(recordName + capitalize propertyName)
+        | _ ->
+            SynType.String()
+
+let compiledName (name: string) = SynAttribute.Create("CompiledName", name)
+
+let createEnumType (enumType: (string * seq<string>)) =
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [
+            SynAttributeList.Create [
+                SynAttribute.RequireQualifiedAccess()
+            ]
+        ]
+
+        Id = [ Ident.Create (fst enumType) ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let values = snd enumType
+
+    let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
+        for value in values ->
+            let attrs = [ SynAttributeList.Create [| compiledName value  |] ]
+            let docs = PreXmlDoc.Empty
+            SynUnionCase.UnionCase(attrs, Ident.Create (capitalize value), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
+    ])
+
+    let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
+    SynModuleDecl.CreateSimpleType(info, simpleType)
 
 [<EntryPoint>]
 let main argv =
@@ -104,45 +91,66 @@ let main argv =
             Range = range0
         }
 
-        let rec createFSharpType required (propertyName: string) (schema: OpenApiSchema) =
-            match schema.Type with
-            | "integer" when schema.Format = "int64" ->
-                if required
-                then SynType.Int64()
-                else SynType.Option(SynType.Int64())
-            | "integer" when schema.Format = "int32" ->
-                if required
-                then SynType.Int()
-                else SynType.Option(SynType.Int())
-            | "array" ->
-                let arrayItemsType = createFSharpType required propertyName schema.Items
-                if required
-                then SynType.List(arrayItemsType)
-                else SynType.Option(SynType.List(arrayItemsType))
-            | _ ->
-                SynType.String()
-
         let recordRepresentation =  SynTypeDefnSimpleReprRecordRcd.Create [
             for property in schema.Properties do
                 // todo: infer the types correctly
                 let propertyName = property.Key
                 let propertyType = property.Value
                 let required = schema.Required.Contains propertyName
-                SynFieldRcd.Create(propertyName, createFSharpType required propertyName propertyType)
+                let field = SynFieldRcd.Create(propertyName, createFSharpType recordName required propertyName propertyType)
+                let docs = PreXmlDoc.Create [ if String.isNotNullOrEmpty propertyType.Description then propertyType.Description ]
+                { field with XmlDoc = docs }
         ]
 
         let simpleType = SynTypeDefnSimpleReprRcd.Record recordRepresentation
         SynModuleDecl.CreateSimpleType(info, simpleType)
 
-    let globalTypes = [
+    // give me a (enumName * enumCase list) list
+    let rec findEnumTypes (parentName: string) (enumName: string option) (schema: OpenApiSchema) =
+        // when schema is an actual enum
+        if not (isNull schema.Enum) && schema.Enum.Count > 0 then
+            match enumName with
+            | Some name ->
+                let cases =
+                    schema.Enum
+                    |> Seq.choose (fun enumCase ->
+                        match enumCase with
+                        | :? Microsoft.OpenApi.Any.OpenApiString as primitiveValue -> Some primitiveValue.Value
+                        | _ -> None)
+
+                [ (name, cases) ]
+            | None ->
+                [ ]
+        else
+            [
+                for property in schema.Properties do
+                    let propertyName = property.Key
+                    let propertySchema = property.Value
+                    yield! findEnumTypes parentName (Some (parentName + capitalize propertyName)) propertySchema
+            ]
+
+    let enumDefinitions = [
         for schema in openApiDocument.Components.Schemas do
-            createRecordFromSchema schema.Key schema.Value
+            let typeName = schema.Key
+            for (enumName, enumCases) in findEnumTypes typeName None schema.Value do
+                if not (Seq.isEmpty enumCases) then
+                    enumName, enumCases
     ]
 
+    let enumTypes =
+        enumDefinitions
+        |> List.map createEnumType
 
-    let globalTypesModule = createNamespace [ project; "Types" ] globalTypes
+    let globalTypes = [
+        yield! enumTypes
+        for schema in openApiDocument.Components.Schemas do
+            if schema.Value.Type = "object"
+            then createRecordFromSchema schema.Key schema.Value
+    ]
 
-    let code = formatAst (createFile [ globalTypesModule ])
+    let globalTypesModule = CodeGen.createNamespace [ project; "Types" ] globalTypes
+
+    let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
 
     System.Console.WriteLine code
     0 // return an integer exit code
