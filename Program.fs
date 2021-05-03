@@ -16,16 +16,20 @@ let resolveFile (path: string) =
     then path
     else Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
 let client = new HttpClient()
-let getSchema(schemaPath: string) =
-    if File.Exists schemaPath
-    then new FileStream(schemaPath, FileMode.Open) :> Stream
-    elif schemaPath.StartsWith "http"
+let getSchema(schema: string) =
+    if File.Exists schema
+    then new FileStream(schema, FileMode.Open) :> Stream
+    elif schema.StartsWith "http"
     then
-        client.GetStreamAsync(schemaPath)
+        client.GetStreamAsync(schema)
         |> Async.AwaitTask
         |> Async.RunSynchronously
     else
-        failwith "Could not create a stream from the input schema path"
+        // assume the schema is coming in as a string
+        // convert it into a memory stream
+        // this is useful for unit tests
+        let schemaBytes = System.Text.Encoding.UTF8.GetBytes schema
+        new MemoryStream(schemaBytes) :> Stream
 
 let capitalize (input: string) =
     if String.IsNullOrWhiteSpace input
@@ -40,14 +44,15 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         match propertySchema.Type with
         | "integer" when propertySchema.Format = "int64" -> SynType.Int64()
         | "integer" -> SynType.Int()
-        | "number" when propertySchema.Format = "float" -> SynType.Create "float32"
-        | "number" ->  SynType.Create "double"
+        | "number" when propertySchema.Format = "float" -> SynType.Float32()
+        | "number" ->  SynType.Double()
         | "boolean" -> SynType.Bool()
-        | "string" when propertySchema.Format = "uuid" -> SynType.CreateLongIdent(LongIdentWithDots.Create [ "System"; "Guid" ])
+        | "string" when propertySchema.Format = "uuid" -> SynType.Guid()
         | "string" when propertySchema.Format = "date-time" -> SynType.DateTimeOffset()
         | "string" when propertySchema.Format = "byte" ->
             // base64 encoded characters
-            SynType.Array(1, SynType.Create "byte", range0)
+            // use a byte array
+            SynType.Array(1, SynType.Byte(), range0)
         | "array" ->
             let arrayItemsType = createFieldType recordName required propertyName propertySchema.Items
             SynType.List(arrayItemsType)
@@ -63,9 +68,9 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         | _ ->
             SynType.String()
 
-let compiledName (name: string) = SynAttribute.Create("CompiledName", name)
+let compiledName (name: string) = SynAttribute.CompiledName name
 
-let createEnumType (enumType: (string * seq<string>)) =
+let createEnumType (enumName: string, values: seq<string>) =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [
@@ -74,15 +79,13 @@ let createEnumType (enumType: (string * seq<string>)) =
             ]
         ]
 
-        Id = [ Ident.Create (fst enumType) ]
+        Id = [ Ident.Create enumName ]
         XmlDoc = PreXmlDoc.Empty
         Parameters = [ ]
         Constraints = [ ]
         PreferPostfix = false
         Range = range0
     }
-
-    let values = snd enumType
 
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
         for value in values ->

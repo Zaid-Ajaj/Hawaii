@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fantomas" Version="4.4.0" />
-    <PackageReference Include="FsAst" Version="0.7.0" />
+    <PackageReference Include="FsAst" Version="0.8.0" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.2.3" />
   </ItemGroup>
 </Project>
