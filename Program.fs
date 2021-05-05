@@ -102,6 +102,7 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         | "number" ->  SynType.Double()
         | "boolean" -> SynType.Bool()
         | "string" when propertySchema.Format = "uuid" -> SynType.Guid()
+        | "string" when propertySchema.Format = "guid" -> SynType.Guid()
         | "string" when propertySchema.Format = "date-time" -> SynType.DateTimeOffset()
         | "string" when propertySchema.Format = "byte" ->
             // base64 encoded characters
