@@ -919,15 +919,19 @@
                 "nested": {
                     "type": "object",
                     "required": [
-                        "id"
+                        "identity"
                     ],
                     "properties": {
-                        "id": {
+                        "identity": {
                             "type": "integer",
                             "format": "int64"
                         },
-                        "name": {
-                            "type": "string"
+                        "nestedEnum": {
+                            "type": "string",
+                            "enum": [
+                                "one",
+                                "two"
+                            ]
                         }
                     }
                 },
@@ -940,7 +944,8 @@
                 },
                 "thumbnail": {
                     "type": "string",
-                    "format": "byte"
+                    "format": "byte",
+                    "description": "the thumbnail of the pet"
                 },
                 "photoUrls": {
                     "type": "array",
@@ -1056,6 +1061,9 @@
                 "phone": {
                     "type": "string"
                 },
+                "role": {
+                    "$ref": "#/definitions/UserRole"
+                },
                 "userStatus": {
                     "type": "integer",
                     "format": "int32",
@@ -1065,6 +1073,13 @@
             "xml": {
                 "name": "User"
             }
+        },
+        "UserRole": {
+            "type": "string",
+            "enum": [
+                "admin",
+                "user"
+            ]
         }
     },
     "externalDocs": {
