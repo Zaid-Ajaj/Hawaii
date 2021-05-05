@@ -71,7 +71,6 @@ let isEnumType (schema: OpenApiSchema) =
     schema.Type = "string"
     && not (isNull schema.Enum)
     && schema.Enum.Count > 0
-    && isNull schema.Reference
 
 let (|StringEnum|_|) (schema: OpenApiSchema) =
     if isEnumType schema then
@@ -87,8 +86,6 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
             None
     else
         None
-
-
 
 let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
     if not required then
@@ -185,6 +182,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
     let nestedObjects = ResizeArray<SynModuleDecl>()
     let recordFields = ResizeArray<SynFieldRcd>()
+    let addedFields = ResizeArray<string * bool * SynType>()
 
     for property in schema.Properties do
         // todo: infer the types correctly
@@ -197,7 +195,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let field = SynFieldRcd.Create(propertyName, fieldType)
             let docs = PreXmlDoc.Create [ if String.isNotNullOrEmpty propertyType.Description then propertyType.Description ]
             recordFields.Add { field with XmlDoc = docs }
-        else if isEnum then
+            addedFields.Add((propertyName, required, fieldType))
+        else if isEnum && isNull propertyType.Reference then
+            // nested enum -> not a reference to a global usable enum
             match property.Value with
             | StringEnum cases ->
                 let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
@@ -211,9 +211,24 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 let field = SynFieldRcd.Create(propertyName, fieldType)
                 let docs = PreXmlDoc.Create [ if String.isNotNullOrEmpty propertyType.Description then propertyType.Description ]
                 recordFields.Add { field with XmlDoc = docs }
+                addedFields.Add((propertyName, required, fieldType))
             | _ ->
                 ()
-        else
+        else if isEnum && not (isNull propertyType.Reference) then
+            // referenced enum
+            let typeName =
+                if String.IsNullOrEmpty propertyType.Title
+                then propertyType.Reference.Id
+                else propertyType.Title
+            let fieldType =
+                if required
+                then SynType.Create typeName
+                else SynType.Option(SynType.Create typeName)
+            let field = SynFieldRcd.Create(propertyName, fieldType)
+            let docs = PreXmlDoc.Create [ if String.isNotNullOrEmpty propertyType.Description then propertyType.Description ]
+            recordFields.Add { field with XmlDoc = docs }
+            addedFields.Add((propertyName, required, fieldType))
+        else if property.Value.Type = "object" then
             let nestedPropertyNames =
                 property.Value.Properties
                 |> Seq.map (fun pair -> pair.Key)
@@ -230,14 +245,55 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let field = SynFieldRcd.Create(propertyName, fieldType)
             let docs = PreXmlDoc.Create [ if String.isNotNullOrEmpty propertyType.Description then propertyType.Description ]
             recordFields.Add { field with XmlDoc = docs }
-
+            addedFields.Add((propertyName, required, fieldType))
+        else
+            ()
 
     let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
-    let simpleType = SynTypeDefnSimpleReprRcd.Record recordRepr
+    let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
+
+    let members : SynMemberDefn list = [
+        SynMemberDefn.CreateStaticMember
+            {
+                SynBindingRcd.Null with
+                    XmlDoc = PreXmlDoc.Create $"Creates an instance of {recordName} with all optional fields initialized to None. The required fields are parameters of this function"
+                    Pattern =
+                        SynPatRcd.Typed {
+                            Type = SynType.Create recordName
+                            Range = range0
+                            Pattern =
+                                SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString "Create", [
+                                    SynPatRcd.CreateParen(
+                                        SynPatRcd.Tuple {
+                                            Patterns = [
+                                                for (fieldName, required, fieldType) in addedFields do
+                                                    if required then yield SynPatRcd.Typed {
+                                                        Type = fieldType
+                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
+                                                        Range = range0
+                                                    }
+                                            ]
+                                            Range  = range0
+                                        }
+                                    )
+                                ])
+                        }
+
+                    // create a record with the required fields
+                    Expr = SynExpr.CreateRecord [
+                        for (fieldName, required, fieldType) in addedFields do
+                            let expr =
+                                if required
+                                then Some(SynExpr.Ident(Ident.Create fieldName))
+                                else Some(SynExpr.Ident(Ident.Create "None"))
+                            ((LongIdentWithDots.CreateString fieldName, false), expr)
+                    ]
+            }
+    ]
 
     [
         yield! nestedObjects
-        SynModuleDecl.CreateSimpleType(info, simpleType)
+        SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
     ]
 
 let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocument) =

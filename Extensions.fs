@@ -31,3 +31,21 @@ type SynFieldRcd with
             Type = SynType.Create fieldType
             XmlDoc= PreXmlDoc.Empty
         }
+
+type SynMemberDefn with
+    /// <summary>
+    /// Creates a member from a binding definition: [static member {binding} = {expr}]
+    /// where {binding} = {pattern args} and {expr} is the body of the static binding
+    /// </summary>
+    static member CreateStaticMember(binding:SynBindingRcd) =
+        let (SynValData(usedMemberFlags, valInfo, identifier)) = binding.ValData
+        let staticMemberFlags = Some {
+            // this means the member is static
+            IsInstance = false;
+            IsOverrideOrExplicitImpl = false
+            IsDispatchSlot = false;
+            IsFinal = false
+            MemberKind = MemberKind.Member
+        }
+        let staticBinding = { binding with ValData = SynValData.SynValData(staticMemberFlags, valInfo, identifier) }
+        SynMemberDefn.Member(staticBinding.FromRcd, range.Zero)
