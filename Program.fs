@@ -15,6 +15,7 @@ let resolveFile (path: string) =
     if Path.IsPathRooted path
     then path
     else Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
+
 let client = new HttpClient()
 let getSchema(schema: string) =
     if File.Exists schema
@@ -162,7 +163,7 @@ let createEnumType (enumName: string) (values: seq<string>) =
         SynMemberDefn.CreateMember
             { SynBindingRcd.Null with
                 Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString "this.Format", [SynPatRcd.Const unitConst])
-                Expr = SynExpr.Match(DebugPointForBinding.DebugPointAtBinding range0, SynExpr.Ident(Ident.Create "this"), matchClauses, range0)
+                Expr = SynExpr.CreateMatch(SynExpr.Ident(Ident.Create "this"), matchClauses)
             }
     ]
 
