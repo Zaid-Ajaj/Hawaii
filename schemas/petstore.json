@@ -909,7 +909,8 @@
             "type": "object",
             "required": [
                 "name",
-                "photoUrls"
+                "photoUrls",
+                "locales"
             ],
             "properties": {
                 "id": {
@@ -971,9 +972,50 @@
                         "$ref": "#/definitions/Tag"
                     }
                 },
+                "moods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "happy",
+                            "angry"
+                        ]
+                    }
+                },
+                "locales": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "dutch",
+                            "german",
+                            "french",
+                            "english"
+                        ]
+                    }
+                },
+                "friends": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "friend_id",
+                            "friend_name"
+                        ],
+                        "properties": {
+                            "friend_id": {
+                                "type": "integer",
+                                "format": "int64"
+                            },
+                            "friend_name": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
                 "status": {
                     "type": "string",
-                    "description": "pet status in the store",
+                    "description": "pet status\r\nin the store",
                     "enum": [
                         "available",
                         "pending",
