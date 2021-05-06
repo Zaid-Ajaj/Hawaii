@@ -215,7 +215,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             not isEnumArray
         ]
 
-        if isPrimitve then
+        if propertyType.Deprecated then
+            // skip deprecated propertie
+            ()
+        elif isPrimitve then
             let fieldType = createFieldType recordName required propertyName propertyType
             let field = SynFieldRcd.Create(propertyName, fieldType)
             let docs = xmlDocs propertyType.Description
@@ -388,6 +391,9 @@ let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocum
 
             visitedTypes.Add typeName
 
+            if topLevelObject.Value.Deprecated then
+                // skip deprecated global types
+                ()
             if topLevelObject.Value.Type = "object"
             then yield! createRecordFromSchema typeName topLevelObject.Value visitedTypes
             elif topLevelObject.Value.Type = "string" then
@@ -401,6 +407,16 @@ let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocum
     let globalTypesModule = CodeGen.createNamespace [ projectName; "Types" ] globalTypes
     globalTypesModule
 
+let rec deleteFilesAndFolders directory isRoot =
+    for file in Directory.GetFiles directory
+        do File.Delete file
+    for subdirectory in Directory.GetDirectories directory do
+        deleteFilesAndFolders subdirectory false
+        if not isRoot then Directory.Delete subdirectory
+
+let path xs = Path.Combine(Array.ofList xs)
+let write content filePath = File.WriteAllText(path filePath, content)
+
 [<EntryPoint>]
 let main argv =
     let schema = getSchema (resolveFile "./schemas/petstore.json")
@@ -411,7 +427,14 @@ let main argv =
             System.Console.WriteLine error.Message
         1
     else
-        let globalTypesModule = createGlobalTypesModule "PetStore" openApiDocument
+        let projectName = "PetStore"
+        let outputDir = resolveFile "./output"
+        // prepare output directory
+        if Directory.Exists outputDir
+        then deleteFilesAndFolders outputDir true
+        else ignore(Directory.CreateDirectory outputDir)
+        // generate types
+        let globalTypesModule = createGlobalTypesModule projectName openApiDocument
         let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-        System.Console.WriteLine code
+        write code [outputDir; $"{projectName}.Types.fs"]
         0 // return an integer exit code
