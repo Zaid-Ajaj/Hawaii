@@ -9,6 +9,9 @@
     <Content Include="./schemas/petstore.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="./schemas/ghibli.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="Extensions.fs" />
     <Compile Include="CodeGen.fs" />
     <Compile Include="Program.fs" />

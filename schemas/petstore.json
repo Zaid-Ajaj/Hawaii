@@ -907,6 +907,10 @@
         },
         "Pet": {
             "type": "object",
+            "additionalProperties": {
+                "type": "integer",
+                "format": "int64"
+            },
             "required": [
                 "name",
                 "photoUrls",

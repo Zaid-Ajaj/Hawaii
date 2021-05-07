@@ -197,19 +197,16 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let recordFields = ResizeArray<SynFieldRcd>()
     let addedFields = ResizeArray<string * bool * SynType>()
 
-    for property in schema.Properties do
-        // todo: infer the types correctly
-        let propertyName = property.Key
-        let propertyType = property.Value
+    let createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
         let isEnum = isEnumType propertyType
-        let required = schema.Required.Contains propertyName
+        let required = propertyName = "additionalProperties" || schema.Required.Contains propertyName
         let isObjectArray =
             propertyType.Type = "array"
             && propertyType.Items.Type = "object"
             && isNull propertyType.Items.Reference
         let isEnumArray = propertyType.Type = "array" && isEnumType propertyType.Items
         let isPrimitve = List.forall id [
-            (property.Value.Type <> "object" || not (isNull property.Value.Reference))
+            (propertyType.Type <> "object" || not (isNull propertyType.Reference))
             not isEnum
             not isObjectArray
             not isEnumArray
@@ -217,16 +214,13 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
         if propertyType.Deprecated then
             // skip deprecated propertie
-            ()
+            None
         elif isPrimitve then
             let fieldType = createFieldType recordName required propertyName propertyType
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
+            Some fieldType
         else if isEnum && isNull propertyType.Reference then
             // nested enum -> not a reference to a global usable enum
-            match property.Value with
+            match propertyType with
             | StringEnum cases ->
                 let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
                 visitedTypes.Add enumTypeName
@@ -236,12 +230,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                     if required
                     then SynType.Create enumTypeName
                     else SynType.Option(SynType.Create enumTypeName)
-                let field = SynFieldRcd.Create(propertyName, fieldType)
-                let docs = xmlDocs propertyType.Description
-                recordFields.Add { field with XmlDoc = docs }
-                addedFields.Add((propertyName, required, fieldType))
+                Some fieldType
             | _ ->
-                ()
+                None
         else if isEnum && not (isNull propertyType.Reference) then
             // referenced enum
             let typeName =
@@ -252,29 +243,23 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 if required
                 then SynType.Create typeName
                 else SynType.Option(SynType.Create typeName)
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
-        else if property.Value.Type = "object" then
+            Some fieldType
+        else if propertyType.Type = "object" then
             // handle nested objects
             let nestedPropertyNames =
-                property.Value.Properties
+                propertyType.Properties
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let nestedObjectTypeName = findNextTypeName property.Key recordName nestedPropertyNames visitedTypes
+            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName property.Value visitedTypes
+            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
                 then SynType.Create nestedObjectTypeName
                 else SynType.Option(SynType.Create nestedObjectTypeName)
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
+            Some fieldType
         else if isObjectArray then
              // handle arrays of nested objects
             let arrayItemsType = propertyType.Items
@@ -283,7 +268,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let nestedObjectTypeName = findNextTypeName property.Key recordName nestedPropertyNames visitedTypes
+            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
             visitedTypes.Add nestedObjectTypeName
             let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes
             nestedObjects.AddRange nestedObject
@@ -291,10 +276,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 if required
                 then SynType.List(SynType.Create nestedObjectTypeName)
                 else SynType.Option(SynType.List(SynType.Create nestedObjectTypeName))
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
+            Some fieldType
         else if isEnumArray then
             let arrayItemsType = propertyType.Items
             if isNull arrayItemsType.Reference then
@@ -309,12 +291,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                         if required
                         then SynType.List(SynType.Create enumTypeName)
                         else SynType.Option(SynType.List(SynType.Create enumTypeName))
-                    let field = SynFieldRcd.Create(propertyName, fieldType)
-                    let docs = xmlDocs propertyType.Description
-                    recordFields.Add { field with XmlDoc = docs }
-                    addedFields.Add((propertyName, required, fieldType))
+                    Some fieldType
                 | _ ->
-                    ()
+                    None
             else
                 // referenced enum type
                 let typeName =
@@ -325,12 +304,37 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                     if required
                     then SynType.List(SynType.Create typeName)
                     else SynType.Option(SynType.List(SynType.Create typeName))
-                let field = SynFieldRcd.Create(propertyName, fieldType)
-                let docs = xmlDocs propertyType.Description
-                recordFields.Add { field with XmlDoc = docs }
-                addedFields.Add((propertyName, required, fieldType))
+                Some fieldType
         else
-            ()
+            None
+
+    for property in schema.Properties do
+        match createPropertyType property.Key property.Value with
+        | None -> ()
+        | Some fieldType ->
+            let propertyName = property.Key
+            let propertyType = property.Value
+            let required = schema.Required.Contains propertyName
+            let field = SynFieldRcd.Create(propertyName, fieldType)
+            let docs = xmlDocs propertyType.Description
+            recordFields.Add { field with XmlDoc = docs }
+            addedFields.Add((propertyName, required, fieldType))
+
+    let containsPreservedProperty =
+        schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
+
+    if schema.AdditionalPropertiesAllowed && not (isNull schema.AdditionalProperties) && not containsPreservedProperty then
+        match createPropertyType "additionalProperties" schema.AdditionalProperties with
+        | None -> ()
+        | Some additionalType ->
+            let propertyName = "additionalProperties"
+            let propertyType = schema.AdditionalProperties
+            let required = true
+            let fieldType = SynType.Map(SynType.String(), additionalType)
+            let field = SynFieldRcd.Create(propertyName, fieldType)
+            let docs = xmlDocs propertyType.Description
+            recordFields.Add { field with XmlDoc = docs }
+            addedFields.Add((propertyName, required, fieldType))
 
     let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
     let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
@@ -350,11 +354,14 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                         SynPatRcd.Tuple {
                                             Patterns = [
                                                 for (fieldName, required, fieldType) in addedFields do
-                                                    if required then yield SynPatRcd.Typed {
-                                                        Type = fieldType
-                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
-                                                        Range = range0
-                                                    }
+                                                    if fieldName = "additionalProperties" && not containsPreservedProperty then
+                                                        ()
+                                                    else
+                                                        if required then yield SynPatRcd.Typed {
+                                                            Type = fieldType
+                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
+                                                            Range = range0
+                                                        }
                                             ]
                                             Range  = range0
                                         }
@@ -366,7 +373,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                     Expr = SynExpr.CreateRecord [
                         for (fieldName, required, fieldType) in addedFields do
                             let expr =
-                                if required
+                                if fieldName = "additionalProperties" && not containsPreservedProperty
+                                then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
+                                elif required
                                 then Some(SynExpr.Ident(Ident.Create fieldName))
                                 else Some(SynExpr.Ident(Ident.Create "None"))
                             ((LongIdentWithDots.CreateString fieldName, false), expr)
@@ -419,22 +428,27 @@ let write content filePath = File.WriteAllText(path filePath, content)
 
 [<EntryPoint>]
 let main argv =
-    let schema = getSchema (resolveFile "./schemas/petstore.json")
-    let reader = new OpenApiStreamReader()
-    let (openApiDocument, diagnostics) =  reader.Read(schema)
-    if diagnostics.Errors.Count > 0 then
-        for error in diagnostics.Errors do
-            System.Console.WriteLine error.Message
+    try
+        let schema = getSchema (resolveFile "./schemas/petstore.json")
+        let reader = new OpenApiStreamReader()
+        let (openApiDocument, diagnostics) =  reader.Read(schema)
+        if diagnostics.Errors.Count > 0 && isNull openApiDocument then
+            for error in diagnostics.Errors do
+                System.Console.WriteLine error.Message
+            1
+        else
+            let projectName = "PetStore"
+            let outputDir = resolveFile "./output"
+            // prepare output directory
+            if Directory.Exists outputDir
+            then deleteFilesAndFolders outputDir true
+            else ignore(Directory.CreateDirectory outputDir)
+            // generate types
+            let globalTypesModule = createGlobalTypesModule projectName openApiDocument
+            let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
+            write code [outputDir; $"{projectName}.Types.fs"]
+            0 // return an integer exit code
+    with
+    | error ->
+        printfn "%s" error.Message
         1
-    else
-        let projectName = "PetStore"
-        let outputDir = resolveFile "./output"
-        // prepare output directory
-        if Directory.Exists outputDir
-        then deleteFilesAndFolders outputDir true
-        else ignore(Directory.CreateDirectory outputDir)
-        // generate types
-        let globalTypesModule = createGlobalTypesModule projectName openApiDocument
-        let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-        write code [outputDir; $"{projectName}.Types.fs"]
-        0 // return an integer exit code

@@ -1,0 +1,1139 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Studio Ghibli API",
+    "description": "# Studio Ghibli API\n  The Studio Ghibli API catalogs the people, places, and things found in the worlds of Ghibli. It was created to help users discover resources, consume them via HTTP requests, and interact with them in whatever way makes sense. Navigation can be found on the left sidebar, and the right sidebar shows examples of returned objects for successful calls.\n\n  Users can raise an issue, ask for help, or find a contribution guide at the main repo: [https://github.com/janaipakos/ghibliapi](https://github.com/janaipakos/ghibliapi)\n\n# Getting Started\n  Requests can be made with `curl` or other helper libraries by following regular REST calls. For example, here is how to GET the resource for the film *My Neighbor Tororo*:\n\n  `curl https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49`\n\n  Calling this resource will respond with the following object:\n\n  ```json\n  {\n  \"id\": \"58611129-2dbc-4a81-a72f-77ddfc1b1b49\",\n  \"title\": \"My Neighbor Totoro\",\n  \"original_title\": \"となりのトトロ\",\n  \"original_title_romanised\": \"Tonari no Totoro\",\n  \"description\": \"Two sisters move to the country with their father in order to be closer to their hospitalized mother, and discover the surrounding trees are inhabited by Totoros, magical spirits of the forest. When the youngest runs away from home, the older sister seeks help from the spirits to find her.\",\n  \"director\": \"Hayao Miyazaki\",\n  \"producer\": \"Hayao Miyazaki\",\n  \"release_date\": \"1988\",\n  \"running_time\": \"86\",\n  \"rt_score\": \"93\",\n  ...\n  }\n  ```\n\n# Base URL\n  Users must prepend all resource calls with this base URL:\n\n  `https://ghibliapi.herokuapp.com`\n\n# Authentication\n   There is no authentication necessary for the Studio Ghibli API.\n\n# Workflow\n  Endpoints can be used by themselves, or combined with one another to retrieve more specific information. An example workflow is listed below:\n\n  ### Goal: Get a list of people with the species classification as \"spirit.\"\n    - Call the species endpoint with `/species?name=spirit`\n    - Call the people listed under this endpoint with `/people/<uuid>`\n    - Combine these results\n\n\n# Use Case\n  There are numerous ways for users to interact with the platform. For example, with the \"people\" API, users can get customized information about people, such as eye and hair color. Another example is using the \"species\"\" API to find the different films each creature appears in. A more concrete case study is listed below:\n\n  ### A use case for finding information on all the cats of Studio Ghibli.\n\n  Using the Aeson library in Haskell, the user can parse the `people` array to return all of the cats, listed under `/species/603428ba-8a86-4b0b-a9f1-65df6abef3d3`\n\n  ```haskell\n  import qualified Data.ByteString.Lazy as L\n  import GHC.Generics\n  import Data.Aeson\n\n  main = do\n      fileData <- L.readFile \"cats.json\"\n      let ghibliResponse = decode fileData :: Maybe GhibliCatResponse\n      let ghibliResults = people <$> ghibliResponse\n      findCat ghibliResults\n\n  findCat :: Maybe [GhibliCatResult] -> IO ()\n  findCat Nothing = print \"data not found\"\n  findCat (Just people) = do\n      print $ T.pack \"Studio Ghibli Cats:\"\n      forM_ people $ \\person -> do\n          let dataName = name person\n          let dataGender = gender person\n          let dataAge = age person\n          let dataHairColor = hairColor person\n          let dataEyeColor = eyeColor person\n          let dataFilms = films person\n          print $ T.concat [T.pack 'name: ', dataName\n                           ,T.pack ', gender: ', dataGender\n                           ,T.pack ', age: ', dataAge\n                           ,T.pack ', hair color: ', dataHairColor\n                           ,T.pack ', eye color: '', dataEyeColor\n                           ]\n  ```\n\n  The above code will return an IO Action of the requested cats.\n\n  ```\n  \"Studio Ghibli Cats:\"\n  \"name: Jiji, gender: Male, hair color: Black, eye color: Black\"\n  \"name: Catbus, gender: Male, hair color: Brown, eye color: Yellow\"\n  \"name: Niya, gender: Male, hair color: Beige, eye color: White\"\n  \"name: Renaldo Moon aka Moon aka Muta, gender: Male, hair color: Beige, eye color: White\"\n  \"name: Cat King, gender: Male, hair color: Grey, eye color: Emerald\"\n  \"name: Yuki, gender: Female, hair color: White, eye color: Blue\"\n  \"name: Haru, gender: Female, hair color: Brown, eye color: Brown\"\n  \"name: Baron Humbert von Gikkingen, gender: Male, hair color: Yellow, eye color: Green\"\n  \"name: Natori, gender: Male, hair color: Grey, eye color: Blue\"\n  ```\n\n# Helper Libraries\n\n  ## Elixir\n  - [ghibli](https://github.com/sotojuan/ghibli) by [Juan Soto](https://github.com/sotojuan)\n",
+    "version": "1.0.1",
+    "x-logo": {
+      "url": "./images/logo.svg",
+      "backgroundColor": "#FFFFFF"
+    }
+  },
+  "host": "ghibliapi.herokuapp.com",
+  "schemes": [
+    "https"
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Endpoints",
+      "tags": [
+        "Films",
+        "People",
+        "Locations",
+        "Species",
+        "Vehicles"
+      ]
+    }
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/films": {
+      "get": {
+        "summary": "Return all films",
+        "description": "The Films endpoint returns information about all of the Studio Ghibli films.\n",
+        "tags": [
+          "Films"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "amount of results (default 50) (maximum 250)",
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/films\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/films')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/films').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of films",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Films"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "id": "2baf70d1-42bb-4437-b551-e5fed5a87abe",
+                  "title": "Castle in the Sky",
+                  "original_title": "天空の城ラピュタ",
+                  "original_title_romanised": "Tenkū no shiro Rapyuta",
+                  "description": "The orphan Sheeta inherited a mysterious crystal that links her to the mythical sky-kingdom of Laputa. With the help of resourceful Pazu and a rollicking band of sky pirates, she makes her way to the ruins of the once-great civilization. Sheeta and Pazu must outwit the evil Muska, who plans to use Laputa's science to make himself ruler of the world.",
+                  "director": "Hayao Miyazaki",
+                  "producer": "Isao Takahata",
+                  "release_date": "1986",
+                  "running_time": "124",
+                  "rt_score": "95",
+                  "people": [
+                    "https://ghibliapi.herokuapp.com/people/"
+                  ],
+                  "species": [
+                    "https://ghibliapi.herokuapp.com/species/af3910a6-429f-4c74-9ad5-dfe1c4aa04f2"
+                  ],
+                  "locations": [
+                    "https://ghibliapi.herokuapp.com/locations/"
+                  ],
+                  "vehicles": [
+                    "https://ghibliapi.herokuapp.com/vehicles/"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/films/2baf70d1-42bb-4437-b551-e5fed5a87abe"
+                },
+                {
+                  "id": "12cfb892-aac0-4c5b-94af-521852e46d6a",
+                  "title": "Grave of the Fireflies",
+                  "original_title": "火垂るの墓",
+                  "original_title_romanised": "Hotaru no haka",
+                  "description": "In the latter part of World War II, a boy and his sister, orphaned when their mother is killed in the firebombing of Tokyo, are left to survive on their own in what remains of civilian life in Japan. The plot follows this boy and his sister as they do their best to survive in the Japanese countryside, battling hunger, prejudice, and pride in their own quiet, personal battle.",
+                  "director": "Isao Takahata",
+                  "producer": "Toru Hara",
+                  "release_date": "1988",
+                  "running_time": "89",
+                  "rt_score": "97",
+                  "people": [
+                    "https://ghibliapi.herokuapp.com/people/"
+                  ],
+                  "species": [
+                    "https://ghibliapi.herokuapp.com/species/af3910a6-429f-4c74-9ad5-dfe1c4aa04f2"
+                  ],
+                  "locations": [
+                    "https://ghibliapi.herokuapp.com/locations/"
+                  ],
+                  "vehicles": [
+                    "https://ghibliapi.herokuapp.com/vehicles/"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/films/12cfb892-aac0-4c5b-94af-521852e46d6a"
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/films/{id}": {
+      "get": {
+        "summary": "Film ID",
+        "description": "Returns a film based on a single ID\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "film `id`",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Films"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/films/<id>\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/films/<id>')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/films/<id>').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A single film is returned",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Films"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": "2baf70d1-42bb-4437-b551-e5fed5a87abe",
+                "title": "Castle in the Sky",
+                "original_title": "天空の城ラピュタ",
+                "original_title_romanised": "Tenkū no shiro Rapyuta",
+                "description": "The orphan Sheeta inherited a mysterious crystal that links her to the mythical sky-kingdom of Laputa. With the help of resourceful Pazu and a rollicking band of sky pirates, she makes her way to the ruins of the once-great civilization. Sheeta and Pazu must outwit the evil Muska, who plans to use Laputa's science to make himself ruler of the world.",
+                "director": "Hayao Miyazaki",
+                "producer": "Isao Takahata",
+                "release_date": "1986",
+                "running_time": "124",
+                "rt_score": "95",
+                "people": [
+                  "https://ghibliapi.herokuapp.com/people/"
+                ],
+                "species": [
+                  "https://ghibliapi.herokuapp.com/species/af3910a6-429f-4c74-9ad5-dfe1c4aa04f2"
+                ],
+                "locations": [
+                  "https://ghibliapi.herokuapp.com/locations/"
+                ],
+                "vehicles": [
+                  "https://ghibliapi.herokuapp.com/vehicles/"
+                ],
+                "url": "https://ghibliapi.herokuapp.com/films/2baf70d1-42bb-4437-b551-e5fed5a87abe"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/people": {
+      "get": {
+        "summary": "Return all people",
+        "description": "The People endpoint returns information about all of the Studio Ghibli people. This broadly includes all Ghibli characters, human and non-.\n",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "amount of results (default 50) (maximum 250)",
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/people\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/people')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/people').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of people",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/People"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "id": "ba924631-068e-4436-b6de-f3283fa848f0",
+                  "name": "Ashitaka",
+                  "gender": "male",
+                  "age": "late teens",
+                  "eye_color": "brown",
+                  "hair_color": "brown",
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/030555b3-4c92-4fce-93fb-e70c3ae3df8b"
+                  ],
+                  "species": "https://ghibliapi.herokuapp.com/species/af3910a6-429f-4c74-9ad5-dfe1c4aa04f2",
+                  "url": "https://ghibliapi.herokuapp.com/people/ba924631-068e-4436-b6de-f3283fa848f0"
+                },
+                {
+                  "id": "030555b3-4c92-4fce-93fb-e70c3ae3df8b",
+                  "name": "Yakul",
+                  "age": "Unknown",
+                  "gender": "male",
+                  "eye_color": "Grey",
+                  "hair_color": "Brown",
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                  ],
+                  "species": "https://ghibliapi.herokuapp.com/species/6bc92fdd-b0f4-4286-ad71-1f99fb4a0d1e",
+                  "url": "https://ghibliapi.herokuapp.com/people/030555b3-4c92-4fce-93fb-e70c3ae3df8b"
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "summary": "People ID",
+        "description": "Returns a person based on a single ID\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "person `id`",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "People"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/people/<id>\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/people/<id>')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/people/<id>').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A single person is returned",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/People"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": "ba924631-068e-4436-b6de-f3283fa848f0",
+                "name": "Cat King",
+                "gender": "Male",
+                "eye_color": "Emerald",
+                "hair_color": "Grey",
+                "films": [
+                  "https://ghibliapi.herokuapp.com/films/90b72513-afd4-4570-84de-a56c312fdf81"
+                ],
+                "species": "https://ghibliapi.herokuapp.com/species/603428ba-8a86-4b0b-a9f1-65df6abef3d3",
+                "url": "https://ghibliapi.herokuapp.com/people/3042818d-a8bb-4cba-8180-c19249822d57"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/locations": {
+      "get": {
+        "summary": "Return all locations",
+        "description": "The Locations endpoint returns information about all of the Studio Ghibli locations. This broadly includes lands, countries, and places.\n",
+        "tags": [
+          "Locations"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "amount of results (default 50) (maximum 250)",
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/locations\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/locations')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/locations').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of locations",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Locations"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "id": "11014596-71b0-4b3e-b8c0-1c4b15f28b9a",
+                  "name": "Irontown",
+                  "climate": "Continental",
+                  "terrain": "Mountain",
+                  "surface_water": "40",
+                  "residents": [
+                    "https://ghibliapi.herokuapp.com/people/ba924631-068e-4436-b6de-f3283fa848f0",
+                    "https://ghibliapi.herokuapp.com/people/030555b3-4c92-4fce-93fb-e70c3ae3df8b"
+                  ],
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/locations/11014596-71b0-4b3e-b8c0-1c4b15f28b9a"
+                },
+                {
+                  "id": "11014596-71b0-4b3e-b8c0-1c4b15f28b9a",
+                  "name": "Gutiokipanja",
+                  "climate": "Continental",
+                  "terrain": "Hill",
+                  "surface_water": "50",
+                  "residents": [
+                    "https://ghibliapi.herokuapp.com/people/ba924631-068e-4436-b6de-f3283fa848f0",
+                    "https://ghibliapi.herokuapp.com/people/030555b3-4c92-4fce-93fb-e70c3ae3df8b"
+                  ],
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/locations/11014596-71b0-4b3e-b8c0-1c4b15f28b9a"
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/locations/{id}": {
+      "get": {
+        "summary": "Location ID",
+        "description": "Returns an individual location.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "location `id`",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Locations"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/locations/<id>\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/locations/<id>')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/locations/<id>').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A single location is returned",
+            "schema": {
+              "type": "object",
+              "items": {
+                "$ref": "#/definitions/Locations"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": "11014596-71b0-4b3e-b8c0-1c4b15f28b9a",
+                "name": "Irontown",
+                "climate": "Continental",
+                "terrain": "Mountain",
+                "surface_water": "40",
+                "residents": [
+                  "https://ghibliapi.herokuapp.com/people/ba924631-068e-4436-b6de-f3283fa848f0"
+                ],
+                "films": [
+                  "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                ],
+                "url": "https://ghibliapi.herokuapp.com/locations/11014596-71b0-4b3e-b8c0-1c4b15f28b9a"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/species": {
+      "get": {
+        "summary": "Species",
+        "description": "The Species endpoint returns information about all of the Studio Ghibli species. This includes humans, animals, and spirits et al.\n",
+        "tags": [
+          "Species"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "amount of results (default 50) (maximum 250)",
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/species\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/species')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/species').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of species",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Species"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "id": "b5a92d0e-5fb4-43d4-ba60-c012135958e4",
+                  "name": "Spirit",
+                  "classification": "Spirit",
+                  "eye_colors": "Red",
+                  "hair_colors": "Light Orange",
+                  "url": "https://ghibliapi.herokuapp.com/species/b5a92d0e-5fb4-43d4-ba60-c012135958e4",
+                  "people": [
+                    "https://ghibliapi.herokuapp.com/people/ca568e87-4ce2-4afa-a6c5-51f4ae80a60b"
+                  ],
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                  ]
+                },
+                {
+                  "id": "f25fa661-3073-414d-968a-ab062e3065f7",
+                  "name": "God",
+                  "classification": "God",
+                  "eye_colors": "Brown",
+                  "hair_colors": "White",
+                  "url": "https://ghibliapi.herokuapp.com/species/f25fa661-3073-414d-968a-ab062e3065f7",
+                  "people": [
+                    "Moro"
+                  ],
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/0440483e-ca0e-4120-8c50-4c8cd9b965d6"
+                  ]
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/species/{id}": {
+      "get": {
+        "summary": "Species ID",
+        "description": "Returns an individual species",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "film `id`",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Species"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/species/<id>\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/species/<id>')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/species/<id>').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A single species is returned",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Species"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": "603428ba-8a86-4b0b-a9f1-65df6abef3d3",
+                "name": "Cat",
+                "classification": "Mammal",
+                "eye_colors": "Brown, Black, Yellow, White, Emerald, Blue, Green",
+                "hair_colors": "White, Black, Brown, Beige, Grey, Yellow",
+                "people": [
+                  "https://ghibliapi.herokuapp.com/people/7151abc6-1a9e-4e6a-9711-ddb50ea572ec",
+                  "https://ghibliapi.herokuapp.com/people/f467e18e-3694-409f-bdb3-be891ade1106",
+                  "https://ghibliapi.herokuapp.com/people/89026b3a-abc4-4053-ab1a-c6d2eea68faa",
+                  "https://ghibliapi.herokuapp.com/people/6b3facea-ea33-47b1-96ce-3fc737b119b8",
+                  "https://ghibliapi.herokuapp.com/people/3042818d-a8bb-4cba-8180-c19249822d57",
+                  "https://ghibliapi.herokuapp.com/people/58d1973f-f247-47d7-9358-e56cb0d2b5a6",
+                  "https://ghibliapi.herokuapp.com/people/a3d8e70f-46a0-4e5a-b850-db01620d6b92",
+                  "https://ghibliapi.herokuapp.com/people/fc196c4f-0201-4ed2-9add-c6403f7c4d32",
+                  "https://ghibliapi.herokuapp.com/people/466bc926-2024-4653-ac63-fe52f2dc8c7b"
+                ],
+                "films": [
+                  "https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49",
+                  "https://ghibliapi.herokuapp.com/films/ea660b10-85c4-4ae3-8a5f-41cea3648e3e",
+                  "https://ghibliapi.herokuapp.com/films/ff24da26-a969-4f0e-ba1e-a122ead6c6e3",
+                  "https://ghibliapi.herokuapp.com/films/90b72513-afd4-4570-84de-a56c312fdf81",
+                  "https://ghibliapi.herokuapp.com/films/2de9426b-914a-4a06-a3a0-5e6d9d3886f6"
+                ],
+                "url": "https://ghibliapi.herokuapp.com/species/603428ba-8a86-4b0b-a9f1-65df6abef3d3"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/vehicles": {
+      "get": {
+        "summary": "Vehicles",
+        "description": "The Vehicles endpoint returns information about all of the Studio Ghibli vechiles. This includes cars, ships, and planes.\n",
+        "tags": [
+          "Vehicles"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "amount of results (default 50) (maximum 250)",
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/vehicles\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/vehicles')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/vehicles').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of vehicles",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Vehicles"
+              }
+            },
+            "examples": {
+              "application/json": [
+                {
+                  "id": "4e09b023-f650-4747-9ab9-eacf14540cfb",
+                  "name": "Air Destroyer Goliath",
+                  "description": "A military airship utilized by the government to access Laputa",
+                  "vehicle_class": "Airship",
+                  "length": "1,000",
+                  "pilot": "https://ghibliapi.herokuapp.com/people/40c005ce-3725-4f15-8409-3e1b1b14b583",
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/2baf70d1-42bb-4437-b551-e5fed5a87abe"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/films/2baf70d1-42bb-4437-b551-e5fed5a87abe"
+                },
+                {
+                  "id": "d8f893b5-1dd9-41a1-9918-0099c1aa2de8",
+                  "name": "Red Wing",
+                  "description": "An experimental aircraft captured by Porco. Named Savoia S.21",
+                  "vehicle_class": "Airplane",
+                  "length": "20",
+                  "pilot": "https://ghibliapi.herokuapp.com/people/6523068d-f5a9-4150-bf5b-76abe6fb42c3",
+                  "films": [
+                    "https://ghibliapi.herokuapp.com/films/ebbb6b7c-945c-41ee-a792-de0e43191bd8"
+                  ],
+                  "url": "https://ghibliapi.herokuapp.com/vehicles/d8f893b5-1dd9-41a1-9918-0099c1aa2de8"
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}": {
+      "get": {
+        "summary": "Vehicle ID",
+        "description": "An individual vehicle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "film `id`",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "comma-separated list of fields to include in the response",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Vehicles"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "curl -X GET -H \"Content-Type: application/json\" https://ghibliapi.herokuapp.com/vehicles/<id>\n"
+          },
+          {
+            "lang": "Ruby",
+            "source": "require 'net/http'\n\nuri = URI('https://ghibliapi.herokuapp.com/vehicles/<id>')\nNet::HTTP.get(uri) # => String\n"
+          },
+          {
+            "lang": "Python",
+            "source": "import urllib2\n\nurllib2.urlopen('https://ghibliapi.herokuapp.com/vehicles/<id>').read()\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A single vehicle is returned",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Vehicles"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": "923d70c9-8f15-4972-ad53-0128b261d628",
+                "name": "Sosuke's Boat",
+                "description": "A toy boat where Sosuke plays",
+                "vehicle_class": "Boat",
+                "length": "10",
+                "pilot": "https://ghibliapi.herokuapp.com/people/a10f64f3-e0b6-4a94-bf30-87ad8bc51607",
+                "films": [
+                  "https://ghibliapi.herokuapp.com/films/758bf02e-3122-46e0-884e-67cf83df1786"
+                ],
+                "url": "https://ghibliapi.herokuapp.com/films/758bf02e-3122-46e0-884e-67cf83df1786"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Films": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier representing a specific film"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the film"
+        },
+        "original_title": {
+          "type": "string",
+          "description": "Original title of the film"
+        },
+        "original_title_romanised": {
+          "type": "string",
+          "description": "Orignal title in romanised form"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the film"
+        },
+        "director": {
+          "type": "string",
+          "description": "Director of the film"
+        },
+        "producer": {
+          "type": "string",
+          "description": "Producer of the film"
+        },
+        "release_date": {
+          "type": "string",
+          "description": "Release year of film"
+        },
+        "running_time": {
+          "type": "string",
+          "description": "Running time of the film in minutes"
+        },
+        "rt_score": {
+          "type": "string",
+          "description": "Rotten Tomato score of film"
+        },
+        "people": {
+          "type": "array",
+          "description": "People found in film",
+          "items": {
+            "type": "string"
+          }
+        },
+        "species": {
+          "type": "array",
+          "description": "Species found in film",
+          "items": {
+            "type": "string"
+          }
+        },
+        "locations": {
+          "type": "array",
+          "description": "Locations found in film",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vehicles": {
+          "type": "array",
+          "description": "Vehicles found in film",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of film"
+        }
+      }
+    },
+    "People": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier representing a specific person"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the person"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender of the person"
+        },
+        "age": {
+          "type": "string",
+          "description": "Age, if known, of the person"
+        },
+        "eye_color": {
+          "type": "string",
+          "description": "Eye color of the person"
+        },
+        "hair_color": {
+          "type": "string",
+          "description": "Hair color of the person"
+        },
+        "films": {
+          "type": "array",
+          "description": "Array of films the person appears in",
+          "items": {
+            "type": "string"
+          }
+        },
+        "species": {
+          "type": "string",
+          "description": "Species the person belongs to"
+        },
+        "url": {
+          "type": "string",
+          "description": "Unique url of the person"
+        }
+      }
+    },
+    "Locations": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier representing a specific location"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of location"
+        },
+        "climate": {
+          "type": "string",
+          "description": "Climate of location"
+        },
+        "terrain": {
+          "type": "string",
+          "description": "Terrain type of location"
+        },
+        "surface_water": {
+          "type": "string",
+          "description": "Percent of location covered in water"
+        },
+        "residents": {
+          "type": "array",
+          "description": "Array of residents in location",
+          "items": {
+            "type": "string"
+          }
+        },
+        "films": {
+          "type": "array",
+          "description": "Array of films the location appears in",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "type": "string",
+          "description": "Individual URL of the location"
+        }
+      }
+    },
+    "Species": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier representing a specific species"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the species"
+        },
+        "classification": {
+          "type": "string",
+          "description": "Classification of the species"
+        },
+        "eye_color": {
+          "type": "string",
+          "description": "Eye color of the species"
+        },
+        "hair_color": {
+          "type": "string",
+          "description": "Hair color of the species"
+        },
+        "people": {
+          "type": "array",
+          "description": "People belonging to the species",
+          "items": {
+            "type": "string"
+          }
+        },
+        "films": {
+          "type": "array",
+          "description": "Array of films the species appears in",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "type": "string",
+          "description": "Unique url of the species"
+        }
+      }
+    },
+    "Vehicles": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier representing a specific vehicle"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the vehicles"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the vehicle"
+        },
+        "vehicle_class": {
+          "type": "string",
+          "description": "Class of the vehicle"
+        },
+        "length": {
+          "type": "string",
+          "description": "Length of the vehicle in feet"
+        },
+        "pilot": {
+          "type": "string",
+          "description": "Pilot of the vehicle"
+        },
+        "films": {
+          "type": "array",
+          "description": "Array of films the vehicle appears in",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "type": "string",
+          "description": "Unique URL of the vehicle"
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
