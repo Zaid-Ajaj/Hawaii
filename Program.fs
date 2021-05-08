@@ -20,6 +20,7 @@ type Target =
 
 type CodegenConfig = {
     target: Target
+    projectName : string
 }
 
 let xmlDocs (description: string) =
@@ -406,7 +407,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
     ]
 
-let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
+let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
 
     let globalTypes = [
@@ -431,8 +432,67 @@ let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocum
                 ()
     ]
 
-    let globalTypesModule = CodeGen.createNamespace [ projectName; "Types" ] globalTypes
+    let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] globalTypes
     globalTypesModule
+
+let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [ ]
+        Id = [ Ident.Create $"{config.projectName}Client" ]
+        XmlDoc = xmlDocs openApiDocument.Info.Description
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let clientMembers = ResizeArray<SynMemberDefn>()
+
+    let httpClient = SynSimplePat.CreateTyped(Ident.Create "httpClient", SynType.Create "HttpClient")
+
+    clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
+
+    for path in openApiDocument.Paths do
+        let fullPath = path.Key
+        let pathInfo = path.Value
+        for operation in pathInfo.Operations do
+            let operationInfo = operation.Value
+            if not (isNull operationInfo.OperationId) && not operationInfo.Deprecated then
+                let clientOperation = SynMemberDefn.CreateMember {
+                    SynBindingRcd.Null with
+                        XmlDoc = xmlDocs operationInfo.Description
+                        Expr = SynExpr.CreateConstString fullPath
+                        Pattern =
+                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{operationInfo.OperationId}", [
+                                SynPatRcd.CreateParen(
+                                    SynPatRcd.Tuple {
+                                        Patterns = [
+                                            for parameter in operationInfo.Parameters do
+                                                if not parameter.Deprecated then
+                                                    SynPatRcd.Typed {
+                                                        Type = SynType.String()
+                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString parameter.Name, [])
+                                                        Range = range0
+                                                    }
+                                        ]
+                                        Range  = range0
+                                    }
+                                )
+                            ])
+                }
+
+                clientMembers.Add clientOperation
+
+    let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
+    let moduleContents = [
+        SynModuleDecl.CreateOpen "System.Net.Http"
+        SynModuleDecl.CreateOpen $"{config.projectName}.Types"
+        clientType
+    ]
+
+    let clientModule = CodeGen.createNamespace [ config.projectName ] moduleContents
+    clientModule
 
 let rec deleteFilesAndFolders directory isRoot =
     for file in Directory.GetFiles directory
@@ -487,18 +547,23 @@ let main argv =
                 System.Console.WriteLine error.Message
             1
         else
-            let projectName = "PetStore"
             let outputDir = resolveFile "./output"
-            let config = { target = Target.Fable }
+
+            let config = {
+                target = Target.FSharp
+                projectName = "PetStore"
+            }
             // prepare output directory
             if Directory.Exists outputDir
             then deleteFilesAndFolders outputDir true
             else ignore(Directory.CreateDirectory outputDir)
             // generate types
-            let globalTypesModule = createGlobalTypesModule projectName openApiDocument config
+            let globalTypesModule = createGlobalTypesModule openApiDocument config
             let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-            write code [outputDir; $"{projectName}.Types.fs"]
-
+            let clientModule = createOpenApiClient openApiDocument config
+            let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
+            write code [ outputDir; "Types.fs" ]
+            write clientModuleCode [ outputDir; "Client.fs" ]
             let projectFile =
                 let packages = [
                     if config.target = Target.FSharp then
@@ -512,7 +577,8 @@ let main argv =
                     if config.target = Target.FSharp then
                         XElement.Compile "StringEnum.fs"
                         XElement.Compile "OpenApiJson.fs"
-                    XElement.Compile $"{projectName}.Types.fs"
+                    XElement.Compile "Types.fs"
+                    XElement.Compile "Client.fs"
                 ]
 
                 let copyLocalLockFileAssemblies = None
@@ -521,10 +587,10 @@ let main argv =
                 generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
 
             if config.target = Target.FSharp then
-                let content = JsonLibrary.content.Replace("{projectName}", projectName)
+                let content = JsonLibrary.content.Replace("{projectName}", config.projectName)
                 write content [ outputDir; "OpenApiJson.fs" ]
                 write CodeGen.dummyStringEnum [ outputDir; "StringEnum.fs" ]
-            write (projectFile.ToString()) [ outputDir; $"{projectName}.fsproj" ]
+            write (projectFile.ToString()) [ outputDir; $"{config.projectName}.fsproj" ]
             0 // return an integer exit code
     with
     | error ->
