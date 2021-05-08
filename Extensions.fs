@@ -49,3 +49,43 @@ type SynMemberDefn with
         }
         let staticBinding = { binding with ValData = SynValData.SynValData(staticMemberFlags, valInfo, identifier) }
         SynMemberDefn.Member(staticBinding.FromRcd, range.Zero)
+
+type SynAttribute with
+    static member Create(idents: string list) : SynAttribute =
+        {
+            AppliesToGetterAndSetter = false
+            ArgExpr = SynExpr.Const (SynConst.Unit, range0)
+            Range = range0
+            Target = None
+            TypeName = LongIdentWithDots(List.map Ident.Create idents, [ ])
+        }
+
+open System
+open System.Xml.Linq
+
+[<AbstractClass; Sealed>]
+type XAttribute =
+
+    static member ofStringName (name: string, value: obj) =
+        XAttribute(XName.Get(name), value)
+
+[<AbstractClass; Sealed>]
+type XElement =
+
+    static member ofStringName (name: string, content: obj) =
+        XElement(XName.Get(name), content)
+
+    static member ofStringName (name: string, [<ParamArray>] content) =
+        XElement(XName.Get(name), content)
+
+    static member Compile(fileName: string) =
+        XElement.ofStringName("Compile", XAttribute.ofStringName("Include", fileName))
+
+    static member PackageReference (include': string, version: string) =
+        XElement.ofStringName("PackageReference",
+            XAttribute.ofStringName("Include", include'),
+            XAttribute.ofStringName("Version", version))
+
+    static member ProjectReference (include': string) =
+        XElement.ofStringName("ProjectReference",
+            XAttribute.ofStringName("Include", include'))

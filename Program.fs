@@ -9,6 +9,18 @@ open FSharp.Compiler.XmlDoc
 open Microsoft.OpenApi.Models
 open System.Linq
 open System.IO
+open System.Xml.Linq
+
+[<RequireQualifiedAccess>]
+/// <summary>Describes the compilation target</summary>
+type Target =
+    | FSharp
+    | Fable
+
+
+type CodegenConfig = {
+    target: Target
+}
 
 let xmlDocs (description: string) =
     if String.IsNullOrWhiteSpace description then
@@ -137,10 +149,10 @@ let createEnumType (enumName: string) (values: seq<string>) =
         Access = None
         Attributes = [
             SynAttributeList.Create [
+                SynAttribute.Create [ "Fable";"Core"; "StringEnum" ]
                 SynAttribute.RequireQualifiedAccess()
             ]
         ]
-
         Id = [ Ident.Create enumName ]
         XmlDoc = PreXmlDoc.Empty
         Parameters = [ ]
@@ -181,7 +193,7 @@ let createEnumType (enumName: string) (values: seq<string>) =
 
     SynModuleDecl.CreateSimpleType(info, simpleType, members)
 
-let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) : SynModuleDecl list =
+let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
@@ -253,7 +265,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
             let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes
+            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
@@ -270,7 +282,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
             let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes
+            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
@@ -323,7 +335,13 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let containsPreservedProperty =
         schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
 
-    if schema.AdditionalPropertiesAllowed && not (isNull schema.AdditionalProperties) && not containsPreservedProperty then
+    let includeAdditionalProperties =
+        schema.AdditionalPropertiesAllowed
+        && not (isNull schema.AdditionalProperties)
+        && not containsPreservedProperty
+        && config.target = Target.FSharp
+
+    if includeAdditionalProperties then
         match createPropertyType "additionalProperties" schema.AdditionalProperties with
         | None -> ()
         | Some additionalType ->
@@ -388,7 +406,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
     ]
 
-let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocument) =
+let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
 
     let globalTypes = [
@@ -404,7 +422,7 @@ let createGlobalTypesModule (projectName: string) (openApiDocument: OpenApiDocum
                 // skip deprecated global types
                 ()
             if topLevelObject.Value.Type = "object"
-            then yield! createRecordFromSchema typeName topLevelObject.Value visitedTypes
+            then yield! createRecordFromSchema typeName topLevelObject.Value visitedTypes config
             elif topLevelObject.Value.Type = "string" then
                 match topLevelObject.Value with
                 | StringEnum cases -> createEnumType typeName cases
@@ -426,6 +444,38 @@ let rec deleteFilesAndFolders directory isRoot =
 let path xs = Path.Combine(Array.ofList xs)
 let write content filePath = File.WriteAllText(path filePath, content)
 
+let generateProjectDocument
+    (packageReferences: XElement seq)
+    (files: XElement seq)
+    (copyLocalLockFileAssemblies: bool option)
+    (contentItems: XElement seq)
+    (projectReferences: XElement seq) =
+    XDocument(
+        XElement.ofStringName("Project",
+            XAttribute.ofStringName("Sdk", "Microsoft.NET.Sdk"),
+            seq {
+            XElement.ofStringName("PropertyGroup",
+                seq {
+                    XElement.ofStringName("TargetFramework", "netstandard2.0")
+                    XElement.ofStringName("LangVersion", "latest")
+                    if copyLocalLockFileAssemblies.IsSome then
+                        XElement.ofStringName("CopyLocalLockFileAssemblies",
+                            if copyLocalLockFileAssemblies.Value
+                            then "true"
+                            else "false"
+                        )
+                })
+            if not (files |> Seq.isEmpty) then
+                XElement.ofStringName("ItemGroup", files)
+            if not (contentItems |> Seq.isEmpty) then
+                XElement.ofStringName("ItemGroup", contentItems)
+            if not (packageReferences |> Seq.isEmpty) then
+                XElement.ofStringName("ItemGroup", packageReferences)
+            if not (projectReferences |> Seq.isEmpty) then
+                XElement.ofStringName("ItemGroup", projectReferences)
+        }))
+
+
 [<EntryPoint>]
 let main argv =
     try
@@ -439,14 +489,42 @@ let main argv =
         else
             let projectName = "PetStore"
             let outputDir = resolveFile "./output"
+            let config = { target = Target.Fable }
             // prepare output directory
             if Directory.Exists outputDir
             then deleteFilesAndFolders outputDir true
             else ignore(Directory.CreateDirectory outputDir)
             // generate types
-            let globalTypesModule = createGlobalTypesModule projectName openApiDocument
+            let globalTypesModule = createGlobalTypesModule projectName openApiDocument config
             let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
             write code [outputDir; $"{projectName}.Types.fs"]
+
+            let projectFile =
+                let packages = [
+                    if config.target = Target.FSharp then
+                        XElement.PackageReference("Newtonsoft.Json", "13.0.1")
+                    else
+                        XElement.PackageReference("Fable.SimpleJson", "3.19.0")
+                        XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
+                ]
+
+                let files = [
+                    if config.target = Target.FSharp then
+                        XElement.Compile "StringEnum.fs"
+                        XElement.Compile "OpenApiJson.fs"
+                    XElement.Compile $"{projectName}.Types.fs"
+                ]
+
+                let copyLocalLockFileAssemblies = None
+                let contentItems = [ ]
+                let projectReferences = [ ]
+                generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
+
+            if config.target = Target.FSharp then
+                let content = JsonLibrary.content.Replace("{projectName}", projectName)
+                write content [ outputDir; "OpenApiJson.fs" ]
+                write CodeGen.dummyStringEnum [ outputDir; "StringEnum.fs" ]
+            write (projectFile.ToString()) [ outputDir; $"{projectName}.fsproj" ]
             0 // return an integer exit code
     with
     | error ->
