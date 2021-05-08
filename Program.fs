@@ -461,13 +461,14 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
             if not (isNull operationInfo.OperationId) && not operationInfo.Deprecated then
                 let clientOperation = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
-                        XmlDoc = xmlDocs operationInfo.Description
+                        XmlDoc = xmlDocs (if isNull operationInfo.Description then operationInfo.Summary else operationInfo.Description)
                         Expr = SynExpr.CreateConstString fullPath
                         Pattern =
                             SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{operationInfo.OperationId}", [
                                 SynPatRcd.CreateParen(
                                     SynPatRcd.Tuple {
                                         Patterns = [
+                                            // path parameters
                                             for parameter in operationInfo.Parameters do
                                                 if not parameter.Deprecated then
                                                     SynPatRcd.Typed {
@@ -475,6 +476,17 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                                                         Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString parameter.Name, [])
                                                         Range = range0
                                                     }
+
+                                            if not (isNull operationInfo.RequestBody) then
+                                                for pair in operationInfo.RequestBody.Content do
+                                                    if pair.Key = "multipart/form-data" then
+
+                                                        for property in pair.Value.Schema.Properties do
+                                                            SynPatRcd.Typed {
+                                                                Type = SynType.String()
+                                                                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString property.Key, [])
+                                                                Range = range0
+                                                            }
                                         ]
                                         Range  = range0
                                     }
