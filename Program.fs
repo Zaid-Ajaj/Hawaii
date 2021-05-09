@@ -520,6 +520,28 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] (Seq.toList moduleTypes)
     globalTypesModule
 
+let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
+    if not (String.IsNullOrWhiteSpace operationName) then
+        operationName
+    else
+        let parts = path.Split("/")
+        let parameters =
+            parts
+            |> Array.filter (fun part -> part.StartsWith "{" && part.EndsWith "}")
+            |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
+            |> String.concat "And"
+
+        let segments =
+            parts
+            |> Array.filter (fun part -> not (part.StartsWith "{" && part.EndsWith "}"))
+            |> Array.mapi (fun index part -> if index <> 0 then capitalize part else part)
+            |> String.concat ""
+
+        if String.IsNullOrEmpty parameters then
+            string operationType + segments
+        else
+            string operationType + segments + "By" + parameters
+
 let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let info : SynComponentInfoRcd = {
         Access = None
@@ -543,13 +565,13 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
         let pathInfo = path.Value
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
-            if not (isNull operationInfo.OperationId) && not operationInfo.Deprecated then
+            if not operationInfo.Deprecated then
                 let clientOperation = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
                         XmlDoc = xmlDocs (if isNull operationInfo.Description then operationInfo.Summary else operationInfo.Description)
                         Expr = SynExpr.CreateConstString fullPath
                         Pattern =
-                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{operationInfo.OperationId}", [
+                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{deriveOperationName operationInfo.OperationId fullPath operation.Key}", [
                                 SynPatRcd.CreateParen(
                                     SynPatRcd.Tuple {
                                         Patterns = [
