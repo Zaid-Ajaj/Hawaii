@@ -93,7 +93,7 @@ let findNextTypeName fieldName objectName (selections: string list) (visitedType
         nextTick (capitalize fieldName + "From" + objectName) visitedTypes
 
 let isEnumType (schema: OpenApiSchema) =
-    schema.Type = "string"
+    (schema.Type = "string" || schema.Type = "integer")
     && not (isNull schema.Enum)
     && schema.Enum.Count > 0
 
@@ -105,8 +105,44 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
                 match enumCase with
                 | :? Microsoft.OpenApi.Any.OpenApiString as primitiveValue -> Some primitiveValue.Value
                 | _ -> None)
+
         if not (Seq.isEmpty cases) then
             Some (Seq.toList cases)
+        else
+            None
+    else
+        None
+
+let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
+    if isEnumType schema then
+        let cases =
+            schema.Enum
+            |> Seq.choose (fun enumCase ->
+                match enumCase with
+                | :? Microsoft.OpenApi.Any.OpenApiInteger as primitiveValue -> Some primitiveValue.Value
+                | _ -> None)
+
+        let caseNames =
+            if not (isNull schema.Extensions) && schema.Extensions.ContainsKey "x-enumNames" then
+                let enumNames = schema.Extensions.["x-enumNames"]
+                match enumNames with
+                | :? Microsoft.OpenApi.Any.OpenApiArray as namesArray ->
+                    namesArray
+                    |> Seq.choose (function
+                        | :? Microsoft.OpenApi.Any.OpenApiString as enumName -> Some enumName.Value
+                        | _ -> None)
+                    |> Seq.toList
+                | _ ->
+                    []
+            else
+                cases
+                |> Seq.map (fun caseValue -> typeName + string caseValue)
+                |> Seq.toList
+
+        if not (Seq.isEmpty cases) && not (Seq.isEmpty caseNames) && Seq.length cases = Seq.length caseNames then
+            cases
+            |> Seq.zip caseNames
+            |> Some
         else
             None
     else
@@ -194,6 +230,33 @@ let createEnumType (enumName: string) (values: seq<string>) =
 
     SynModuleDecl.CreateSimpleType(info, simpleType, members)
 
+let createFlagsEnum (enumName: string) (values: seq<string * int>) =
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [
+            SynAttributeList.Create [
+                SynAttribute.RequireQualifiedAccess()
+            ]
+        ]
+        Id = [ Ident.Create enumName ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let enumRepresentation = SynTypeDefnSimpleReprEnumRcd.Create([
+        for (enumName, enumValue) in values ->
+            let attrs = []
+            let docs = PreXmlDoc.Empty
+            SynEnumCaseRcd.Create(Ident.Create (capitalize enumName), SynConst.Int32 enumValue)
+    ])
+
+    let simpleType = SynTypeDefnSimpleReprRcd.Enum enumRepresentation
+
+    SynModuleDecl.CreateSimpleType(info, simpleType)
+
 let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
         Access = None
@@ -233,11 +296,20 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             Some fieldType
         else if isEnum && isNull propertyType.Reference then
             // nested enum -> not a reference to a global usable enum
+            let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
             match propertyType with
             | StringEnum cases ->
-                let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
                 visitedTypes.Add enumTypeName
                 let createdEnumType = createEnumType enumTypeName cases
+                nestedObjects.Add createdEnumType
+                let fieldType =
+                    if required
+                    then SynType.Create enumTypeName
+                    else SynType.Option(SynType.Create enumTypeName)
+                Some fieldType
+            | IntEnum enumTypeName cases ->
+                visitedTypes.Add enumTypeName
+                let createdEnumType = createFlagsEnum enumTypeName cases
                 nestedObjects.Add createdEnumType
                 let fieldType =
                     if required
@@ -294,11 +366,20 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let arrayItemsType = propertyType.Items
             if isNull arrayItemsType.Reference then
                 // nested enum type -> not a global reference
+                let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
                 match arrayItemsType with
                 | StringEnum cases ->
-                    let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
                     visitedTypes.Add enumTypeName
                     let createdEnumType = createEnumType enumTypeName cases
+                    nestedObjects.Add createdEnumType
+                    let fieldType =
+                        if required
+                        then SynType.List(SynType.Create enumTypeName)
+                        else SynType.Option(SynType.List(SynType.Create enumTypeName))
+                    Some fieldType
+                | IntEnum enumTypeName cases ->
+                    visitedTypes.Add enumTypeName
+                    let createdEnumType = createFlagsEnum enumTypeName cases
                     nestedObjects.Add createdEnumType
                     let fieldType =
                         if required
@@ -409,30 +490,34 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
+    let moduleTypes = ResizeArray<SynModuleDecl>()
 
-    let globalTypes = [
-        for topLevelObject in openApiDocument.Components.Schemas do
-            let typeName =
-                if String.IsNullOrEmpty topLevelObject.Value.Title
-                then topLevelObject.Key
-                else topLevelObject.Value.Title
+    for topLevelObject in openApiDocument.Components.Schemas do
+        let typeName =
+            if String.IsNullOrEmpty topLevelObject.Value.Title
+            then topLevelObject.Key
+            else topLevelObject.Value.Title
 
-            visitedTypes.Add typeName
+        visitedTypes.Add typeName
 
-            if topLevelObject.Value.Deprecated then
-                // skip deprecated global types
-                ()
-            if topLevelObject.Value.Type = "object"
-            then yield! createRecordFromSchema typeName topLevelObject.Value visitedTypes config
-            elif topLevelObject.Value.Type = "string" then
-                match topLevelObject.Value with
-                | StringEnum cases -> createEnumType typeName cases
-                | _ -> ()
-            else
-                ()
-    ]
+        if topLevelObject.Value.Deprecated then
+            // skip deprecated global types
+            ()
+        if topLevelObject.Value.Type = "object" then
+            for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
+                moduleTypes.Add createdType
+        elif topLevelObject.Value.Type = "string" then
+            match topLevelObject.Value with
+            | StringEnum cases -> moduleTypes.Add (createEnumType typeName cases)
+            | _ -> ()
+        elif topLevelObject.Value.Type = "integer" then
+            match topLevelObject.Value with
+            | IntEnum typeName cases -> moduleTypes.Add(createFlagsEnum typeName cases)
+            | _ -> ()
+        else
+            ()
 
-    let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] globalTypes
+    let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] (Seq.toList moduleTypes)
     globalTypesModule
 
 let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
@@ -551,7 +636,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/petstore.json")
+        let schema = getSchema (resolveFile "./schemas/simple-swashbuckle.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then

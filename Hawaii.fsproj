@@ -12,6 +12,12 @@
     <Content Include="./schemas/ghibli.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="./schemas/simple-nswag.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="./schemas/simple-swashbuckle.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="JsonLibrary.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="CodeGen.fs" />
