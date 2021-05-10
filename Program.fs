@@ -533,20 +533,21 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             // skip deprecated global types
             ()
         if topLevelObject.Value.Type = "object" || isAllOf then
+            visitedTypes.Add typeName
             for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
-                visitedTypes.Add typeName
+
         elif topLevelObject.Value.Type = "string" then
+            visitedTypes.Add typeName
             match topLevelObject.Value with
             | StringEnum cases ->
                 moduleTypes.Add (createEnumType typeName cases)
-                visitedTypes.Add typeName
             | _ -> ()
         elif topLevelObject.Value.Type = "integer" then
+            visitedTypes.Add typeName
             match topLevelObject.Value with
             | IntEnum typeName cases ->
                 moduleTypes.Add(createFlagsEnum typeName cases)
-                visitedTypes.Add typeName
             | _ -> ()
         else
             ()
@@ -692,7 +693,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/simple-swashbuckle.json")
+        let schema = getSchema (resolveFile "./schemas/petstore.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
