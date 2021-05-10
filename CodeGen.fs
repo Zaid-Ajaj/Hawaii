@@ -38,11 +38,11 @@ let formatAstInternal ast =
     let cfg = { FormatConfig.FormatConfig.Default with StrictMode = true } // do not format comments
     CodeFormatter.FormatASTAsync(ast, "temp.fsx", [], None, cfg)
 
-let dummyStringEnum =
-    """namespace Fable.Core
+let dummyStringEnum (projectName) =
+    sprintf """namespace %s
 
 type StringEnumAttribute() =
-    inherit System.Attribute()"""
+    inherit System.Attribute()""" projectName
 
 let formatAst file =
     formatAstInternal (ParsedInput.ImplFile file)

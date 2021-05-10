@@ -95,6 +95,16 @@ let findNextTypeName fieldName objectName (selections: string list) (visitedType
     else
         nextTick (capitalize fieldName + "From" + objectName) visitedTypes
 
+let findNextEnumTypeName fieldName objectName (visitedTypes: ResizeArray<string>) =
+    if not (visitedTypes.Contains (capitalize fieldName)) then
+        capitalize fieldName
+    elif not (visitedTypes.Contains (objectName + capitalize fieldName)) then
+        objectName + capitalize fieldName
+    elif not (visitedTypes.Contains (capitalize fieldName + "From" + objectName)) then
+        capitalize fieldName + "From" + objectName
+    else
+        nextTick (capitalize fieldName + "From" + objectName) visitedTypes
+
 let isEnumType (schema: OpenApiSchema) =
     (schema.Type = "string" || schema.Type = "integer")
     && not (isNull schema.Enum)
@@ -184,12 +194,16 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
 
 let compiledName (name: string) = SynAttribute.CompiledName name
 
-let createEnumType (enumName: string) (values: seq<string>) =
+let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConfig) =
+    let fableStringEnum = SynAttribute.Create [ "Fable";"Core"; "StringEnum" ]
+    let fsharpStringEnum = SynAttribute.Create [ config.projectName; "StringEnum" ]
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [
             SynAttributeList.Create [
-                SynAttribute.Create [ "Fable";"Core"; "StringEnum" ]
+                if config.target = Target.Fable
+                then fableStringEnum
+                else fsharpStringEnum
                 SynAttribute.RequireQualifiedAccess()
             ]
         ]
@@ -345,11 +359,11 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             Some fieldType
         else if isEnum && isNull propertyType.Reference then
             // nested enum -> not a reference to a global usable enum
-            let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
+            let enumTypeName = findNextEnumTypeName propertyName recordName visitedTypes
             match propertyType with
             | StringEnum cases ->
                 visitedTypes.Add enumTypeName
-                let createdEnumType = createEnumType enumTypeName cases
+                let createdEnumType = createEnumType enumTypeName cases config
                 nestedObjects.Add createdEnumType
                 let fieldType =
                     if required
@@ -382,12 +396,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             // empty object definition
             let fieldType =
                 if required
-                then 
+                then
                     if config.target = Target.FSharp
                     then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject"
                     else SynType.Create "obj"
 
-                else 
+                else
                     if config.target = Target.FSharp
                     then SynType.Option(SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject")
                     else SynType.Option(SynType.Create "obj")
@@ -442,11 +456,11 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let arrayItemsType = propertyType.Items
             if isNull arrayItemsType.Reference then
                 // nested enum type -> not a global reference
-                let enumTypeName = findNextTypeName propertyName recordName [ ] visitedTypes
+                let enumTypeName = findNextEnumTypeName propertyName recordName visitedTypes
                 match arrayItemsType with
                 | StringEnum cases ->
                     visitedTypes.Add enumTypeName
-                    let createdEnumType = createEnumType enumTypeName cases
+                    let createdEnumType = createEnumType enumTypeName cases config
                     nestedObjects.Add createdEnumType
                     let fieldType =
                         if required
@@ -492,12 +506,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         elif isArrayOfEmptyObject then
             let fieldType =
                 if required
-                then 
+                then
                     if config.target = Target.FSharp
                     then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray"
                     else SynType.ResizeArray(SynType.Create "obj")
 
-                else 
+                else
                     if config.target = Target.FSharp
                     then SynType.Option (SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray")
                     else SynType.Option(SynType.ResizeArray(SynType.Create "obj"))
@@ -616,7 +630,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     ]
 
 // type KeyValuePair<'TKey, 'TValue> = { Key: 'TKey, Value: 'TValue }
-let createKeyValuePair() = 
+let createKeyValuePair() =
     let keyTypeArg = SynTypar.Typar(Ident.Create "TKey", TyparStaticReq.NoStaticReq, false)
     let valueTypeArg = SynTypar.Typar(Ident.Create "TValue", TyparStaticReq.NoStaticReq, false)
 
@@ -647,6 +661,29 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
 
+    // first add all global enum types
+    for topLevelObject in openApiDocument.Components.Schemas do
+        let typeName =
+            if String.IsNullOrEmpty topLevelObject.Value.Title
+            then sanitizeTypeName topLevelObject.Key
+            else sanitizeTypeName topLevelObject.Value.Title
+
+        if topLevelObject.Value.Type = "string" then
+            match topLevelObject.Value with
+            | StringEnum cases ->
+                moduleTypes.Add (createEnumType typeName cases config)
+                visitedTypes.Add typeName
+            | _ -> ()
+        elif topLevelObject.Value.Type = "integer" then
+            match topLevelObject.Value with
+            | IntEnum typeName cases ->
+                moduleTypes.Add(createFlagsEnum typeName cases)
+                visitedTypes.Add typeName
+            | _ -> ()
+        else
+            ()
+
+    // then handle the global objects
     for topLevelObject in openApiDocument.Components.Schemas do
         let typeName =
             if String.IsNullOrEmpty topLevelObject.Value.Title
@@ -673,34 +710,19 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             // from .NET backend services that encode System.Collections.Generic.KeyValuePair
             moduleTypes.Add(createKeyValuePair())
             visitedTypes.Add "KeyValuePair"
-        elif isKeyValuePairObject then 
+        elif isKeyValuePairObject then
             // skip generating more key value pair type
             ()
         elif topLevelObject.Value.Type = "object" || isAllOf  then
-            let selections = 
+            let selections =
                 topLevelObject.Value.Properties
                 |> Seq.map (fun prop -> prop.Key)
-                |> Seq.toList 
+                |> Seq.toList
 
             let resolvedTypeName = findNextTypeName "Field" typeName selections visitedTypes
             for createdType in createRecordFromSchema resolvedTypeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
                 visitedTypes.Add resolvedTypeName
-
-        elif topLevelObject.Value.Type = "string" then
-            match topLevelObject.Value with
-            | StringEnum cases ->
-                let resolvedTypeName = findNextTypeName "Enum" typeName [] visitedTypes
-                moduleTypes.Add (createEnumType resolvedTypeName cases)
-                visitedTypes.Add resolvedTypeName
-            | _ -> ()
-        elif topLevelObject.Value.Type = "integer" then
-            match topLevelObject.Value with
-            | IntEnum typeName cases ->
-                let resolvedTypeName = findNextTypeName "Enum" typeName [] visitedTypes
-                moduleTypes.Add(createFlagsEnum resolvedTypeName cases)
-                visitedTypes.Add resolvedTypeName
-            | _ -> ()
         else
             ()
 
@@ -747,9 +769,9 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
 
     clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
 
-    let sanitizeParameterName (name: string) = 
-        if name.Contains "." then 
-            match name.Split "." with 
+    let sanitizeParameterName (name: string) =
+        if name.Contains "." then
+            match name.Split "." with
             | [| ns; parameter |] -> parameter
             | _ -> name.Replace(".", "")
         else
@@ -901,9 +923,13 @@ let main argv =
                 generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
 
             if config.target = Target.FSharp then
+                // include custom JSON converter library
+                // and specialized StringEnum attribute
+                // when targeting F# on dotnet
                 let content = JsonLibrary.content.Replace("{projectName}", config.projectName)
                 write content [ outputDir; "OpenApiJson.fs" ]
-                write CodeGen.dummyStringEnum [ outputDir; "StringEnum.fs" ]
+                write (CodeGen.dummyStringEnum config.projectName) [ outputDir; "StringEnum.fs" ]
+
             write (projectFile.ToString()) [ outputDir; $"{config.projectName}.fsproj" ]
             0 // return an integer exit code
     with
