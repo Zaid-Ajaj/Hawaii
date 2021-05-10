@@ -32,9 +32,12 @@ let xmlDocs (description: string) =
         |> PreXmlDoc.Create
 
 let resolveFile (path: string) =
-    if Path.IsPathRooted path
-    then path
-    else Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
+    if Path.IsPathRooted path then
+        path
+    elif System.Diagnostics.Debugger.IsAttached then
+        Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, path))
+    else
+        Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
 
 let client = new HttpClient()
 let getSchema(schema: string) =
@@ -414,6 +417,29 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             recordFields.Add { field with XmlDoc = docs }
             addedFields.Add((propertyName, required, fieldType))
 
+    let rec handleAllOf (currentSchema: OpenApiSchema) =
+        if not (isNull currentSchema.AllOf) then
+            for innerSchema in currentSchema.AllOf do
+                if innerSchema.Type = "object" then
+                    for property in innerSchema.Properties do
+                        match createPropertyType property.Key property.Value with
+                        | None -> ()
+                        | Some fieldType ->
+                            let propertyName = property.Key
+                            let propertyType = property.Value
+                            let required = schema.Required.Contains propertyName
+                            let field = SynFieldRcd.Create(propertyName, fieldType)
+                            let docs = xmlDocs propertyType.Description
+                            recordFields.Add { field with XmlDoc = docs }
+                            addedFields.Add((propertyName, required, fieldType))
+                else if isNull innerSchema.Type && not (isNull innerSchema.AllOf) && innerSchema.AllOf.Count > 0 then
+                    // handle recursice allOf references
+                    handleAllOf innerSchema
+                else
+                    ()
+
+    handleAllOf schema
+
     let containsPreservedProperty =
         schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
 
@@ -498,21 +524,29 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             then topLevelObject.Key
             else topLevelObject.Value.Title
 
-        visitedTypes.Add typeName
+        let isAllOf =
+            isNull topLevelObject.Value.Type
+            && not (isNull topLevelObject.Value.AllOf)
+            && topLevelObject.Value.AllOf.Count > 0
 
         if topLevelObject.Value.Deprecated then
             // skip deprecated global types
             ()
-        if topLevelObject.Value.Type = "object" then
+        if topLevelObject.Value.Type = "object" || isAllOf then
             for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
+                visitedTypes.Add typeName
         elif topLevelObject.Value.Type = "string" then
             match topLevelObject.Value with
-            | StringEnum cases -> moduleTypes.Add (createEnumType typeName cases)
+            | StringEnum cases ->
+                moduleTypes.Add (createEnumType typeName cases)
+                visitedTypes.Add typeName
             | _ -> ()
         elif topLevelObject.Value.Type = "integer" then
             match topLevelObject.Value with
-            | IntEnum typeName cases -> moduleTypes.Add(createFlagsEnum typeName cases)
+            | IntEnum typeName cases ->
+                moduleTypes.Add(createFlagsEnum typeName cases)
+                visitedTypes.Add typeName
             | _ -> ()
         else
             ()
