@@ -720,9 +720,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 |> Seq.toList
 
             let resolvedTypeName = findNextTypeName "Field" typeName selections visitedTypes
+            visitedTypes.Add resolvedTypeName
             for createdType in createRecordFromSchema resolvedTypeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
-                visitedTypes.Add resolvedTypeName
         else
             ()
 
@@ -887,7 +887,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "PetStore"
+                projectName = "ESight"
             }
             // prepare output directory
             if Directory.Exists outputDir
