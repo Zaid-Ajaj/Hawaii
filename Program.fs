@@ -260,11 +260,20 @@ let createFlagsEnum (enumName: string) (values: seq<string * int>) =
 
     SynModuleDecl.CreateSimpleType(info, simpleType)
 
+let sanitizeTypeName (typeName: string) =
+    if typeName.Contains "`" then
+        match typeName.Split '`' with
+        | [| name; typeArgArity |] -> name
+        | _ -> typeName.Replace("`", "")
+    else
+        typeName
+
+
 let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create recordName ]
+        Id = [ Ident.Create (sanitizeTypeName recordName) ]
         XmlDoc = xmlDocs schema.Description
         Parameters = [ ]
         Constraints = [ ]
@@ -276,19 +285,56 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let recordFields = ResizeArray<SynFieldRcd>()
     let addedFields = ResizeArray<string * bool * SynType>()
 
-    let createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
+    let rec createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
         let isEnum = isEnumType propertyType
         let required = propertyName = "additionalProperties" || schema.Required.Contains propertyName
         let isObjectArray =
             propertyType.Type = "array"
             && propertyType.Items.Type = "object"
             && isNull propertyType.Items.Reference
+            && propertyType.Items.Properties.Count > 0
+
         let isEnumArray = propertyType.Type = "array" && isEnumType propertyType.Items
+
+        let isEmptyObjectDefinition =
+            propertyType.Type = "object"
+            && propertyType.Properties.Count = 0
+            && isNull propertyType.Reference
+            && (isNull propertyType.AllOf || propertyType.AllOf.Count = 0)
+            && (isNull propertyType.AnyOf || propertyType.AnyOf.Count = 0)
+
+        let isKeyValuePairObject =
+            propertyType.Type = "object"
+            && propertyType.Title = "KeyValuePair`2"
+            && propertyType.Properties.Count = 2
+            && propertyType.Properties.ContainsKey "Key"
+            && propertyType.Properties.ContainsKey "Value"
+
+        let isArrayOfKeyValuePairObject =
+            propertyType.Type = "array"
+            && propertyType.Items.Type = "object"
+            && propertyType.Items.Title = "KeyValuePair`2"
+            && propertyType.Items.Properties.Count = 2
+            && propertyType.Items.Properties.ContainsKey "Key"
+            && propertyType.Items.Properties.ContainsKey "Value"
+
+        let isArrayOfEmptyObject =
+            propertyType.Type = "array"
+            && propertyType.Items.Type = "object"
+            && propertyType.Items.Properties.Count = 0
+            && isNull propertyType.Items.Reference
+            && (isNull propertyType.Items.AllOf || propertyType.Items.AllOf.Count = 0)
+            && (isNull propertyType.Items.AnyOf || propertyType.Items.AnyOf.Count = 0)
+
         let isPrimitve = List.forall id [
             (propertyType.Type <> "object" || not (isNull propertyType.Reference))
             not isEnum
             not isObjectArray
             not isEnumArray
+            not isEmptyObjectDefinition
+            not isKeyValuePairObject
+            not isArrayOfKeyValuePairObject
+            not isArrayOfEmptyObject
         ]
 
         if propertyType.Deprecated then
@@ -332,6 +378,33 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 then SynType.Create typeName
                 else SynType.Option(SynType.Create typeName)
             Some fieldType
+        else if isEmptyObjectDefinition then
+            // empty object definition
+            let fieldType =
+                if required
+                then 
+                    if config.target = Target.FSharp
+                    then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject"
+                    else SynType.Create "obj"
+
+                else 
+                    if config.target = Target.FSharp
+                    then SynType.Option(SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject")
+                    else SynType.Option(SynType.Create "obj")
+            Some fieldType
+        else if isKeyValuePairObject then
+            let keySchema = propertyType.Properties.["Key"]
+            let valueSchema = propertyType.Properties.["Value"]
+            match createPropertyType (propertyName + "Key") keySchema, createPropertyType (propertyName + "Value") valueSchema with
+            | Some keyType, Some valueType ->
+                let pairType = SynType.KeyValuePair(keyType, valueType)
+                let fieldType =
+                    if required
+                    then pairType
+                    else SynType.Option(pairType)
+                Some fieldType
+            | _ ->
+                None
         else if propertyType.Type = "object" then
             // handle nested objects
             let nestedPropertyNames =
@@ -395,13 +468,41 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 // referenced enum type
                 let typeName =
                     if String.IsNullOrEmpty propertyType.Title
-                    then propertyType.Reference.Id
-                    else propertyType.Title
+                    then sanitizeTypeName propertyType.Reference.Id
+                    else sanitizeTypeName propertyType.Title
+
                 let fieldType =
                     if required
                     then SynType.List(SynType.Create typeName)
                     else SynType.Option(SynType.List(SynType.Create typeName))
                 Some fieldType
+        elif isArrayOfKeyValuePairObject then
+            let keySchema = propertyType.Items.Properties.["Key"]
+            let valueSchema = propertyType.Items.Properties.["Value"]
+            match createPropertyType (propertyName + "Key") keySchema, createPropertyType (propertyName + "Value") valueSchema with
+            | Some keyType, Some valueType ->
+                let pairType = SynType.KeyValuePair(keyType, valueType)
+                let fieldType =
+                    if required
+                    then SynType.List(pairType)
+                    else SynType.Option(SynType.List(pairType))
+                Some fieldType
+            | _ ->
+                None
+        elif isArrayOfEmptyObject then
+            let fieldType =
+                if required
+                then 
+                    if config.target = Target.FSharp
+                    then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray"
+                    else SynType.ResizeArray(SynType.Create "obj")
+
+                else 
+                    if config.target = Target.FSharp
+                    then SynType.Option (SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray")
+                    else SynType.Option(SynType.ResizeArray(SynType.Create "obj"))
+
+            Some fieldType
         else
             None
 
@@ -514,6 +615,34 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
     ]
 
+// type KeyValuePair<'TKey, 'TValue> = { Key: 'TKey, Value: 'TValue }
+let createKeyValuePair() = 
+    let keyTypeArg = SynTypar.Typar(Ident.Create "TKey", TyparStaticReq.NoStaticReq, false)
+    let valueTypeArg = SynTypar.Typar(Ident.Create "TValue", TyparStaticReq.NoStaticReq, false)
+
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [ ]
+        Id = [ Ident.Create "KeyValuePair" ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [
+            SynTyparDecl.TyparDecl([], keyTypeArg)
+            SynTyparDecl.TyparDecl([], valueTypeArg)
+        ]
+        Constraints = [ ]
+        PreferPostfix = true
+        Range = range0
+    }
+
+    let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create [
+        SynFieldRcd.Create("Key", SynType.Var(keyTypeArg, range0))
+        SynFieldRcd.Create("Value", SynType.Var(valueTypeArg, range0))
+    ]
+
+    let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
+
+    SynModuleDecl.CreateSimpleType(info, simpleRecordType)
+
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
@@ -521,33 +650,56 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     for topLevelObject in openApiDocument.Components.Schemas do
         let typeName =
             if String.IsNullOrEmpty topLevelObject.Value.Title
-            then topLevelObject.Key
-            else topLevelObject.Value.Title
+            then sanitizeTypeName topLevelObject.Key
+            else sanitizeTypeName topLevelObject.Value.Title
 
         let isAllOf =
             isNull topLevelObject.Value.Type
             && not (isNull topLevelObject.Value.AllOf)
             && topLevelObject.Value.AllOf.Count > 0
 
+        let isKeyValuePairObject =
+            topLevelObject.Value.Type = "object"
+            && topLevelObject.Value.Title = "KeyValuePair`2"
+            && topLevelObject.Value.Properties.Count = 2
+            && topLevelObject.Value.Properties.ContainsKey "Key"
+            && topLevelObject.Value.Properties.ContainsKey "Value"
+
         if topLevelObject.Value.Deprecated then
             // skip deprecated global types
             ()
-        if topLevelObject.Value.Type = "object" || isAllOf then
-            visitedTypes.Add typeName
-            for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
+        elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
+            // create specialized key value pair when encountering auto generated type
+            // from .NET backend services that encode System.Collections.Generic.KeyValuePair
+            moduleTypes.Add(createKeyValuePair())
+            visitedTypes.Add "KeyValuePair"
+        elif isKeyValuePairObject then 
+            // skip generating more key value pair type
+            ()
+        elif topLevelObject.Value.Type = "object" || isAllOf  then
+            let selections = 
+                topLevelObject.Value.Properties
+                |> Seq.map (fun prop -> prop.Key)
+                |> Seq.toList 
+
+            let resolvedTypeName = findNextTypeName "Field" typeName selections visitedTypes
+            for createdType in createRecordFromSchema resolvedTypeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
+                visitedTypes.Add resolvedTypeName
 
         elif topLevelObject.Value.Type = "string" then
-            visitedTypes.Add typeName
             match topLevelObject.Value with
             | StringEnum cases ->
-                moduleTypes.Add (createEnumType typeName cases)
+                let resolvedTypeName = findNextTypeName "Enum" typeName [] visitedTypes
+                moduleTypes.Add (createEnumType resolvedTypeName cases)
+                visitedTypes.Add resolvedTypeName
             | _ -> ()
         elif topLevelObject.Value.Type = "integer" then
-            visitedTypes.Add typeName
             match topLevelObject.Value with
             | IntEnum typeName cases ->
-                moduleTypes.Add(createFlagsEnum typeName cases)
+                let resolvedTypeName = findNextTypeName "Enum" typeName [] visitedTypes
+                moduleTypes.Add(createFlagsEnum resolvedTypeName cases)
+                visitedTypes.Add resolvedTypeName
             | _ -> ()
         else
             ()
@@ -595,6 +747,14 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
 
     clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
 
+    let sanitizeParameterName (name: string) = 
+        if name.Contains "." then 
+            match name.Split "." with 
+            | [| ns; parameter |] -> parameter
+            | _ -> name.Replace(".", "")
+        else
+            name
+
     for path in openApiDocument.Paths do
         let fullPath = path.Key
         let pathInfo = path.Value
@@ -615,7 +775,7 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                                                 if not parameter.Deprecated then
                                                     SynPatRcd.Typed {
                                                         Type = SynType.String()
-                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString parameter.Name, [])
+                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
                                                         Range = range0
                                                     }
 
@@ -693,7 +853,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/petstore.json")
+        let schema = getSchema (resolveFile "./schemas/esight.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then

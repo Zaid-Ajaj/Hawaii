@@ -60,6 +60,18 @@ type SynAttribute with
             TypeName = LongIdentWithDots(List.map Ident.Create idents, [ ])
         }
 
+type SynType with
+    static member KeyValuePair(keyType, valueType) =
+        SynType.App(
+            typeName=SynType.Create "KeyValuePair",
+            typeArgs=[ keyType; valueType ],
+            commaRanges = [ ],
+            isPostfix = false,
+            range=range0,
+            greaterRange=None,
+            lessRange=None
+        )
+
 open System
 open System.Xml.Linq
 
