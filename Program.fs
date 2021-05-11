@@ -29,7 +29,35 @@ let xmlDocs (description: string) =
     else
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
+        |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
         |> PreXmlDoc.Create
+
+let xmlDocsWithParams (description: string) (parameters: (string * string) seq) =
+    if String.IsNullOrWhiteSpace description then
+        PreXmlDoc.Create [ ]
+    else
+        description.Split("\r\n")
+        |> Seq.collect (fun line -> line.Split("\n"))
+        |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+        |> fun summary ->
+            PreXmlDoc.Create [
+                yield "<summary>"
+                yield! summary
+                yield "</summary>"
+                for (param, paramDocs) in parameters do
+                    if not (String.IsNullOrWhiteSpace paramDocs) then
+                        let docs =
+                            paramDocs.Split "\r\n"
+                            |> Seq.collect (fun line -> line.Split("\n"))
+                            |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+
+                        if Seq.length docs = 1 then
+                            yield $"<param name=\"{param}\">{Seq.head docs}</param>"
+                        else
+                            yield $"<param name=\"{param}\">"
+                            yield! docs
+                            yield "</param>"
+            ]
 
 let resolveFile (path: string) =
     if Path.IsPathRooted path then
@@ -751,6 +779,11 @@ let deriveOperationName (operationName: string) (path: string) (operationType: O
         else
             string operationType + segments + "By" + parameters
 
+type Test() =
+    static member Foo(?value: int) = "Foo"
+    static member Bar(value: option<int>) = "Bar"
+
+
 let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let info : SynComponentInfoRcd = {
         Access = None
@@ -783,9 +816,19 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated then
+                let parameterDocs = ResizeArray<string * string>()
+                for parameter in operationInfo.Parameters do
+                    if not parameter.Deprecated then
+                        parameterDocs.Add((sanitizeParameterName parameter.Name), parameter.Description)
+                if not (isNull operationInfo.RequestBody) then
+                    for pair in operationInfo.RequestBody.Content do
+                        if pair.Key = "multipart/form-data" then
+                            for property in pair.Value.Schema.Properties do
+                                parameterDocs.Add((sanitizeParameterName property.Key), property.Value.Description)
+
                 let clientOperation = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
-                        XmlDoc = xmlDocs (if isNull operationInfo.Description then operationInfo.Summary else operationInfo.Description)
+                        XmlDoc = xmlDocsWithParams (if isNull operationInfo.Description then operationInfo.Summary else operationInfo.Description) parameterDocs
                         Expr = SynExpr.CreateConstString fullPath
                         Pattern =
                             SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{deriveOperationName operationInfo.OperationId fullPath operation.Key}", [
@@ -795,16 +838,24 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                                             // path parameters
                                             for parameter in operationInfo.Parameters do
                                                 if not parameter.Deprecated then
-                                                    SynPatRcd.Typed {
-                                                        Type = SynType.String()
-                                                        Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
-                                                        Range = range0
-                                                    }
+                                                    if parameter.Required then
+                                                        // required parameter
+                                                        SynPatRcd.Typed {
+                                                            Type = SynType.String()
+                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
+                                                            Range = range0
+                                                        }
+                                                    else
+                                                        // optional parameter
+                                                        SynPatRcd.Typed {
+                                                            Type = SynType.String()
+                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
+                                                            Range = range0
+                                                        }
 
                                             if not (isNull operationInfo.RequestBody) then
                                                 for pair in operationInfo.RequestBody.Content do
                                                     if pair.Key = "multipart/form-data" then
-
                                                         for property in pair.Value.Schema.Properties do
                                                             SynPatRcd.Typed {
                                                                 Type = SynType.String()
