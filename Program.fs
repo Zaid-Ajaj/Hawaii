@@ -30,6 +30,7 @@ let xmlDocs (description: string) =
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
         |> PreXmlDoc.Create
 
 let xmlDocsWithParams (description: string) (parameters: (string * string) seq) =
@@ -39,6 +40,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
         |> fun summary ->
             PreXmlDoc.Create [
                 yield "<summary>"
@@ -50,6 +52,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
                             paramDocs.Split "\r\n"
                             |> Seq.collect (fun line -> line.Split("\n"))
                             |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+                            |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
 
                         if Seq.length docs = 1 then
                             yield $"<param name=\"{param}\">{Seq.head docs}</param>"
@@ -926,7 +929,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/esight.json")
+        let schema = getSchema (resolveFile "./schemas/petstore.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -938,7 +941,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "ESight"
+                projectName = "PetStore"
             }
             // prepare output directory
             if Directory.Exists outputDir
