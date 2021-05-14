@@ -42,24 +42,31 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
         |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
         |> fun summary ->
+            let containsParamDocs =
+                parameters
+                |> Seq.map snd
+                |> Seq.exists (fun docs -> not (String.IsNullOrWhiteSpace docs))
             PreXmlDoc.Create [
                 yield "<summary>"
                 yield! summary
                 yield "</summary>"
-                for (param, paramDocs) in parameters do
-                    if not (String.IsNullOrWhiteSpace paramDocs) then
-                        let docs =
-                            paramDocs.Split "\r\n"
-                            |> Seq.collect (fun line -> line.Split("\n"))
-                            |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-                            |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
+                if containsParamDocs then
+                    for (param, paramDocs) in parameters do
+                        if not (String.IsNullOrWhiteSpace paramDocs) then
+                            let docs =
+                                paramDocs.Split "\r\n"
+                                |> Seq.collect (fun line -> line.Split("\n"))
+                                |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
+                                |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
 
-                        if Seq.length docs = 1 then
-                            yield $"<param name=\"{param}\">{Seq.head docs}</param>"
+                            if Seq.length docs = 1 then
+                                yield $"<param name=\"{param}\">{Seq.head docs}</param>"
+                            else
+                                yield $"<param name=\"{param}\">"
+                                yield! docs
+                                yield "</param>"
                         else
-                            yield $"<param name=\"{param}\">"
-                            yield! docs
-                            yield "</param>"
+                            yield $"<param name=\"{param}\"></param>"
             ]
 
 let resolveFile (path: string) =
@@ -90,6 +97,19 @@ let capitalize (input: string) =
     if String.IsNullOrWhiteSpace input
     then ""
     else input.First().ToString().ToUpper() + String.Join("", input.Skip(1))
+
+let camelCase (input: string) =
+    if String.IsNullOrWhiteSpace input
+    then ""
+    else input.First().ToString().ToLower() + String.Join("", input.Skip(1))
+
+let normalizeFullCaps (input: string) =
+    let fullCaps =
+        input |> Seq.forall Char.IsUpper
+
+    if fullCaps
+    then input.ToLower()
+    else input
 
 let nextTick (name: string) (visited: ResizeArray<string>) =
     if not (visited.Contains name) then
@@ -782,10 +802,84 @@ let deriveOperationName (operationName: string) (path: string) (operationType: O
         else
             string operationType + segments + "By" + parameters
 
-type Test() =
-    static member Foo(?value: int) = "Foo"
-    static member Bar(value: option<int>) = "Bar"
+type OperationParameter = {
+    parameterName: string
+    required: bool
+    parameterType: SynType
+    docs : string
+    location: string
+    style: string
+}
 
+let sanitizeParameterName (name: string) =
+    if name.Contains "." then
+        match name.Split "." with
+        | [| ns; parameter |] -> parameter
+        | _ -> name.Replace(".", "")
+    else
+        name
+
+let operationParameters (operation: OpenApiOperation) =
+    let parameters = ResizeArray<OperationParameter>()
+    for parameter in operation.Parameters do
+        if not parameter.Deprecated && parameter.In.HasValue then
+            parameters.Add {
+                parameterName = sanitizeParameterName parameter.Name
+                required = parameter.Required
+                parameterType = SynType.String()
+                docs = parameter.Description
+                location = (string parameter.In.Value).ToLower()
+                style =
+                    if parameter.Style.HasValue
+                    then (string parameter.Style).ToLower()
+                    else ""
+            }
+
+    if not (isNull operation.RequestBody) then
+        for pair in operation.RequestBody.Content do
+            if pair.Key = "multipart/form-data" then
+                for property in pair.Value.Schema.Properties do
+                    parameters.Add {
+                        parameterName = property.Key
+                        required = pair.Value.Schema.Required.Contains property.Key
+                        parameterType = SynType.String()
+                        docs = property.Value.Description
+                        location = "formdata"
+                        style = ""
+                    }
+
+            if pair.Key = "application/json" then
+                if not (isNull pair.Value.Schema.Reference) then
+                    let schema = pair.Value.Schema
+                    let typeName =
+                        if String.IsNullOrWhiteSpace schema.Title
+                        then schema.Reference.Id
+                        else schema.Title
+
+                    let parameterName =
+                        if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                            match operation.RequestBody.Extensions.["x-bodyName"] with
+                            | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                            | _ -> camelCase (normalizeFullCaps typeName)
+                        else
+                            camelCase (normalizeFullCaps typeName)
+
+                    parameters.Add {
+                        parameterName = parameterName
+                        required = true
+                        parameterType = SynType.Create typeName
+                        docs = schema.Description
+                        location = "body"
+                        style = ""
+                    }
+
+    parameters
+    |> Seq.sortBy (fun param ->
+        // required parameters come first
+        if param.required
+        then 0
+        else 1
+    )
 
 let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let info : SynComponentInfoRcd = {
@@ -805,76 +899,44 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
 
     clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
 
-    let sanitizeParameterName (name: string) =
-        if name.Contains "." then
-            match name.Split "." with
-            | [| ns; parameter |] -> parameter
-            | _ -> name.Replace(".", "")
-        else
-            name
-
     for path in openApiDocument.Paths do
         let fullPath = path.Key
         let pathInfo = path.Value
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated then
-                let parameterDocs = ResizeArray<string * string>()
-                for parameter in operationInfo.Parameters do
-                    if not parameter.Deprecated then
-                        parameterDocs.Add((sanitizeParameterName parameter.Name), parameter.Description)
-                if not (isNull operationInfo.RequestBody) then
-                    for pair in operationInfo.RequestBody.Content do
-                        if pair.Key = "multipart/form-data" then
-                            for property in pair.Value.Schema.Properties do
-                                parameterDocs.Add((sanitizeParameterName property.Key), property.Value.Description)
+                let parameters = operationParameters operationInfo
+                let summary =
+                    if String.IsNullOrWhiteSpace operationInfo.Description
+                    then operationInfo.Summary
+                    else operationInfo.Description
 
+                let parameterDocs = [
+                    for p in parameters -> (p.parameterName, p.docs)
+                ]
+
+                let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key
                 let clientOperation = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
-                        XmlDoc = xmlDocsWithParams (if isNull operationInfo.Description then operationInfo.Summary else operationInfo.Description) parameterDocs
+                        XmlDoc = xmlDocsWithParams summary parameterDocs
                         Expr = SynExpr.CreateConstString fullPath
                         Pattern =
-                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{deriveOperationName operationInfo.OperationId fullPath operation.Key}", [
+                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{memberName}", [
                                 SynPatRcd.CreateParen(
                                     SynPatRcd.Tuple {
                                         Patterns = [
-                                            // path parameters
-                                            let sortedParameters =
-                                                operationInfo.Parameters
-                                                |> Seq.sortBy (fun parameter ->
-                                                    if parameter.Required
-                                                    then 0
-                                                    else 1
-                                                )
-                                            for parameter in sortedParameters do
-                                                if not parameter.Deprecated then
-                                                    if parameter.Required then
-                                                        // required parameter
-                                                        SynPatRcd.Typed {
-                                                            Type = SynType.String()
-                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
+                                            for parameter in parameters do
+                                                SynPatRcd.Typed {
+                                                    Range = range0
+                                                    Type = parameter.parameterType
+                                                    Pattern =
+                                                        if parameter.required
+                                                        then SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString(parameter.parameterName), [])
+                                                        else SynPatRcd.OptionalVal {
                                                             Range = range0
+                                                            Id = Ident.Create parameter.parameterName
                                                         }
-                                                    else
-                                                        // optional parameter
-                                                        SynPatRcd.Typed {
-                                                            Type = SynType.String()
-                                                            Pattern = SynPatRcd.OptionalVal {
-                                                                Id = Ident.Create (sanitizeParameterName parameter.Name)
-                                                                Range = range0
-                                                            }
-                                                            Range = range0
-                                                        }
-
-                                            if not (isNull operationInfo.RequestBody) then
-                                                for pair in operationInfo.RequestBody.Content do
-                                                    if pair.Key = "multipart/form-data" then
-                                                        for property in pair.Value.Schema.Properties do
-                                                            SynPatRcd.Typed {
-                                                                Type = SynType.String()
-                                                                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString property.Key, [])
-                                                                Range = range0
-                                                            }
+                                                }
                                         ]
                                         Range  = range0
                                     }
@@ -939,7 +1001,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/esight.json")
+        let schema = getSchema (resolveFile "./schemas/petstore.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -951,7 +1013,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "ESight"
+                projectName = "PetStore"
             }
             // prepare output directory
             if Directory.Exists outputDir
