@@ -839,7 +839,14 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                                     SynPatRcd.Tuple {
                                         Patterns = [
                                             // path parameters
-                                            for parameter in operationInfo.Parameters do
+                                            let sortedParameters =
+                                                operationInfo.Parameters
+                                                |> Seq.sortBy (fun parameter ->
+                                                    if parameter.Required
+                                                    then 0
+                                                    else 1
+                                                )
+                                            for parameter in sortedParameters do
                                                 if not parameter.Deprecated then
                                                     if parameter.Required then
                                                         // required parameter
@@ -852,7 +859,10 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                                                         // optional parameter
                                                         SynPatRcd.Typed {
                                                             Type = SynType.String()
-                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (sanitizeParameterName parameter.Name), [])
+                                                            Pattern = SynPatRcd.OptionalVal {
+                                                                Id = Ident.Create (sanitizeParameterName parameter.Name)
+                                                                Range = range0
+                                                            }
                                                             Range = range0
                                                         }
 
@@ -929,7 +939,7 @@ let generateProjectDocument
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/petstore.json")
+        let schema = getSchema (resolveFile "./schemas/esight.json")
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -941,7 +951,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "PetStore"
+                projectName = "ESight"
             }
             // prepare output directory
             if Directory.Exists outputDir

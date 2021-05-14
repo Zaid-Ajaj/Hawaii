@@ -21,6 +21,8 @@
     <Content Include="./schemas/esight.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Compile Include="./FsAst/AstRcd.fs" />
+    <Compile Include="./FsAst/AstCreate.fs" />
     <Compile Include="JsonLibrary.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="CodeGen.fs" />
@@ -29,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fantomas" Version="4.4.0" />
-    <PackageReference Include="FsAst" Version="0.8.0" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="38.0.2" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.2.3" />
   </ItemGroup>
 </Project>
