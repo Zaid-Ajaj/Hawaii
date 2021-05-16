@@ -228,8 +228,7 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         | "string" when propertySchema.Format = "date-time" -> SynType.DateTimeOffset()
         | "string" when propertySchema.Format = "byte" ->
             // base64 encoded characters
-            // use a byte array
-            SynType.Array(1, SynType.Byte(), range0)
+            SynType.ByteArray()
         | "array" ->
             let arrayItemsType = createFieldType recordName required propertyName propertySchema.Items
             SynType.List(arrayItemsType)
@@ -748,7 +747,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     match topLevelObject.Value.Format with
                     | "guid" | "uuid" -> SynType.Guid()
                     | "date-time" -> SynType.DateTimeOffset()
-                    | "byte" -> SynType.Array(1, SynType.Byte(), range0)
+                    | "byte" -> SynType.ByteArray()
                     | _ -> SynType.String()
 
                 moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)

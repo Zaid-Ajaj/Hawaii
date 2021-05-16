@@ -72,6 +72,8 @@ type SynType with
             lessRange=None
         )
 
+    static member ByteArray() = SynType.Array(1, SynType.Byte(), range0)
+
 open System
 open System.Xml.Linq
 
