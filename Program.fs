@@ -332,6 +332,25 @@ let sanitizeTypeName (typeName: string) =
     else
         typeName
 
+/// Creates a declaration: type {typeName} = {aliasedType}
+///
+/// This is used when there are global schema components that map to primitive types
+let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [ ]
+        Id = [ Ident.Create abbreviation ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let typeAbbrev = SynTypeDefnSimpleRepr.TypeAbbrev(ParserDetail.Ok, aliasedType, range0)
+    let typeRepr = SynTypeDefnRepr.Simple(typeAbbrev, range0)
+    let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
+    SynModuleDecl.Types ([ typeInfo ], range0)
 
 let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
@@ -357,6 +376,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             && propertyType.Items.Type = "object"
             && isNull propertyType.Items.Reference
             && propertyType.Items.Properties.Count > 0
+
+        let isReference = not (isNull propertyType.Reference)
+
+        let isAdditionalProperties =
+            propertyType.AdditionalPropertiesAllowed
+            && not (isNull propertyType.AdditionalProperties)
 
         let isEnumArray = propertyType.Type = "array" && isEnumType propertyType.Items
 
@@ -404,6 +429,11 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         if propertyType.Deprecated then
             // skip deprecated propertie
             None
+        elif isAdditionalProperties then
+            let fieldType = createFieldType recordName true propertyName propertyType.AdditionalProperties
+            if required
+            then Some (SynType.Map(SynType.String(), fieldType))
+            else Some (SynType.Option(SynType.Map(SynType.String(), fieldType)))
         elif isPrimitve then
             let fieldType = createFieldType recordName required propertyName propertyType
             Some fieldType
@@ -612,72 +642,91 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         schema.AdditionalPropertiesAllowed
         && not (isNull schema.AdditionalProperties)
         && not containsPreservedProperty
-        && config.target = Target.FSharp
 
-    if includeAdditionalProperties then
+    if includeAdditionalProperties && recordFields.Count = 0 then
+        // when only additional properties are present
+        // then create type abbreviation
         match createPropertyType "additionalProperties" schema.AdditionalProperties with
-        | None -> ()
+        | None -> [ ]
         | Some additionalType ->
-            let propertyName = "additionalProperties"
-            let propertyType = schema.AdditionalProperties
-            let required = true
-            let fieldType = SynType.Map(SynType.String(), additionalType)
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
+            let dictionaryType = SynType.Map(SynType.String(), additionalType)
+            [ createTypeAbbreviation recordName dictionaryType ]
+    elif includeAdditionalProperties && recordFields.Count > 0 && config.target = Target.Fable then
+        // when there are additional properties
+        // and fixed properties while targeting fable
+        // then ignore the fixed properties and only get the dictionary type
+        // when only additional properties are present
+        // then create type abbreviation
+        match createPropertyType "additionalProperties" schema.AdditionalProperties with
+        | None -> [ ]
+        | Some additionalType ->
+            let dictionaryType = SynType.Map(SynType.String(), additionalType)
+            [ createTypeAbbreviation recordName dictionaryType ]
+    else
+        if includeAdditionalProperties then
+            match createPropertyType "additionalProperties" schema.AdditionalProperties with
+            | None -> ()
+            | Some additionalType ->
+                let propertyName = "additionalProperties"
+                let propertyType = schema.AdditionalProperties
+                let required = true
+                let fieldType = SynType.Map(SynType.String(), additionalType)
+                let field = SynFieldRcd.Create(propertyName, fieldType)
+                let docs = xmlDocs propertyType.Description
+                recordFields.Add { field with XmlDoc = docs }
+                addedFields.Add((propertyName, required, fieldType))
 
-    let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
-    let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
+        let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
+        let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
 
-    let members : SynMemberDefn list = [
-        SynMemberDefn.CreateStaticMember
-            {
-                SynBindingRcd.Null with
-                    XmlDoc = PreXmlDoc.Create $"Creates an instance of {recordName} with all optional fields initialized to None. The required fields are parameters of this function"
-                    Pattern =
-                        SynPatRcd.Typed {
-                            Type = SynType.Create recordName
-                            Range = range0
-                            Pattern =
-                                SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString "Create", [
-                                    SynPatRcd.CreateParen(
-                                        SynPatRcd.Tuple {
-                                            Patterns = [
-                                                for (fieldName, required, fieldType) in addedFields do
-                                                    if fieldName = "additionalProperties" && not containsPreservedProperty then
-                                                        ()
-                                                    else
-                                                        if required then yield SynPatRcd.Typed {
-                                                            Type = fieldType
-                                                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
-                                                            Range = range0
-                                                        }
-                                            ]
-                                            Range  = range0
-                                        }
-                                    )
-                                ])
-                        }
+        let members : SynMemberDefn list = [
+            SynMemberDefn.CreateStaticMember
+                {
+                    SynBindingRcd.Null with
+                        XmlDoc = PreXmlDoc.Create $"Creates an instance of {recordName} with all optional fields initialized to None. The required fields are parameters of this function"
+                        Pattern =
+                            SynPatRcd.Typed {
+                                Type = SynType.Create recordName
+                                Range = range0
+                                Pattern =
+                                    SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString "Create", [
+                                        SynPatRcd.CreateParen(
+                                            SynPatRcd.Tuple {
+                                                Patterns = [
+                                                    for (fieldName, required, fieldType) in addedFields do
+                                                        if fieldName = "additionalProperties" && not containsPreservedProperty then
+                                                            ()
+                                                        else
+                                                            if required then yield SynPatRcd.Typed {
+                                                                Type = fieldType
+                                                                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
+                                                                Range = range0
+                                                            }
+                                                ]
+                                                Range  = range0
+                                            }
+                                        )
+                                    ])
+                            }
 
-                    // create a record with the required fields
-                    Expr = SynExpr.CreateRecord [
-                        for (fieldName, required, fieldType) in addedFields do
-                            let expr =
-                                if fieldName = "additionalProperties" && not containsPreservedProperty
-                                then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
-                                elif required
-                                then Some(SynExpr.Ident(Ident.Create fieldName))
-                                else Some(SynExpr.Ident(Ident.Create "None"))
-                            ((LongIdentWithDots.CreateString fieldName, false), expr)
-                    ]
-            }
-    ]
+                        // create a record with the required fields
+                        Expr = SynExpr.CreateRecord [
+                            for (fieldName, required, fieldType) in addedFields do
+                                let expr =
+                                    if fieldName = "additionalProperties" && not containsPreservedProperty
+                                    then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
+                                    elif required
+                                    then Some(SynExpr.Ident(Ident.Create fieldName))
+                                    else Some(SynExpr.Ident(Ident.Create "None"))
+                                ((LongIdentWithDots.CreateString fieldName, false), expr)
+                        ]
+                }
+        ]
 
-    [
-        yield! nestedObjects
-        SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
-    ]
+        [
+            yield! nestedObjects
+            SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
+        ]
 
 // type KeyValuePair<'TKey, 'TValue> = { Key: 'TKey, Value: 'TValue }
 let createKeyValuePair() =
@@ -706,26 +755,6 @@ let createKeyValuePair() =
     let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
-
-/// Creates a declaration: type {typeName} = {aliasedType}
-///
-/// This is used when there are global schema components that map to primitive types
-let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
-    let info : SynComponentInfoRcd = {
-        Access = None
-        Attributes = [ ]
-        Id = [ Ident.Create abbreviation ]
-        XmlDoc = PreXmlDoc.Empty
-        Parameters = [ ]
-        Constraints = [ ]
-        PreferPostfix = false
-        Range = range0
-    }
-
-    let typeAbbrev = SynTypeDefnSimpleRepr.TypeAbbrev(ParserDetail.Ok, aliasedType, range0)
-    let typeRepr = SynTypeDefnRepr.Simple(typeAbbrev, range0)
-    let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
-    SynModuleDecl.Types ([ typeInfo ], range0)
 
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
@@ -818,14 +847,8 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             // skip generating more key value pair type
             ()
         elif topLevelObject.Value.Type = "object" || isAllOf  then
-            let selections =
-                topLevelObject.Value.Properties
-                |> Seq.map (fun prop -> prop.Key)
-                |> Seq.toList
-
-            let resolvedTypeName = findNextTypeName "Field" typeName selections visitedTypes
-            visitedTypes.Add resolvedTypeName
-            for createdType in createRecordFromSchema resolvedTypeName topLevelObject.Value visitedTypes config do
+            visitedTypes.Add typeName
+            for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
         else
             ()

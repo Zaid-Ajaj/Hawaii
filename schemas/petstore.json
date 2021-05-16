@@ -907,10 +907,6 @@
         },
         "Pet": {
             "type": "object",
-            "additionalProperties": {
-                "type": "integer",
-                "format": "int64"
-            },
             "required": [
                 "name",
                 "photoUrls",
@@ -1034,7 +1030,40 @@
                 "name": "Pet"
             }
         },
+        "Lang": {
+            "type": "object",
+            "required": [
+                "defaultLang"
+            ],
+            "properties": {
+                "defaultLang": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
+        "LangInteger": {
+            "type": "object",
+            "required": [
+                "defaultLang"
+            ],
+            "properties": {
+                "defaultLang": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            },
+            "additionalProperties": {
+                "type": "integer",
+                "format": "int64"
+            }
+        },
         "Tag": {
+            "required": [
+                "status"
+            ],
             "type": "object",
             "properties": {
                 "id": {
@@ -1043,6 +1072,19 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "properties": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
                 }
             },
             "xml": {
@@ -1051,6 +1093,27 @@
         },
         "PhoneNumber": {
             "type": "string"
+        },
+        "MessagesDictionary": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/Message"
+            }
+        },
+        "Message": {
+            "type": "object",
+            "required": [
+                "code",
+                "message"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
         },
         "Order": {
             "type": "object",
