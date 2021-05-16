@@ -478,13 +478,13 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 if required
                 then
                     if config.target = Target.FSharp
-                    then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject"
-                    else SynType.Create "obj"
+                    then SynType.JObject()
+                    else SynType.Object()
 
                 else
                     if config.target = Target.FSharp
-                    then SynType.Option(SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject")
-                    else SynType.Option(SynType.Create "obj")
+                    then SynType.Option(SynType.JObject())
+                    else SynType.Option(SynType.Object())
             Some fieldType
         else if isKeyValuePairObject then
             let keySchema = propertyType.Properties.["Key"]
@@ -646,10 +646,17 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     if includeAdditionalProperties && recordFields.Count = 0 then
         // when only additional properties are present
         // then create type abbreviation
+        let isFreeForm = isNull schema.AdditionalProperties.Type
         match createPropertyType "additionalProperties" schema.AdditionalProperties with
         | None -> [ ]
         | Some additionalType ->
-            let dictionaryType = SynType.Map(SynType.String(), additionalType)
+            let valueType =
+                if isFreeForm && config.target = Target.FSharp
+                then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JToken"
+                elif isFreeForm && config.target = Target.Fable
+                then SynType.Create "obj"
+                else additionalType
+            let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
     elif includeAdditionalProperties && recordFields.Count > 0 && config.target = Target.Fable then
         // when there are additional properties
@@ -657,10 +664,17 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         // then ignore the fixed properties and only get the dictionary type
         // when only additional properties are present
         // then create type abbreviation
+        let isFreeForm = isNull schema.AdditionalProperties.Type
         match createPropertyType "additionalProperties" schema.AdditionalProperties with
         | None -> [ ]
         | Some additionalType ->
-            let dictionaryType = SynType.Map(SynType.String(), additionalType)
+            let valueType =
+                if isFreeForm && config.target = Target.FSharp
+                then SynType.JToken()
+                elif isFreeForm && config.target = Target.Fable
+                then SynType.Object()
+                else additionalType
+            let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
     else
         if includeAdditionalProperties then

@@ -1060,6 +1060,10 @@
                 "format": "int64"
             }
         },
+        "FreeForm": {
+            "type": "object",
+            "additionalProperties": {}
+        },
         "Tag": {
             "required": [
                 "status"
