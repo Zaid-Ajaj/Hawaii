@@ -708,6 +708,23 @@ let createKeyValuePair() =
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
 
+let createTypeAbbreviation (typeName: string) (abbreviation: SynType) =
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [ ]
+        Id = [ Ident.Create typeName ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let typeAbbrev = SynTypeDefnSimpleRepr.TypeAbbrev(ParserDetail.Ok, abbreviation, range0)
+    let typeRepr = SynTypeDefnRepr.Simple(typeAbbrev, range0)
+    let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
+    SynModuleDecl.Types ([ typeInfo ], range0)
+
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
@@ -722,15 +739,46 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
         if topLevelObject.Value.Type = "string" then
             match topLevelObject.Value with
             | StringEnum cases ->
+                // create global enum type
                 moduleTypes.Add (createEnumType typeName cases config)
                 visitedTypes.Add typeName
-            | _ -> ()
+            | _ ->
+                // create abbreviated type
+                let abbreviatedType =
+                    match topLevelObject.Value.Format with
+                    | "guid" | "uuid" -> SynType.Guid()
+                    | "date-time" -> SynType.DateTimeOffset()
+                    | "byte" -> SynType.Array(1, SynType.Byte(), range0)
+                    | _ -> SynType.String()
+
+                moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                visitedTypes.Add typeName
         elif topLevelObject.Value.Type = "integer" then
             match topLevelObject.Value with
             | IntEnum typeName cases ->
+                // create global enum type
                 moduleTypes.Add(createFlagsEnum typeName cases)
                 visitedTypes.Add typeName
-            | _ -> ()
+            | _ ->
+                // create type abbreviation
+                let abbreviatedType =
+                    match topLevelObject.Value.Format with
+                    | "int64" -> SynType.Int64()
+                    | _ -> SynType.Int()
+                moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                visitedTypes.Add typeName
+        elif topLevelObject.Value.Type = "number" then
+            // create type abbreviation
+            let abbreviatedType =
+                match topLevelObject.Value.Format with
+                | "float" -> SynType.Float32()
+                | _ -> SynType.Double()
+            moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+            visitedTypes.Add typeName
+        elif topLevelObject.Value.Type = "boolean" then
+            // create type abbreviation
+            moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
+            visitedTypes.Add typeName
         else
             ()
 

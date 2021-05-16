@@ -943,6 +943,9 @@
                 "category": {
                     "$ref": "#/definitions/Category"
                 },
+                "phone": {
+                    "$ref": "#/definitions/PhoneNumber"
+                },
                 "name": {
                     "type": "string",
                     "example": "doggie"
@@ -1045,6 +1048,9 @@
             "xml": {
                 "name": "Tag"
             }
+        },
+        "PhoneNumber": {
+            "type": "string"
         },
         "Order": {
             "type": "object",
