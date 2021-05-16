@@ -707,11 +707,14 @@ let createKeyValuePair() =
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
 
-let createTypeAbbreviation (typeName: string) (abbreviation: SynType) =
+/// Creates a declaration: type {typeName} = {aliasedType}
+///
+/// This is used when there are global schema components that map to primitive types
+let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create typeName ]
+        Id = [ Ident.Create abbreviation ]
         XmlDoc = PreXmlDoc.Empty
         Parameters = [ ]
         Constraints = [ ]
@@ -719,7 +722,7 @@ let createTypeAbbreviation (typeName: string) (abbreviation: SynType) =
         Range = range0
     }
 
-    let typeAbbrev = SynTypeDefnSimpleRepr.TypeAbbrev(ParserDetail.Ok, abbreviation, range0)
+    let typeAbbrev = SynTypeDefnSimpleRepr.TypeAbbrev(ParserDetail.Ok, aliasedType, range0)
     let typeRepr = SynTypeDefnRepr.Simple(typeAbbrev, range0)
     let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
     SynModuleDecl.Types ([ typeInfo ], range0)
@@ -778,6 +781,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             // create type abbreviation
             moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
             visitedTypes.Add typeName
+        elif topLevelObject.Value.Type = "array" then
+            // TODO: implement type abbreviation for array<schema>
+            ()
         else
             ()
 
