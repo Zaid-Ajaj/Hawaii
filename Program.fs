@@ -825,8 +825,68 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
             visitedTypes.Add typeName
         elif topLevelObject.Value.Type = "array" then
-            // TODO: implement type abbreviation for array<schema>
-            ()
+            let elementType = topLevelObject.Value.Items
+            if not (isNull elementType.Reference) then
+                let referencedType =
+                    if String.IsNullOrEmpty elementType.Title
+                    then elementType.Reference.Id
+                    else elementType.Title
+
+                moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Create referencedType)))
+                visitedTypes.Add typeName
+            elif elementType.Type = "string" then
+                match elementType with
+                | StringEnum cases ->
+                    // create global enum type
+                    let enumTypeName = $"EnumFor{typeName}";
+                    moduleTypes.Add (createEnumType enumTypeName cases config)
+                    let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
+                    moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
+
+                    visitedTypes.Add enumTypeName
+                    visitedTypes.Add typeName
+                | _ ->
+                    // create abbreviated type
+                    let abbreviatedType =
+                        match topLevelObject.Value.Format with
+                        | "guid" | "uuid" -> SynType.Guid()
+                        | "date-time" -> SynType.DateTimeOffset()
+                        | "byte" -> SynType.ByteArray()
+                        | _ -> SynType.String()
+
+                    let listOfAbbrev = SynType.List abbreviatedType
+
+                    moduleTypes.Add (createTypeAbbreviation typeName listOfAbbrev)
+                    visitedTypes.Add typeName
+            elif elementType.Type = "integer" then
+                match elementType with
+                | IntEnum typeName cases ->
+                    // create global enum type
+                    let enumTypeName = $"EnumFor{typeName}";
+                    moduleTypes.Add(createFlagsEnum typeName cases)
+                    let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
+                    moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
+                    visitedTypes.Add typeName
+                | _ ->
+                    // create type abbreviation
+                    let abbreviatedType =
+                        match elementType.Format with
+                        | "int64" -> SynType.List(SynType.Int64())
+                        | _ -> SynType.List(SynType.Int())
+                    moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                    visitedTypes.Add typeName
+            elif elementType.Type = "number" then
+                // create type abbreviation
+                let abbreviatedType =
+                    match elementType.Format with
+                    | "float" -> SynType.List(SynType.Float32())
+                    | _ -> SynType.List(SynType.Double())
+                moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                visitedTypes.Add typeName
+            elif elementType.Type = "boolean" then
+                // create type abbreviation
+                moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
+                visitedTypes.Add typeName
         else
             ()
 
@@ -1085,7 +1145,8 @@ let generateProjectDocument
                 XElement.ofStringName("ItemGroup", packageReferences)
             if not (projectReferences |> Seq.isEmpty) then
                 XElement.ofStringName("ItemGroup", projectReferences)
-        }))
+        })
+    )
 
 
 [<EntryPoint>]

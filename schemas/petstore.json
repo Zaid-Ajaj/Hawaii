@@ -1199,6 +1199,34 @@
                 "admin",
                 "user"
             ]
+        },
+        "TopLevelArray": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "TopLevelEnumArray": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "First",
+                    "Second"
+                ]
+            }
+        },
+        "TopLevelArrayRef": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/UserRole"
+            }
+        },
+        "ArrayOfMessages": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Message"
+            }
         }
     },
     "externalDocs": {
