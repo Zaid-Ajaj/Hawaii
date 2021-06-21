@@ -928,7 +928,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             ()
 
     let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] (Seq.toList moduleTypes)
-    globalTypesModule
+    visitedTypes, globalTypesModule
 
 let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
     if not (String.IsNullOrWhiteSpace operationName) then
@@ -969,20 +969,50 @@ let sanitizeParameterName (name: string) =
     else
         name
 
-let operationParameters (operation: OpenApiOperation) =
+let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) =
     let parameters = ResizeArray<OperationParameter>()
+    let rec readParamType (schema: OpenApiSchema) =
+        match schema.Type with
+        | "integer" when schema.Format = "int64" -> SynType.Int64()
+        | "integer" -> SynType.Int()
+        | "number" when schema.Format = "float" -> SynType.Float32()
+        | "number" ->  SynType.Double()
+        | "boolean" -> SynType.Bool()
+        | "string" when schema.Format = "uuid" -> SynType.Guid()
+        | "string" when schema.Format = "guid" -> SynType.Guid()
+        | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
+        | "string" when schema.Format = "byte" ->
+            // base64 encoded characters
+            SynType.ByteArray()
+        | "file" ->
+            SynType.ByteArray()
+        | "array" ->
+            let elementSchema = schema.Items
+            let elementType = readParamType elementSchema
+            SynType.List elementType
+        | _ when not (isNull schema.Reference) ->
+            // working with a reference type
+            let typeName =
+                if String.IsNullOrEmpty schema.Title
+                then schema.Reference.Id
+                else schema.Title
+            SynType.Create typeName
+        | _ ->
+            SynType.String()
+
     for parameter in operation.Parameters do
         if not parameter.Deprecated && parameter.In.HasValue then
+            let paramType = readParamType parameter.Schema
             parameters.Add {
                 parameterName = sanitizeParameterName parameter.Name
                 required = parameter.Required
-                parameterType = SynType.String()
+                parameterType = paramType
                 docs = parameter.Description
                 location = (string parameter.In.Value).ToLower()
                 style =
                     if parameter.Style.HasValue
                     then (string parameter.Style).ToLower()
-                    else ""
+                    else "none"
             }
 
     if not (isNull operation.RequestBody) then
@@ -992,36 +1022,31 @@ let operationParameters (operation: OpenApiOperation) =
                     parameters.Add {
                         parameterName = property.Key
                         required = pair.Value.Schema.Required.Contains property.Key
-                        parameterType = SynType.String()
+                        parameterType = readParamType property.Value
                         docs = property.Value.Description
                         location = "formdata"
-                        style = ""
+                        style = "formfield"
                     }
 
             if pair.Key = "application/json" then
-                if not (isNull pair.Value.Schema.Reference) then
-                    let schema = pair.Value.Schema
-                    let typeName =
-                        if String.IsNullOrWhiteSpace schema.Title
-                        then schema.Reference.Id
-                        else schema.Title
+                let schema = pair.Value.Schema
+                let typeName = "body"
+                let parameterName =
+                    if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                        match operation.RequestBody.Extensions.["x-bodyName"] with
+                        | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                        | _ -> camelCase (normalizeFullCaps typeName)
+                    else
+                        camelCase (normalizeFullCaps typeName)
 
-                    let parameterName =
-                        if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
-                            match operation.RequestBody.Extensions.["x-bodyName"] with
-                            | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
-                            | _ -> camelCase (normalizeFullCaps typeName)
-                        else
-                            camelCase (normalizeFullCaps typeName)
-
-                    parameters.Add {
-                        parameterName = parameterName
-                        required = true
-                        parameterType = SynType.Create typeName
-                        docs = schema.Description
-                        location = "body"
-                        style = ""
-                    }
+                parameters.Add {
+                    parameterName = parameterName
+                    required = true
+                    parameterType = readParamType schema
+                    docs = schema.Description
+                    location = "body"
+                    style = "none"
+                }
 
     parameters
     |> Seq.sortBy (fun param ->
@@ -1031,7 +1056,13 @@ let operationParameters (operation: OpenApiOperation) =
         else 1
     )
 
-let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
+let createOpenApiClient
+    (openApiDocument: OpenApiDocument)
+    (visitedTypes: ResizeArray<string>)
+    (config: CodegenConfig) =
+
+    let extraTypes = ResizeArray<SynModuleDecl>()
+
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
@@ -1055,7 +1086,7 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated then
-                let parameters = operationParameters operationInfo
+                let parameters = operationParameters operationInfo visitedTypes
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
                     then operationInfo.Summary
@@ -1097,10 +1128,15 @@ let createOpenApiClient (openApiDocument: OpenApiDocument) (config: CodegenConfi
                 clientMembers.Add clientOperation
 
     let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
+
     let moduleContents = [
-        SynModuleDecl.CreateOpen "System.Net.Http"
-        SynModuleDecl.CreateOpen $"{config.projectName}.Types"
-        clientType
+        yield SynModuleDecl.CreateOpen "System.Net.Http"
+        yield SynModuleDecl.CreateOpen $"{config.projectName}.Types"
+        // extra types generated from parameters
+        for extraType in extraTypes do
+            yield extraType
+        // the main http client
+        yield clientType
     ]
 
     let clientModule = CodeGen.createNamespace [ config.projectName ] moduleContents
@@ -1170,10 +1206,11 @@ let main argv =
             if Directory.Exists outputDir
             then deleteFilesAndFolders outputDir true
             else ignore(Directory.CreateDirectory outputDir)
-            // generate types
-            let globalTypesModule = createGlobalTypesModule openApiDocument config
+            // generate global schema types
+            let visitedTypes, globalTypesModule = createGlobalTypesModule openApiDocument config
             let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-            let clientModule = createOpenApiClient openApiDocument config
+            // generate HTTP client wrapper, pass visited types
+            let clientModule = createOpenApiClient openApiDocument visitedTypes config
             let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
             write code [ outputDir; "Types.fs" ]
             write clientModuleCode [ outputDir; "Client.fs" ]
