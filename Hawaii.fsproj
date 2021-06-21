@@ -24,6 +24,7 @@
     <Compile Include="./FsAst/AstRcd.fs" />
     <Compile Include="./FsAst/AstCreate.fs" />
     <Compile Include="JsonLibrary.fs" />
+    <Compile Include="HttpLibrary.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="CodeGen.fs" />
     <Compile Include="Program.fs" />

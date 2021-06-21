@@ -1024,7 +1024,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
-                        location = "formdata"
+                        location = "formData"
                         style = "formfield"
                     }
 
@@ -1097,10 +1097,47 @@ let createOpenApiClient
                 ]
 
                 let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key
+                let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
+                let stringExpr value = SynExpr.CreateConstString value
+                let requestValues = [
+                    for parameter in parameters do
+                        if parameter.required then
+                            yield SynExpr.CreateApp(
+                                createIdent [ "RequestValue"; parameter.location ],
+                                SynExpr.CreateParen(SynExpr.CreateTuple [
+                                    if parameter.location <> "body"
+                                    then stringExpr parameter.parameterName
+                                    createIdent [ parameter.parameterName ]
+                                ])
+                            )
+                        else
+                            let ifExpr = createIdent [ parameter.parameterName; "IsSome" ]
+                            let thenExpr =
+                                SynExpr.CreateApp(
+                                    createIdent [ "RequestValue"; parameter.location ],
+                                    SynExpr.CreateParen(SynExpr.CreateTuple [
+                                        if parameter.location <> "body"
+                                        then stringExpr parameter.parameterName
+                                        createIdent [ parameter.parameterName; "Value" ]
+                                    ])
+                                )
+                            yield SynExpr.IfThenElse(ifExpr, thenExpr, None, DebugPointForBinding.DebugPointAtBinding(range0), false, range0, range0)
+                ]
+
+                let httpFunction = $"{operation.Key.ToString().ToLower()}Async"
                 let clientOperation = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
                         XmlDoc = xmlDocsWithParams summary parameterDocs
-                        Expr = SynExpr.CreateConstString fullPath
+                        Expr =
+                            SynExpr.CreateApp(
+                                SynExpr.CreateApp(
+                                    SynExpr.CreateApp(
+                                        SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunction ]),
+                                        SynExpr.CreateIdent (Ident.Create "httpClient")
+                                    ),
+                                    SynExpr.CreateConstString fullPath),
+                                SynExpr.ArrayOrList(false, requestValues, range0)
+                            )
                         Pattern =
                             SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{memberName}", [
                                 SynPatRcd.CreateParen(
@@ -1132,6 +1169,7 @@ let createOpenApiClient
     let moduleContents = [
         yield SynModuleDecl.CreateOpen "System.Net.Http"
         yield SynModuleDecl.CreateOpen $"{config.projectName}.Types"
+        yield SynModuleDecl.CreateOpen $"{config.projectName}.Http"
         // extra types generated from parameters
         for extraType in extraTypes do
             yield extraType
@@ -1227,6 +1265,7 @@ let main argv =
                     if config.target = Target.FSharp then
                         XElement.Compile "StringEnum.fs"
                         XElement.Compile "OpenApiJson.fs"
+                        XElement.Compile "OpenApiHttp.fs"
                     XElement.Compile "Types.fs"
                     XElement.Compile "Client.fs"
                 ]
@@ -1240,8 +1279,10 @@ let main argv =
                 // include custom JSON converter library
                 // and specialized StringEnum attribute
                 // when targeting F# on dotnet
-                let content = JsonLibrary.content.Replace("{projectName}", config.projectName)
-                write content [ outputDir; "OpenApiJson.fs" ]
+                let jsonLibrary = JsonLibrary.content.Replace("{projectName}", config.projectName)
+                let httpLibrary = HttpLibrary.content.Replace("{projectName}", config.projectName)
+                write jsonLibrary [ outputDir; "OpenApiJson.fs" ]
+                write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
                 write (CodeGen.dummyStringEnum config.projectName) [ outputDir; "StringEnum.fs" ]
 
             write (projectFile.ToString()) [ outputDir; $"{config.projectName}.fsproj" ]

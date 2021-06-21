@@ -5,6 +5,7 @@ open FSharp.Compiler.XmlDoc
 open FSharp.Compiler.SyntaxTree
 open Fantomas
 open FSharp.Compiler.Range
+open Fantomas.FormatConfig
 
 let createNamespace (names: seq<string>) declarations =
     let nameParts =
@@ -35,7 +36,15 @@ let createFile modules =
     ParsedImplFileInput.ParsedImplFileInput("IrrelevantFileName", false, qualfiedNameOfFile, [], [], modules, (false, false))
 
 let formatAstInternal ast =
-    let cfg = { FormatConfig.FormatConfig.Default with StrictMode = true } // do not format comments
+    let cfg = {
+        FormatConfig.Default
+            with
+                StrictMode = true
+                DisableElmishSyntax = false
+                IndentSize = 4
+                MaxIfThenElseShortWidth = 4
+    }
+
     CodeFormatter.FormatASTAsync(ast, "temp.fsx", [], None, cfg)
 
 let dummyStringEnum (projectName) =
