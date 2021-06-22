@@ -4,8 +4,9 @@ let content = """namespace {projectName}.Http
 
 open {projectName}.Json
 open System
-open System.Net
 open System.Net.Http
+open System.Globalization
+open System.Text
 
 module Serializer =
     open Newtonsoft.Json
@@ -65,14 +66,69 @@ type RequestValue =
     static member body<'t>(content: 't) = Body(Serializer.serialize content)
 
 module OpenApiHttp =
+    let rec serializeValue = function
+        | OpenApiValue.String value -> value
+        | OpenApiValue.Int value -> value.ToString(CultureInfo.InvariantCulture)
+        | OpenApiValue.Int64 value -> value.ToString(CultureInfo.InvariantCulture)
+        | OpenApiValue.Double value -> value.ToString(CultureInfo.InvariantCulture)
+        | OpenApiValue.Float value -> value.ToString(CultureInfo.InvariantCulture)
+        | OpenApiValue.Bool value -> value.ToString().ToLower()
+        | OpenApiValue.List values ->
+            values
+            |> List.map serializeValue
+            |> String.concat ","
+
+    let applyPathParts (path: string) (parts: RequestValue list) =
+        let applyPart (currentPath: string) (part: RequestValue) : string =
+            match part with
+            | Path(key, value) -> currentPath.Replace("{" + key + "}", serializeValue value)
+            | _ -> currentPath
+
+        parts |> List.fold applyPart path
+
+    let applyQueryStringParameters (currentPath: string) (parts: RequestValue list) =
+        let cleanedPath = currentPath.TrimEnd '/'
+        let queryParams =
+            parts
+            |> List.choose (function
+                | Query(key, value) -> Some(key, value)
+                | _ -> None)
+
+        let combinedParamters =
+            queryParams
+            |> List.map (fun (key, value) -> $"{key}={Uri.EscapeUriString(serializeValue value)}")
+            |> String.concat "&"
+
+        cleanedPath + "?" + combinedParamters
+
+    let applyBodyContent (httpRequest: HttpRequestMessage) (parts: RequestValue list) =
+        for part in parts do
+            match part with
+            | Body content ->
+                httpRequest.Content <- new StringContent(content, Encoding.UTF8, "application/json")
+            | _ -> ()
+
+        httpRequest.Headers.Accept.ParseAdd "application/json"
+        httpRequest
+
+    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+        let modifiedPath = applyPathParts path parts
+        let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
+        let requestUri = Uri(httpClient.BaseAddress, httpClient.BaseAddress.AbsolutePath + modifiedQueryParams)
+        use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
+        async {
+            let requestWithBody = applyBodyContent request parts
+            let! response = Async.AwaitTask(httpClient.SendAsync requestWithBody)
+            return response
+        }
+
     let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
-        failwith "To be implemented"
+        sendAsync httpClient HttpMethod.Get path parts
     let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
-        failwith "To be implemented"
+        sendAsync httpClient HttpMethod.Post path parts
     let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
-        failwith "To be implemented"
-    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
-        failwith "To be implemented"
+        sendAsync httpClient HttpMethod.Delete path parts
     let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
-        failwith "To be implemented"
+        sendAsync httpClient HttpMethod.Put path parts
+
 """
