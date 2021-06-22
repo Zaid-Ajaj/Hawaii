@@ -94,12 +94,15 @@ module OpenApiHttp =
                 | Query(key, value) -> Some(key, value)
                 | _ -> None)
 
-        let combinedParamters =
-            queryParams
-            |> List.map (fun (key, value) -> $"{key}={Uri.EscapeUriString(serializeValue value)}")
-            |> String.concat "&"
+        if List.isEmpty queryParams then
+            cleanedPath
+        else
+            let combinedParamters =
+                queryParams
+                |> List.map (fun (key, value) -> $"{key}={Uri.EscapeUriString(serializeValue value)}")
+                |> String.concat "&"
 
-        cleanedPath + "?" + combinedParamters
+            cleanedPath + "?" + combinedParamters
 
     let applyBodyContent (httpRequest: HttpRequestMessage) (parts: RequestValue list) =
         for part in parts do
