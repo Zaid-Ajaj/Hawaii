@@ -65,14 +65,14 @@ type RequestValue =
     static member body<'t>(content: 't) = Body(Serializer.serialize content)
 
 module OpenApiHttp =
-    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpWebResponse> =
+    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
         failwith "To be implemented"
-    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpWebResponse> =
+    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
         failwith "To be implemented"
-    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpWebResponse> =
+    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
         failwith "To be implemented"
-    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpWebResponse> =
+    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
         failwith "To be implemented"
-    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpWebResponse> =
+    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
         failwith "To be implemented"
 """
