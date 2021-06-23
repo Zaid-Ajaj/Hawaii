@@ -649,22 +649,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         && not (isNull schema.AdditionalProperties)
         && not containsPreservedProperty
 
-    if includeAdditionalProperties && recordFields.Count = 0 then
-        // when only additional properties are present
-        // then create type abbreviation
-        let isFreeForm = isNull schema.AdditionalProperties.Type
-        match createPropertyType "additionalProperties" schema.AdditionalProperties with
-        | None -> [ ]
-        | Some additionalType ->
-            let valueType =
-                if isFreeForm && config.target = Target.FSharp
-                then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JToken"
-                elif isFreeForm && config.target = Target.Fable
-                then SynType.Create "obj"
-                else additionalType
-            let dictionaryType = SynType.Map(SynType.String(), valueType)
-            [ createTypeAbbreviation recordName dictionaryType ]
-    elif includeAdditionalProperties && recordFields.Count > 0 && config.target = Target.Fable then
+    if includeAdditionalProperties then
         // when there are additional properties
         // and fixed properties while targeting fable
         // then ignore the fixed properties and only get the dictionary type
@@ -683,18 +668,6 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
     else
-        if includeAdditionalProperties then
-            match createPropertyType "additionalProperties" schema.AdditionalProperties with
-            | None -> ()
-            | Some additionalType ->
-                let propertyName = "additionalProperties"
-                let propertyType = schema.AdditionalProperties
-                let required = true
-                let fieldType = SynType.Map(SynType.String(), additionalType)
-                let field = SynFieldRcd.Create(propertyName, fieldType)
-                let docs = xmlDocs propertyType.Description
-                recordFields.Add { field with XmlDoc = docs }
-                addedFields.Add((propertyName, required, fieldType))
 
         let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
         let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
@@ -1260,7 +1233,7 @@ let main argv =
     try
         let localScheme = resolveFile "./schemas/petstore-modified.json"
         let remoteSchema = "https://petstore.swagger.io/v2/swagger.json"
-        let schema = getSchema remoteSchema
+        let schema = getSchema localScheme
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
