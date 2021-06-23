@@ -1024,16 +1024,21 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     style = "none"
                 }
 
+            let hasJsonContent = operation.RequestBody.Content.ContainsKey "application/json"
+
             if pair.Key = "application/x-www-form-urlencoded" then
-                for property in pair.Value.Schema.Properties do
-                    parameters.Add {
-                        parameterName = property.Key
-                        required = pair.Value.Schema.Required.Contains property.Key
-                        parameterType = readParamType property.Value
-                        docs = property.Value.Description
-                        location = "urlEncodedFormData"
-                        style = "formfield"
-                    }
+                // make sure the form schema isn't the same as the JSON schema
+                // use one or the other
+                if hasJsonContent && pair.Value.Schema <> operation.RequestBody.Content.["application/json"].Schema then
+                    for property in pair.Value.Schema.Properties do
+                        parameters.Add {
+                            parameterName = property.Key
+                            required = pair.Value.Schema.Required.Contains property.Key
+                            parameterType = readParamType property.Value
+                            docs = property.Value.Description
+                            location = "urlEncodedFormData"
+                            style = "formfield"
+                        }
 
     parameters
     |> Seq.sortBy (fun param ->
@@ -1229,7 +1234,7 @@ let generateProjectDocument
 let main argv =
     try
         let localScheme = resolveFile "./schemas/petstore-modified.json"
-        let remoteSchema = "https://petstore.swagger.io/v2/swagger.json"
+        let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
         let schema = getSchema remoteSchema
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
