@@ -2,16 +2,20 @@ module HttpLibrary
 
 let content = """namespace {projectName}.Http
 
-open {projectName}.Json
 open System
 open System.Net.Http
 open System.Globalization
 open System.Text
+open Fable.Remoting.Json
+{taskLibrary}
 
 module Serializer =
     open Newtonsoft.Json
-    let converter = OpenApiConverter() :> JsonConverter
-    let serialize<'t> (value: 't) = JsonConvert.SerializeObject(value, [| converter |])
+    let converter = FableJsonConverter() :> JsonConverter
+    let settings = JsonSerializerSettings(Converters=[| converter |])
+    settings.DateParseHandling <- DateParseHandling.None
+    let serialize<'t> (value: 't) = JsonConvert.SerializeObject(value, settings)
+    let deserialize<'t> (content: string) = JsonConvert.DeserializeObject<'t> content
 
 [<RequireQualifiedAccess>]
 type OpenApiValue =
@@ -114,24 +118,60 @@ module OpenApiHttp =
         httpRequest.Headers.Accept.ParseAdd "application/json"
         httpRequest
 
-    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestValue list) =
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress, httpClient.BaseAddress.AbsolutePath + modifiedQueryParams)
         use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
-        async {
+        {asyncBuilder} {
             let requestWithBody = applyBodyContent request parts
-            let! response = Async.AwaitTask(httpClient.SendAsync requestWithBody)
+            let! response = {getResponse}
             return response
         }
 
-    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
         sendAsync httpClient HttpMethod.Get path parts
-    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+
+    let get (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+        getAsync httpClient path parts
+        {convertSync}
+
+    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
         sendAsync httpClient HttpMethod.Post path parts
-    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+
+    let post (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+        postAsync httpClient path parts
+        {convertSync}
+
+    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
         sendAsync httpClient HttpMethod.Delete path parts
-    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) : Async<HttpResponseMessage> =
+
+    let delete (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+        deleteAsync httpClient path parts
+        {convertSync}
+
+    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
         sendAsync httpClient HttpMethod.Put path parts
 
+    let put (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+        putAsync httpClient path parts
+        {convertSync}
 """
+
+let library isTask projectName =
+    let convertSync =
+        if isTask
+        then "|> Async.AwaitTask |> Async.RunSynchronously"
+        else "|> Async.RunSynchronously"
+
+    let getResponse =
+        if isTask
+        then "httpClient.SendAsync requestWithBody"
+        else "Async.AwaitTask(httpClient.SendAsync requestWithBody)"
+
+    content
+        .Replace("{projectName}", projectName)
+        .Replace("{taskLibrary}", if isTask then "open FSharp.Control.Tasks" else "")
+        .Replace("{asyncBuilder}", if isTask then "task" else "async")
+        .Replace("{convertSync}", convertSync)
+        .Replace("{getResponse}", getResponse)

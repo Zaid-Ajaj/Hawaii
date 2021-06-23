@@ -17,10 +17,16 @@ type Target =
     | FSharp
     | Fable
 
+[<RequireQualifiedAccess>]
+type AsyncReturnType =
+    | Async
+    | Task
 
 type CodegenConfig = {
     target: Target
     projectName : string
+    asyncReturnType: AsyncReturnType
+    synchornousMethods: bool
 }
 
 let xmlDocs (description: string) =
@@ -1048,6 +1054,17 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     style = "none"
                 }
 
+            if pair.Key = "application/x-www-form-urlencoded" then
+                for property in pair.Value.Schema.Properties do
+                    parameters.Add {
+                        parameterName = property.Key
+                        required = pair.Value.Schema.Required.Contains property.Key
+                        parameterType = readParamType property.Value
+                        docs = property.Value.Description
+                        location = "formData"
+                        style = "formfield"
+                    }
+
     parameters
     |> Seq.sortBy (fun param ->
         // required parameters come first
@@ -1097,6 +1114,7 @@ let createOpenApiClient
                 ]
 
                 let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key
+                let memberNameAsync = $"{memberName}Async"
                 let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
                 let stringExpr value = SynExpr.CreateConstString value
                 let requestValues = [
@@ -1124,22 +1142,24 @@ let createOpenApiClient
                             yield SynExpr.IfThenElse(ifExpr, thenExpr, None, DebugPointForBinding.DebugPointAtBinding(range0), false, range0, range0)
                 ]
 
-                let httpFunction = $"{operation.Key.ToString().ToLower()}Async"
-                let clientOperation = SynMemberDefn.CreateMember {
+                let httpFunction = operation.Key.ToString().ToLower()
+                let httpFunctionAsync = $"{httpFunction}Async"
+
+                let clientOperation httpFunc name = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
                         XmlDoc = xmlDocsWithParams summary parameterDocs
                         Expr =
                             SynExpr.CreateApp(
                                 SynExpr.CreateApp(
                                     SynExpr.CreateApp(
-                                        SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunction ]),
+                                        SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunc ]),
                                         SynExpr.CreateIdent (Ident.Create "httpClient")
                                     ),
                                     SynExpr.CreateConstString fullPath),
                                 SynExpr.ArrayOrList(false, requestValues, range0)
                             )
                         Pattern =
-                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{memberName}", [
+                            SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{name}", [
                                 SynPatRcd.CreateParen(
                                     SynPatRcd.Tuple {
                                         Patterns = [
@@ -1162,7 +1182,11 @@ let createOpenApiClient
                             ])
                 }
 
-                clientMembers.Add clientOperation
+                if config.synchornousMethods then
+                    clientMembers.Add (clientOperation httpFunctionAsync memberNameAsync)
+                    clientMembers.Add (clientOperation httpFunction memberName)
+                else
+                    clientMembers.Add (clientOperation httpFunctionAsync memberName)
 
     let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
 
@@ -1222,11 +1246,12 @@ let generateProjectDocument
         })
     )
 
-
 [<EntryPoint>]
 let main argv =
     try
-        let schema = getSchema (resolveFile "./schemas/petstore.json")
+        let localScheme = resolveFile "./schemas/petstore-modified.json"
+        let remoteSchema = "https://petstore.swagger.io/v2/swagger.json"
+        let schema = getSchema remoteSchema
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -1239,7 +1264,10 @@ let main argv =
             let config = {
                 target = Target.FSharp
                 projectName = "PetStore"
+                asyncReturnType = AsyncReturnType.Task
+                synchornousMethods = false
             }
+
             // prepare output directory
             if Directory.Exists outputDir
             then deleteFilesAndFolders outputDir true
@@ -1255,7 +1283,10 @@ let main argv =
             let projectFile =
                 let packages = [
                     if config.target = Target.FSharp then
+                        XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
                         XElement.PackageReference("Newtonsoft.Json", "13.0.1")
+                        if config.asyncReturnType = AsyncReturnType.Task
+                        then XElement.PackageReference("Ply", "0.3.1")
                     else
                         XElement.PackageReference("Fable.SimpleJson", "3.19.0")
                         XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
@@ -1264,7 +1295,6 @@ let main argv =
                 let files = [
                     if config.target = Target.FSharp then
                         XElement.Compile "StringEnum.fs"
-                        XElement.Compile "OpenApiJson.fs"
                         XElement.Compile "OpenApiHttp.fs"
                     XElement.Compile "Types.fs"
                     XElement.Compile "Client.fs"
@@ -1276,12 +1306,7 @@ let main argv =
                 generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
 
             if config.target = Target.FSharp then
-                // include custom JSON converter library
-                // and specialized StringEnum attribute
-                // when targeting F# on dotnet
-                let jsonLibrary = JsonLibrary.content.Replace("{projectName}", config.projectName)
-                let httpLibrary = HttpLibrary.content.Replace("{projectName}", config.projectName)
-                write jsonLibrary [ outputDir; "OpenApiJson.fs" ]
+                let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.projectName
                 write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
                 write (CodeGen.dummyStringEnum config.projectName) [ outputDir; "StringEnum.fs" ]
 
