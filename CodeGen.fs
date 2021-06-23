@@ -47,11 +47,9 @@ let formatAstInternal ast =
 
     CodeFormatter.FormatASTAsync(ast, "temp.fsx", [], None, cfg)
 
-let dummyStringEnum (projectName) =
-    sprintf """namespace %s
-
+let stringEnumAttr = """namespace Fable.Core
 type StringEnumAttribute() =
-    inherit System.Attribute()""" projectName
+    inherit System.Attribute()"""
 
 let formatAst file =
     formatAstInternal (ParsedInput.ImplFile file)

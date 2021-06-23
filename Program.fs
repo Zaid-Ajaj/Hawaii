@@ -17,6 +17,7 @@ type Target =
     | FSharp
     | Fable
 
+/// <summary>Describes the async return type of the functions of the generated clients</summary>
 [<RequireQualifiedAccess>]
 type AsyncReturnType =
     | Async
@@ -251,15 +252,11 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
 let compiledName (name: string) = SynAttribute.CompiledName name
 
 let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConfig) =
-    let fableStringEnum = SynAttribute.Create [ "Fable";"Core"; "StringEnum" ]
-    let fsharpStringEnum = SynAttribute.Create [ config.projectName; "StringEnum" ]
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [
             SynAttributeList.Create [
-                if config.target = Target.Fable
-                then fableStringEnum
-                else fsharpStringEnum
+                SynAttribute.Create [ "Fable";"Core"; "StringEnum" ]
                 SynAttribute.RequireQualifiedAccess()
             ]
         ]
@@ -1233,7 +1230,7 @@ let main argv =
     try
         let localScheme = resolveFile "./schemas/petstore-modified.json"
         let remoteSchema = "https://petstore.swagger.io/v2/swagger.json"
-        let schema = getSchema localScheme
+        let schema = getSchema remoteSchema
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -1246,7 +1243,7 @@ let main argv =
             let config = {
                 target = Target.FSharp
                 projectName = "PetStore"
-                asyncReturnType = AsyncReturnType.Task
+                asyncReturnType = AsyncReturnType.Async
                 synchornousMethods = false
             }
 
@@ -1290,7 +1287,7 @@ let main argv =
             if config.target = Target.FSharp then
                 let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.projectName
                 write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
-                write (CodeGen.dummyStringEnum config.projectName) [ outputDir; "StringEnum.fs" ]
+                write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
 
             write (projectFile.ToString()) [ outputDir; $"{config.projectName}.fsproj" ]
             0 // return an integer exit code

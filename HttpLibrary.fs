@@ -5,6 +5,7 @@ let content = """namespace {projectName}.Http
 open System
 open System.Net.Http
 open System.Globalization
+open System.Collections.Generic
 open System.Text
 open Fable.Remoting.Json
 {taskLibrary}
@@ -15,7 +16,7 @@ module Serializer =
     let settings = JsonSerializerSettings(Converters=[| converter |])
     settings.DateParseHandling <- DateParseHandling.None
     let serialize<'t> (value: 't) = JsonConvert.SerializeObject(value, settings)
-    let deserialize<'t> (content: string) = JsonConvert.DeserializeObject<'t> content
+    let deserialize<'t> (content: string) = JsonConvert.DeserializeObject<'t>(content, settings)
 
 [<RequireQualifiedAccess>]
 type OpenApiValue =
@@ -124,23 +125,70 @@ module OpenApiHttp =
 
             cleanedPath + "?" + combinedParamters
 
-    let applyBodyContent (httpRequest: HttpRequestMessage) (parts: RequestPart list) =
+    let applyJsonBodyContent (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
         for part in parts do
             match part with
             | Body content ->
                 httpRequest.Content <- new StringContent(content, Encoding.UTF8, "application/json")
             | _ -> ()
 
+        httpRequest
+
+    let applyAcceptHeader (httpRequest: HttpRequestMessage) =
         httpRequest.Headers.Accept.ParseAdd "application/json"
         httpRequest
+
+    let applyMultiPartFormData (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
+        let formParts =
+            parts
+            |> List.choose (function
+                | MultiPartFormData (key, value) -> Some(key, value)
+                | _ -> None
+            )
+
+        if formParts.IsEmpty then
+            httpRequest
+        else
+            let multipartFormData = new MultipartFormDataContent()
+            for (key, part) in formParts do
+                match part with
+                | Primitive value ->
+                    let content = new StringContent(serializeValue value, Encoding.UTF8)
+                    multipartFormData.Add(content, key)
+                | File file ->
+                    let content = new ByteArrayContent(file)
+                    multipartFormData.Add(content, key)
+
+            httpRequest.Content <- multipartFormData
+            httpRequest
+
+    let applyUrlEncodedFormData (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
+        let formParts =
+            parts
+            |> List.choose (function
+                | UrlEncodedFormData(key, value) -> Some(key, value)
+                | _ -> None
+            )
+
+        if formParts.IsEmpty then
+            httpRequest
+        else
+            let contents = [ for (key, value) in formParts -> KeyValuePair(key, serializeValue value) ]
+            httpRequest.Content <- new FormUrlEncodedContent(contents)
+            httpRequest
 
     let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) =
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress, httpClient.BaseAddress.AbsolutePath + modifiedQueryParams)
         use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
+        let populatedRequest =
+            request
+            |> applyJsonBodyContent parts
+            |> applyUrlEncodedFormData parts
+            |> applyMultiPartFormData parts
+
         {asyncBuilder} {
-            let requestWithBody = applyBodyContent request parts
             let! response = {getResponse}
             return response
         }
@@ -182,8 +230,8 @@ let library isTask projectName =
 
     let getResponse =
         if isTask
-        then "httpClient.SendAsync requestWithBody"
-        else "Async.AwaitTask(httpClient.SendAsync requestWithBody)"
+        then "httpClient.SendAsync populatedRequest"
+        else "Async.AwaitTask(httpClient.SendAsync populatedRequest)"
 
     content
         .Replace("{projectName}", projectName)
