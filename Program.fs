@@ -1030,7 +1030,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
-                        location = "formData"
+                        location = "multipartFormData"
                         style = "formfield"
                     }
 
@@ -1061,7 +1061,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
-                        location = "formData"
+                        location = "urlEncodedFormData"
                         style = "formfield"
                     }
 
@@ -1117,11 +1117,17 @@ let createOpenApiClient
                 let memberNameAsync = $"{memberName}Async"
                 let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
                 let stringExpr value = SynExpr.CreateConstString value
+                let createLetAssignment leftSide rightSide continuation =
+                    let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
+                    let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
+                    let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
+                    SynExpr.LetOrUse(false, false, [binding], continuation, range0)
+
                 let requestValues = [
                     for parameter in parameters do
                         if parameter.required then
                             yield SynExpr.CreateApp(
-                                createIdent [ "RequestValue"; parameter.location ],
+                                createIdent [ "RequestPart"; parameter.location ],
                                 SynExpr.CreateParen(SynExpr.CreateTuple [
                                     if parameter.location <> "body"
                                     then stringExpr parameter.parameterName
@@ -1132,7 +1138,7 @@ let createOpenApiClient
                             let ifExpr = createIdent [ parameter.parameterName; "IsSome" ]
                             let thenExpr =
                                 SynExpr.CreateApp(
-                                    createIdent [ "RequestValue"; parameter.location ],
+                                    createIdent [ "RequestPart"; parameter.location ],
                                     SynExpr.CreateParen(SynExpr.CreateTuple [
                                         if parameter.location <> "body"
                                         then stringExpr parameter.parameterName
@@ -1144,20 +1150,23 @@ let createOpenApiClient
 
                 let httpFunction = operation.Key.ToString().ToLower()
                 let httpFunctionAsync = $"{httpFunction}Async"
-
+                let requestParts = Ident.Create "requestParts"
                 let clientOperation httpFunc name = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
                         XmlDoc = xmlDocsWithParams summary parameterDocs
                         Expr =
-                            SynExpr.CreateApp(
-                                SynExpr.CreateApp(
+                            createLetAssignment
+                                requestParts
+                                (SynExpr.ArrayOrList(false, requestValues, range0))
+                                (SynExpr.CreateApp(
                                     SynExpr.CreateApp(
-                                        SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunc ]),
-                                        SynExpr.CreateIdent (Ident.Create "httpClient")
-                                    ),
-                                    SynExpr.CreateConstString fullPath),
-                                SynExpr.ArrayOrList(false, requestValues, range0)
-                            )
+                                        SynExpr.CreateApp(
+                                            SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunc ]),
+                                            SynExpr.CreateIdent (Ident.Create "httpClient")
+                                        ),
+                                        SynExpr.CreateConstString fullPath),
+                                        SynExpr.Ident requestParts)
+                                )
                         Pattern =
                             SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{name}", [
                                 SynPatRcd.CreateParen(

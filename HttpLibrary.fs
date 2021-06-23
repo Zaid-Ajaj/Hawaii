@@ -27,12 +27,16 @@ type OpenApiValue =
     | Float of float32
     | List of OpenApiValue list
 
-type RequestValue =
+type MultiPartFormData =
+    | Primitive of OpenApiValue
+    | File of byte[]
+
+type RequestPart =
     | Query of string * OpenApiValue
     | Path of string * OpenApiValue
     | Header of string * OpenApiValue
-    | FormData of string * OpenApiValue
-    | File of string * byte[]
+    | MultiPartFormData of string * MultiPartFormData
+    | UrlEncodedFormData of string * OpenApiValue
     | Body of string
 
     static member query(key: string, value: int) = Query(key, OpenApiValue.Int value)
@@ -51,14 +55,27 @@ type RequestValue =
     static member path(key: string, value: double) = Path(key, OpenApiValue.Double value)
     static member path(key: string, value: float32) = Path(key, OpenApiValue.Float value)
     static member path(key: string, value: Guid) = Path(key, OpenApiValue.String (value.ToString()))
-    static member formData(key: string, value: int) = FormData(key, OpenApiValue.Int value)
-    static member formData(key: string, value: int64) = FormData(key, OpenApiValue.Int64 value)
-    static member formData(key: string, value: string) = FormData(key, OpenApiValue.String value)
-    static member formData(key: string, value: bool) = FormData(key, OpenApiValue.Bool value)
-    static member formData(key: string, value: double) = FormData(key, OpenApiValue.Double value)
-    static member formData(key: string, value: float32) = FormData(key, OpenApiValue.Float value)
-    static member formData(key: string, value: Guid) = FormData(key, OpenApiValue.String (value.ToString()))
-    static member formData(key: string, value: byte[]) = File(key, value)
+    static member multipartFormData(key: string, value: int) =
+        MultiPartFormData(key, Primitive(OpenApiValue.Int value))
+    static member multipartFormData(key: string, value: int64) =
+        MultiPartFormData(key, Primitive(OpenApiValue.Int64 value))
+    static member multipartFormData(key: string, value: string) =
+        MultiPartFormData(key, Primitive(OpenApiValue.String value))
+    static member multipartFormData(key: string, value: bool) =
+        MultiPartFormData(key, Primitive(OpenApiValue.Bool value))
+    static member multipartFormData(key: string, value: double) =
+        MultiPartFormData(key, Primitive(OpenApiValue.Double value))
+    static member multipartFormData(key: string, value: float32) =
+        MultiPartFormData(key, Primitive(OpenApiValue.Float value))
+    static member multipartFormData(key: string, value: Guid) =
+        MultiPartFormData(key, Primitive(OpenApiValue.String (value.ToString())))
+    static member multipartFormData(key: string, value: byte[]) =
+        MultiPartFormData(key, File value)
+    static member urlEncodedFormData(key: string, value: string) = UrlEncodedFormData(key, OpenApiValue.String value)
+    static member urlEncodedFormData(key: string, value: bool) = UrlEncodedFormData(key, OpenApiValue.Bool value)
+    static member urlEncodedFormData(key: string, value: double) = UrlEncodedFormData(key, OpenApiValue.Double value)
+    static member urlEncodedFormData(key: string, value: float32) = UrlEncodedFormData(key, OpenApiValue.Float value)
+    static member urlEncodedFormData(key: string, value: Guid) = UrlEncodedFormData(key, OpenApiValue.String (value.ToString()))
     static member header(key: string, value: int) = Header(key, OpenApiValue.Int value)
     static member header(key: string, value: int64) = Header(key, OpenApiValue.Int64 value)
     static member header(key: string, value: string) = Header(key, OpenApiValue.String value)
@@ -66,7 +83,6 @@ type RequestValue =
     static member header(key: string, value: double) = Header(key, OpenApiValue.Double value)
     static member header(key: string, value: float32) = Header(key, OpenApiValue.Float value)
     static member header(key: string, value: Guid) = Header(key, OpenApiValue.String (value.ToString()))
-    static member file(key: string, value: byte[]) = File(key, value)
     static member body<'t>(content: 't) = Body(Serializer.serialize content)
 
 module OpenApiHttp =
@@ -82,15 +98,15 @@ module OpenApiHttp =
             |> List.map serializeValue
             |> String.concat ","
 
-    let applyPathParts (path: string) (parts: RequestValue list) =
-        let applyPart (currentPath: string) (part: RequestValue) : string =
+    let applyPathParts (path: string) (parts: RequestPart list) =
+        let applyPart (currentPath: string) (part: RequestPart) : string =
             match part with
             | Path(key, value) -> currentPath.Replace("{" + key + "}", serializeValue value)
             | _ -> currentPath
 
         parts |> List.fold applyPart path
 
-    let applyQueryStringParameters (currentPath: string) (parts: RequestValue list) =
+    let applyQueryStringParameters (currentPath: string) (parts: RequestPart list) =
         let cleanedPath = currentPath.TrimEnd '/'
         let queryParams =
             parts
@@ -108,7 +124,7 @@ module OpenApiHttp =
 
             cleanedPath + "?" + combinedParamters
 
-    let applyBodyContent (httpRequest: HttpRequestMessage) (parts: RequestValue list) =
+    let applyBodyContent (httpRequest: HttpRequestMessage) (parts: RequestPart list) =
         for part in parts do
             match part with
             | Body content ->
@@ -118,7 +134,7 @@ module OpenApiHttp =
         httpRequest.Headers.Accept.ParseAdd "application/json"
         httpRequest
 
-    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestValue list) =
+    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) =
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress, httpClient.BaseAddress.AbsolutePath + modifiedQueryParams)
@@ -129,31 +145,31 @@ module OpenApiHttp =
             return response
         }
 
-    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Get path parts
 
-    let get (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let get (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         getAsync httpClient path parts
         {convertSync}
 
-    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Post path parts
 
-    let post (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let post (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         postAsync httpClient path parts
         {convertSync}
 
-    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Delete path parts
 
-    let delete (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let delete (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         deleteAsync httpClient path parts
         {convertSync}
 
-    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Put path parts
 
-    let put (httpClient: HttpClient) (path: string) (parts: RequestValue list) =
+    let put (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         putAsync httpClient path parts
         {convertSync}
 """
