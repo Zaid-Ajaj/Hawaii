@@ -1098,6 +1098,13 @@ let createOpenApiClient
                     let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
                     SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
+                let deconstructAsyncResponse body continuation =
+                    let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
+                    let status = SynPat.Named(SynPat.Wild range0, Ident.Create "status", false, None, range0)
+                    let content = SynPat.Named(SynPat.Wild range0, Ident.Create "content", false, None, range0)
+                    let headPat = SynPat.Paren(SynPat.Tuple(false, [ status; content ], range0), range0)
+                    SynExpr.LetOrUseBang(DebugPointForBinding.DebugPointAtBinding range0, false, false, headPat, body, [], continuation, range0)
+
                 let requestValues = [
                     for parameter in parameters do
                         if parameter.required then
@@ -1110,8 +1117,8 @@ let createOpenApiClient
                                 ])
                             )
                         else
-                            let ifExpr = createIdent [ parameter.parameterName; "IsSome" ]
-                            let thenExpr =
+                            let condition = createIdent [ parameter.parameterName; "IsSome" ]
+                            let value =
                                 SynExpr.CreateApp(
                                     createIdent [ "RequestPart"; parameter.location ],
                                     SynExpr.CreateParen(SynExpr.CreateTuple [
@@ -1120,28 +1127,42 @@ let createOpenApiClient
                                         createIdent [ parameter.parameterName; "Value" ]
                                     ])
                                 )
-                            yield SynExpr.IfThenElse(ifExpr, thenExpr, None, DebugPointForBinding.DebugPointAtBinding(range0), false, range0, range0)
+                            yield SynExpr.CreateIfThen(condition, value)
                 ]
 
                 let httpFunction = operation.Key.ToString().ToLower()
                 let httpFunctionAsync = $"{httpFunction}Async"
                 let requestParts = Ident.Create "requestParts"
+                let asyncCallBody httpFunc =
+                    SynExpr.CreateApp(
+                        SynExpr.CreateApp(
+                            SynExpr.CreateApp(
+                                SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunc ]),
+                                SynExpr.CreateIdent (Ident.Create "httpClient")
+                            ),
+                            SynExpr.CreateConstString fullPath),
+                            SynExpr.Ident requestParts
+                    )
+
+                // TODO
+                let returnExpr = SynExpr.CreateReturn (SynExpr.CreateUnit)
+
+                let asyncBuilder expr =
+                    match config.asyncReturnType with
+                    | AsyncReturnType.Async -> SynExpr.CreateAsync expr
+                    | AsyncReturnType.Task -> SynExpr.CreateTask expr
+
                 let clientOperation httpFunc name = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
                         XmlDoc = xmlDocsWithParams summary parameterDocs
                         Expr =
-                            createLetAssignment
-                                requestParts
-                                (SynExpr.ArrayOrList(false, requestValues, range0))
-                                (SynExpr.CreateApp(
-                                    SynExpr.CreateApp(
-                                        SynExpr.CreateApp(
-                                            SynExpr.CreateLongIdent(LongIdentWithDots.Create [ "OpenApiHttp"; httpFunc ]),
-                                            SynExpr.CreateIdent (Ident.Create "httpClient")
-                                        ),
-                                        SynExpr.CreateConstString fullPath),
-                                        SynExpr.Ident requestParts)
-                                )
+                            asyncBuilder (
+                                createLetAssignment
+                                    requestParts
+                                    (SynExpr.CreateList requestValues)
+                                    (deconstructAsyncResponse (asyncCallBody httpFunc) returnExpr)
+                            )
+
                         Pattern =
                             SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString $"this.{name}", [
                                 SynPatRcd.CreateParen(

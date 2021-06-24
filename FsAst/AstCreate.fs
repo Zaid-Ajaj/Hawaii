@@ -95,9 +95,21 @@ type SynExpr with
         SynExpr.CreateConst SynConst.Unit
     static member CreateNull =
         SynExpr.Null(range.Zero)
+    static member CreateIfThen(ifExpr, thenExpr) =
+        SynExpr.IfThenElse(ifExpr, thenExpr, None, DebugPointForBinding.DebugPointAtBinding(range0), false, range0, range0)
+    static member CreateIfThenElse(ifExpr, thenExpr, elseExpr) =
+        SynExpr.IfThenElse(ifExpr, thenExpr, Some elseExpr, DebugPointForBinding.DebugPointAtBinding(range0), false, range0, range0)
+    static member CreateList(exprs: seq<SynExpr>) =
+        SynExpr.ArrayOrList(false, Seq.toList exprs, range0)
     static member CreateRecord (fields: list<RecordFieldName * option<SynExpr>>) =
         let fields = fields |> List.map (fun (rfn, synExpr) -> (rfn, synExpr, None))
         SynExpr.Record(None, None, fields, range.Zero )
+    static member CreateAsync(expr) =
+        SynExpr.App(ExprAtomicFlag.NonAtomic, false, SynExpr.CreateIdent(Ident.Create "async"), SynExpr.CompExpr(false, ref false, expr, range0), range0)
+    static member CreateTask(expr) =
+        SynExpr.App(ExprAtomicFlag.NonAtomic, false, SynExpr.CreateIdent(Ident.Create "task"), SynExpr.CompExpr(false, ref false, expr, range0), range0)
+    static member  CreateReturn(expr) =
+        SynExpr.YieldOrReturn((false, true), expr, range0)
     static member CreateRecordUpdate (copyInfo: SynExpr, fieldUpdates ) =
         let blockSep = (range.Zero, None) : BlockSeparator
         let copyInfo = Some (copyInfo, blockSep)
@@ -226,7 +238,7 @@ type SynType with
             lessRange=None
         )
 
-    static member Map(key, value) = 
+    static member Map(key, value) =
         SynType.App(
             typeName=SynType.CreateLongIdent "Map",
             typeArgs=[ key; value ],
@@ -276,25 +288,25 @@ type SynType with
     static member DateTime() =
         SynType.LongIdent(LongIdentWithDots.Create [ "System"; "DateTime" ])
 
-    static member Guid() = 
+    static member Guid() =
         SynType.LongIdent(LongIdentWithDots.Create [ "System"; "Guid" ])
 
     static member Int() =
         SynType.Create "int"
 
-    static member UInt() = 
+    static member UInt() =
         SynType.Create "uint"
 
-    static member Int8() = 
+    static member Int8() =
         SynType.Create "int8"
 
-    static member UInt8() = 
+    static member UInt8() =
         SynType.Create "uint8"
 
-    static member Int16() = 
+    static member Int16() =
         SynType.Create "int16"
 
-    static member UInt16() = 
+    static member UInt16() =
         SynType.Create "uint16"
 
     static member Int64() =
@@ -321,16 +333,16 @@ type SynType with
     static member Decimal() =
         SynType.Create "decimal"
 
-    static member Unit() = 
+    static member Unit() =
         SynType.Create "unit"
 
-    static member BigInt() = 
+    static member BigInt() =
         SynType.Create "bigint"
 
-    static member Byte() = 
+    static member Byte() =
         SynType.Create "byte"
 
-    static member Char() = 
+    static member Char() =
         SynType.Create "char"
 
 type SynArgInfo with
@@ -655,7 +667,7 @@ type SynAttribute with
     static member RequireQualifiedAccess() =
         SynAttribute.Create("RequireQualifiedAccess")
 
-    static member CompiledName(valueArg: string) = 
+    static member CompiledName(valueArg: string) =
         SynAttribute.Create("CompiledName", valueArg)
 
 type PreXmlDoc with
@@ -675,7 +687,7 @@ type PreXmlDoc with
             then docs.Value
         ]
 
-    static member Create(docs: string) = 
+    static member Create(docs: string) =
         PreXmlDoc.Create [
             if not (String.IsNullOrWhiteSpace docs)
             then docs

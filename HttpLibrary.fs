@@ -190,7 +190,8 @@ module OpenApiHttp =
 
         {asyncBuilder} {
             let! response = {getResponse}
-            return response
+            let! content = {getContent}
+            return (response.StatusCode, content)
         }
 
     let getAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
@@ -233,9 +234,15 @@ let library isTask projectName =
         then "httpClient.SendAsync populatedRequest"
         else "Async.AwaitTask(httpClient.SendAsync populatedRequest)"
 
+    let getContent =
+        if isTask
+        then "response.Content.ReadAsStringAsync()"
+        else "Async.AwaitTask(response.Content.ReadAsStringAsync())"
+
     content
         .Replace("{projectName}", projectName)
         .Replace("{taskLibrary}", if isTask then "open FSharp.Control.Tasks" else "")
         .Replace("{asyncBuilder}", if isTask then "task" else "async")
         .Replace("{convertSync}", convertSync)
         .Replace("{getResponse}", getResponse)
+        .Replace("{getContent}", getContent)
