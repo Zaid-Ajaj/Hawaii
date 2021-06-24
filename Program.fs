@@ -1199,6 +1199,9 @@ let createOpenApiClient
         yield SynModuleDecl.CreateOpen "System.Net.Http"
         yield SynModuleDecl.CreateOpen $"{config.projectName}.Types"
         yield SynModuleDecl.CreateOpen $"{config.projectName}.Http"
+        if config.asyncReturnType = AsyncReturnType.Task then
+            // from the Ply package
+            yield SynModuleDecl.CreateOpen "FSharp.Control.Tasks"
         // extra types generated from parameters
         for extraType in extraTypes do
             yield extraType
@@ -1269,7 +1272,7 @@ let main argv =
             let config = {
                 target = Target.FSharp
                 projectName = "PetStore"
-                asyncReturnType = AsyncReturnType.Async
+                asyncReturnType = AsyncReturnType.Task
                 synchornousMethods = false
             }
 
