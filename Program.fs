@@ -357,13 +357,13 @@ let rec getFieldType (schema: OpenApiSchema) =
         SynType.String()
 
 let statusCode = function
-    | "200"
-    | "default" -> Some (nameof HttpStatusCode.OK)
+    | "200" -> Some (nameof HttpStatusCode.OK)
     | "404" -> Some (nameof HttpStatusCode.NotFound)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
     | "401" -> Some (nameof HttpStatusCode.Unauthorized)
     | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
+    | "default" -> Some (nameof HttpStatusCode.OK)
     | _ -> None
 
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
@@ -394,8 +394,11 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     let fieldTypes =
                         if response.Value.Content.ContainsKey "application/json" then
                             let responsePayloadType = response.Value.Content.["application/json"]
-                            let fieldType = getFieldType responsePayloadType.Schema
-                            [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                            if not (isNull responsePayloadType.Schema) then
+                                let fieldType = getFieldType responsePayloadType.Schema
+                                [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                            else
+                                []
                         elif response.Value.Content.ContainsKey "application/octet-stream" then
                             let fieldType = SynType.ByteArray()
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
@@ -1268,17 +1271,134 @@ let createOpenApiClient
                     let innerApp = SynExpr.App(ExprAtomicFlag.NonAtomic, true, (createIdent ["op_Equality"]), left, range0)
                     SynExpr.CreateApp(innerApp, right)
 
+                let responses =
+                    operation.Value.Responses
+                    |> Seq.choose (fun pair ->
+                        match statusCode pair.Key with
+                        | Some status -> Some (status, pair.Value)
+                        | _ -> None
+                    )
+                    |> Seq.toList
+                    |> List.groupBy fst
+                    |> List.collect (fun (key, group) ->
+                        if group.Length = 2 && key = "OK" then
+                            let (_, response0) = group.[0]
+                            let (_, response1) = group.[1]
+                            if (response0.Content.Count = 0 && response1.Content.Count >= 1)
+                            then [ group.[1] ]
+                            else [ group.[0] ]
+                        else
+                            group
+                    )
+
+                let responseType = capitalize memberName
                 // TODO
                 let returnExpr =
-                    let ifExpr = equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; "OK" ])
-                    let thenExpr =
-                        createIdent [ capitalize memberName; "OK" ]
-                        |> wrappedReturn
+                    let createOutput (status: string,response: OpenApiResponse) =
+                        if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        else
+                            createIdent [ responseType; status ]
+                            |> wrappedReturn
 
-                    let elseExpr =
-                        createIdent [ capitalize memberName; "NotFound" ]
-                        |> wrappedReturn
-                    SynExpr.CreateIfThenElse(ifExpr, thenExpr, elseExpr)
+                    let statusIsEqual status =
+                        equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; status ])
+
+                    if responses.Length = 1 then
+                        createOutput responses.[0]
+                    elif responses.Length = 2 then
+                        let (status1, response1) = responses.[0]
+                        let (status2, response2) = responses.[1]
+                        SynExpr.CreateIfThenElse(statusIsEqual status1, createOutput responses.[0], createOutput responses.[1])
+                    elif responses.Length = 3 then
+                        let (status1, response1) = responses.[0]
+                        let (status2, response2) = responses.[1]
+                        let (status3, response3) = responses.[2]
+                        SynExpr.CreateIfThenElse(
+                            statusIsEqual status1,
+                            createOutput responses.[0],
+                            SynExpr.CreateIfThenElse(
+                                statusIsEqual status2,
+                                createOutput responses.[1],
+                                createOutput responses.[2]
+                            )
+                        )
+                    elif responses.Length = 4 then
+                        let (status1, response1) = responses.[0]
+                        let (status2, response2) = responses.[1]
+                        let (status3, response3) = responses.[2]
+                        let (status4, response4) = responses.[3]
+                        SynExpr.CreateIfThenElse(
+                            statusIsEqual status1,
+                            createOutput responses.[0],
+                            SynExpr.CreateIfThenElse(
+                                statusIsEqual status2,
+                                createOutput responses.[1],
+                                SynExpr.CreateIfThenElse(
+                                    statusIsEqual status3,
+                                    createOutput responses.[2],
+                                    createOutput responses.[3]
+                                )
+                            )
+                        )
+                    elif responses.Length = 5 then
+                        let (status1, response1) = responses.[0]
+                        let (status2, response2) = responses.[1]
+                        let (status3, response3) = responses.[2]
+                        let (status4, response4) = responses.[3]
+                        let (status5, response5) = responses.[4]
+                        SynExpr.CreateIfThenElse(
+                            statusIsEqual status1,
+                            createOutput responses.[0],
+                            SynExpr.CreateIfThenElse(
+                                statusIsEqual status2,
+                                createOutput responses.[1],
+                                SynExpr.CreateIfThenElse(
+                                    statusIsEqual status3,
+                                    createOutput responses.[2],
+                                    SynExpr.CreateIfThenElse(
+                                        statusIsEqual status4,
+                                        createOutput responses.[3],
+                                        createOutput responses.[4]
+                                    )
+                                )
+                            )
+                        )
+                    else
+                        let (status1, response1) = responses.[0]
+                        let (status2, response2) = responses.[1]
+                        let (status3, response3) = responses.[2]
+                        let (status4, response4) = responses.[3]
+                        let (status5, response5) = responses.[4]
+                        let (status6, response6) = responses.[5]
+                        SynExpr.CreateIfThenElse(
+                            statusIsEqual status1,
+                            createOutput responses.[0],
+                            SynExpr.CreateIfThenElse(
+                                statusIsEqual status2,
+                                createOutput responses.[1],
+                                SynExpr.CreateIfThenElse(
+                                    statusIsEqual status3,
+                                    createOutput responses.[2],
+                                    SynExpr.CreateIfThenElse(
+                                        statusIsEqual status4,
+                                        createOutput responses.[3],
+                                        SynExpr.CreateIfThenElse(
+                                            statusIsEqual status5,
+                                            createOutput responses.[4],
+                                            createOutput responses.[5]
+                                        )
+                                    )
+                                )
+                            )
+                        )
 
                 let asyncBuilder expr =
                     if config.synchornousMethods then
@@ -1399,8 +1519,9 @@ let generateProjectDocument
 let main argv =
     try
         let localScheme = resolveFile "./schemas/petstore-modified.json"
+        let ghibliSchema = resolveFile "./schemas/ghibli.json"
         let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
-        let schema = getSchema remoteSchema
+        let schema = getSchema ghibliSchema
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -1412,7 +1533,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "PetStore"
+                projectName = "Ghibli"
                 asyncReturnType = AsyncReturnType.Async
                 synchornousMethods = false
             }
@@ -1463,5 +1584,6 @@ let main argv =
             0 // return an integer exit code
     with
     | error ->
-        printfn "%s" error.Message
+        System.Console.WriteLine(error.Message)
+        System.Console.WriteLine(error.StackTrace)
         1
