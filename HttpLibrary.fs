@@ -140,7 +140,7 @@ module OpenApiHttp =
         for part in parts do
             match part with
             | BinaryContent content ->
-                httpRequest.Content <- new ByteArray(content)
+                httpRequest.Content <- new ByteArrayContent(content)
             | _ -> ()
 
         httpRequest
