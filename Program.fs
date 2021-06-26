@@ -11,6 +11,7 @@ open System.Linq
 open System.IO
 open System.Xml.Linq
 open System.Net
+open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 /// <summary>Describes the compilation target</summary>
@@ -384,6 +385,13 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         Range = range0
     }
 
+    let containsOk =
+        operation.Responses.ContainsKey "200"
+        || operation.Responses.ContainsKey "201"
+        || operation.Responses.ContainsKey "204"
+        || operation.Responses.ContainsKey "202"
+        || operation.Responses.ContainsKey "default"
+
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
         for response in operation.Responses do
             if response.Key = "default" && operation.Responses.ContainsKey "200" then
@@ -408,6 +416,10 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     yield SynUnionCase.UnionCase([], Ident.Create (capitalize caseName), SynUnionCaseType.UnionCaseFields fieldTypes, docs, None, range0)
                 | None ->
                     ()
+
+        if not containsOk then
+            let docs = PreXmlDoc.Empty
+            yield SynUnionCase.UnionCase([], Ident.Create (capitalize "OK"), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
     ])
 
     let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
@@ -1291,6 +1303,23 @@ let createOpenApiClient
                             group
                     )
 
+                let containsOk =
+                    responses
+                    |> List.exists (fun (status, response) ->
+                        status = "OK"
+                        || status = "Created"
+                        || status = "Accepted"
+                        || status = "NoContent")
+
+                let responses =
+                    if not containsOk then
+                        [
+                            yield ("OK", new OpenApiResponse(Content = new Dictionary<_,_>()))
+                            yield! responses
+                        ]
+                    else
+                        responses
+
                 let responseType = capitalize memberName
                 // TODO
                 let returnExpr =
@@ -1299,6 +1328,15 @@ let createOpenApiClient
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "application/octet-stream" then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
                                         createIdent [ "content" ]
                                     ])
                                 )
@@ -1520,8 +1558,10 @@ let main argv =
     try
         let localScheme = resolveFile "./schemas/petstore-modified.json"
         let ghibliSchema = resolveFile "./schemas/ghibli.json"
+        let simpleNSwag = resolveFile "./schemas/simple-nswag.json"
+        let simpleSwashbuckle = resolveFile "./schemas/simple-swashbuckle.json"
         let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
-        let schema = getSchema ghibliSchema
+        let schema = getSchema simpleSwashbuckle
         let reader = new OpenApiStreamReader()
         let (openApiDocument, diagnostics) =  reader.Read(schema)
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
@@ -1533,7 +1573,7 @@ let main argv =
 
             let config = {
                 target = Target.FSharp
-                projectName = "Ghibli"
+                projectName = "NSwag"
                 asyncReturnType = AsyncReturnType.Async
                 synchornousMethods = false
             }
