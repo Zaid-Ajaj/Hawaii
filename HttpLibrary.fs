@@ -39,6 +39,7 @@ type RequestPart =
     | MultiPartFormData of string * MultiPartFormData
     | UrlEncodedFormData of string * OpenApiValue
     | Body of string
+    | BinaryContent of byte[]
 
     static member query(key: string, value: int) = Query(key, OpenApiValue.Int value)
     static member query(key: string, values: int list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int value ])
@@ -85,6 +86,7 @@ type RequestPart =
     static member header(key: string, value: float32) = Header(key, OpenApiValue.Float value)
     static member header(key: string, value: Guid) = Header(key, OpenApiValue.String (value.ToString()))
     static member body<'t>(content: 't) = Body(Serializer.serialize content)
+    static member binaryContent(content: byte[]) = BinaryContent(content)
 
 module OpenApiHttp =
     let rec serializeValue = function

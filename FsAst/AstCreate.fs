@@ -84,6 +84,8 @@ type SynExpr with
         SynExpr.LongIdent(isOptional, id, altNameRefCell, range.Zero)
     static member CreateLongIdent id =
         SynExpr.CreateLongIdent(false, id, None)
+    static member CreateLongIdent (names: string list) =
+        SynExpr.CreateLongIdent(LongIdentWithDots.Create names)
     static member CreateParen expr =
         SynExpr.Paren(expr, range.Zero, None, range.Zero)
     static member CreateTuple list =
@@ -110,6 +112,21 @@ type SynExpr with
         SynExpr.App(ExprAtomicFlag.NonAtomic, false, SynExpr.CreateIdent(Ident.Create "task"), SynExpr.CompExpr(false, ref false, expr, range0), range0)
     static member  CreateReturn(expr) =
         SynExpr.YieldOrReturn((false, true), expr, range0)
+    static member CreatePartialApp(name: string, exprs: SynExpr list) =
+        let funcParts =
+            if name.Contains "."
+            then List.ofArray (name.Split '.')
+            else [ name ]
+
+        let functionArg = SynExpr.CreateLongIdent funcParts
+        exprs
+        |> List.fold (fun expr argument -> SynExpr.CreateApp(expr, argument)) functionArg
+
+    static member CreatePartialApp(names: string list, exprs: SynExpr list) =
+        let functionArg = SynExpr.CreateLongIdent names
+        exprs
+        |> List.fold (fun expr argument -> SynExpr.CreateApp(expr, argument)) functionArg
+
     static member CreateRecordUpdate (copyInfo: SynExpr, fieldUpdates ) =
         let blockSep = (range.Zero, None) : BlockSeparator
         let copyInfo = Some (copyInfo, blockSep)
