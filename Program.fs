@@ -356,6 +356,16 @@ let rec getFieldType (schema: OpenApiSchema) =
     | _ ->
         SynType.String()
 
+let statusCode = function
+    | "200"
+    | "default" -> Some (nameof HttpStatusCode.OK)
+    | "404" -> Some (nameof HttpStatusCode.NotFound)
+    | "400" -> Some (nameof HttpStatusCode.BadRequest)
+    | "401" -> Some (nameof HttpStatusCode.Unauthorized)
+    | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
+    | "500" -> Some (nameof HttpStatusCode.InternalServerError)
+    | _ -> None
+
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
 
     let typeName = deriveOperationName (capitalize operation.OperationId) path operationType
@@ -374,15 +384,6 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         Range = range0
     }
 
-    let statusCode = function
-        | "200" | "default" -> Some (nameof HttpStatusCode.OK)
-        | "404" -> Some (nameof HttpStatusCode.NotFound)
-        | "400" -> Some (nameof HttpStatusCode.BadRequest)
-        | "401" -> Some (nameof HttpStatusCode.Unauthorized)
-        | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
-        | "500" -> Some (nameof HttpStatusCode.InternalServerError)
-        | _ -> None
-
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
         for response in operation.Responses do
             if response.Key = "default" && operation.Responses.ContainsKey "200" then
@@ -394,6 +395,9 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                         if response.Value.Content.ContainsKey "application/json" then
                             let responsePayloadType = response.Value.Content.["application/json"]
                             let fieldType = getFieldType responsePayloadType.Schema
+                            [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                        elif response.Value.Content.ContainsKey "application/octet-stream" then
+                            let fieldType = SynType.ByteArray()
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
@@ -1255,11 +1259,26 @@ let createOpenApiClient
                         SynExpr.Ident requestParts
                     ])
 
+                let wrappedReturn expr =
+                    if config.synchornousMethods
+                    then expr
+                    else SynExpr.CreateReturn expr
+
+                let equal left right =
+                    let innerApp = SynExpr.App(ExprAtomicFlag.NonAtomic, true, (createIdent ["op_Equality"]), left, range0)
+                    SynExpr.CreateApp(innerApp, right)
+
                 // TODO
                 let returnExpr =
-                    if config.synchornousMethods
-                    then SynExpr.CreateUnit
-                    else SynExpr.CreateReturn (SynExpr.CreateUnit)
+                    let ifExpr = equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; "OK" ])
+                    let thenExpr =
+                        createIdent [ capitalize memberName; "OK" ]
+                        |> wrappedReturn
+
+                    let elseExpr =
+                        createIdent [ capitalize memberName; "NotFound" ]
+                        |> wrappedReturn
+                    SynExpr.CreateIfThenElse(ifExpr, thenExpr, elseExpr)
 
                 let asyncBuilder expr =
                     if config.synchornousMethods then
@@ -1317,6 +1336,7 @@ let createOpenApiClient
     let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
 
     let moduleContents = [
+        yield SynModuleDecl.CreateOpen "System.Net"
         yield SynModuleDecl.CreateOpen "System.Net.Http"
         yield SynModuleDecl.CreateOpen $"{config.projectName}.Types"
         yield SynModuleDecl.CreateOpen $"{config.projectName}.Http"
@@ -1394,7 +1414,7 @@ let main argv =
                 target = Target.FSharp
                 projectName = "PetStore"
                 asyncReturnType = AsyncReturnType.Async
-                synchornousMethods = true
+                synchornousMethods = false
             }
 
             // prepare output directory
