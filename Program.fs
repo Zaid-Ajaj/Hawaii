@@ -12,6 +12,7 @@ open System.IO
 open System.Xml.Linq
 open System.Net
 open System.Collections.Generic
+open Newtonsoft.Json.Linq
 
 [<RequireQualifiedAccess>]
 /// <summary>Describes the compilation target</summary>
@@ -26,11 +27,77 @@ type AsyncReturnType =
     | Task
 
 type CodegenConfig = {
+    schema: string
+    output: string
     target: Target
-    projectName : string
+    project : string
     asyncReturnType: AsyncReturnType
-    synchornousMethods: bool
+    synchronous: bool
 }
+
+let inline isNotNull (x: 't) = not (isNull x)
+
+let resolveFile (path: string) =
+    if Path.IsPathRooted path then
+        path
+    elif System.Diagnostics.Debugger.IsAttached then
+        Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, path))
+    else
+        Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
+
+let readConfig file =
+    try
+        if not (File.Exists file) then
+            Error $"Hawaii configuration file {file} was not found"
+        else
+        let content = File.ReadAllText(file)
+        let parts = JObject.Parse(content)
+        if not (parts.ContainsKey "schema") then
+            Error "Missing required configuration element 'schema'"
+        elif isNotNull parts.["schema"] && parts.["schema"].Type <> JTokenType.String then
+            Error "Configuration element 'schema' must be a string"
+        elif not (parts.ContainsKey "output") then
+            Error "Missing required configuration element 'output'"
+        elif not (parts.ContainsKey "project") then
+            Error "Missing required configuration element 'project'"
+        elif isNotNull parts.["output"] && parts.["output"].Type <> JTokenType.String then
+            Error "The 'output' configuration element must be a string"
+        elif isNotNull parts.["target"] && parts.["target"].Type <> JTokenType.String then
+            Error "The 'target' configuration element must be a string"
+        elif isNotNull parts.["target"] && parts.["target"].ToObject<string>().ToLower().Trim() <> "fable" && parts.["target"].ToObject<string>().ToLower().Trim() <> "fsharp" then
+            Error "The 'target' configuration element can only be 'fable' or 'fsharp'"
+        elif isNotNull parts.["project"] && parts.["project"].Type <> JTokenType.String then
+            Error "The 'project' configuration element must be a string"
+        elif isNotNull parts.["project"] && String.IsNullOrWhiteSpace(parts.["project"].ToString().Trim()) then
+            Error "The 'project' configuration element cannot be empty"
+        elif isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].Type <> JTokenType.String then
+            Error "The 'asyncReturnType' configuration element must be a string"
+        elif isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].ToObject<string>().ToLower().Trim() <> "task" && parts.["asyncReturnType"].ToObject<string>().ToLower().Trim() <> "async" then
+            Error "The 'asyncReturnType' configuration element can only be 'async' (default) or 'task'"
+        elif isNotNull parts.["synchronous"] && parts.["synchronous"].Type <> JTokenType.Boolean then
+            Error "The 'synchronous' configuration element must be a boolean"
+        else
+
+            Ok {
+                schema = parts.["schema"].ToObject<string>()
+                output = resolveFile (parts.["output"].ToObject<string>())
+                project = parts.["project"].ToString()
+                target =
+                    if isNotNull parts.["target"] && parts.["target"].ToString() = "fable"
+                    then Target.Fable
+                    else Target.FSharp
+                asyncReturnType =
+                    if isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].ToString() = "task"
+                    then AsyncReturnType.Task
+                    else AsyncReturnType.Async
+                synchronous =
+                    if isNotNull parts.["synchronous"]
+                    then parts.["synchronous"].ToObject<bool>()
+                    else false
+            }
+    with
+    | error ->
+        Error $"Error ocurred while reading the configuration file: {error.Message}"
 
 let xmlDocs (description: string) =
     if String.IsNullOrWhiteSpace description then
@@ -78,13 +145,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
                             yield $"<param name=\"{param}\"></param>"
             ]
 
-let resolveFile (path: string) =
-    if Path.IsPathRooted path then
-        path
-    elif System.Diagnostics.Debugger.IsAttached then
-        Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, path))
-    else
-        Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
+
 
 let client = new HttpClient()
 let getSchema(schema: string) =
@@ -1034,7 +1095,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             let responseType = createResponseType operation.Value path.Key operation.Key
             moduleTypes.Add responseType
 
-    let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] (Seq.toList moduleTypes)
+    let globalTypesModule = CodeGen.createNamespace [ config.project; "Types" ] (Seq.toList moduleTypes)
 
     visitedTypes, globalTypesModule
 
@@ -1179,7 +1240,7 @@ let createOpenApiClient
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create $"{config.projectName}Client" ]
+        Id = [ Ident.Create $"{config.project}Client" ]
         XmlDoc = xmlDocs openApiDocument.Info.Description
         Parameters = [ ]
         Constraints = [ ]
@@ -1275,7 +1336,7 @@ let createOpenApiClient
                     ])
 
                 let wrappedReturn expr =
-                    if config.synchornousMethods
+                    if config.synchronous
                     then expr
                     else SynExpr.CreateReturn expr
 
@@ -1439,7 +1500,7 @@ let createOpenApiClient
                         )
 
                 let asyncBuilder expr =
-                    if config.synchornousMethods then
+                    if config.synchronous then
                         expr
                     else
                         match config.asyncReturnType with
@@ -1447,7 +1508,7 @@ let createOpenApiClient
                         | AsyncReturnType.Task -> SynExpr.CreateTask expr
 
                 let destructExpr httpFunc =
-                    if config.synchornousMethods
+                    if config.synchronous
                     then deconstructResponse (httpCall httpFunc) returnExpr
                     else deconstructAsyncResponse (httpCall httpFunc) returnExpr
 
@@ -1486,7 +1547,7 @@ let createOpenApiClient
                             ])
                 }
 
-                if config.synchornousMethods then
+                if config.synchronous then
                     clientMembers.Add (clientOperation httpFunction memberName)
                 else
                     clientMembers.Add (clientOperation httpFunctionAsync memberName)
@@ -1496,8 +1557,8 @@ let createOpenApiClient
     let moduleContents = [
         yield SynModuleDecl.CreateOpen "System.Net"
         yield SynModuleDecl.CreateOpen "System.Net.Http"
-        yield SynModuleDecl.CreateOpen $"{config.projectName}.Types"
-        yield SynModuleDecl.CreateOpen $"{config.projectName}.Http"
+        yield SynModuleDecl.CreateOpen $"{config.project}.Types"
+        yield SynModuleDecl.CreateOpen $"{config.project}.Http"
         if config.asyncReturnType = AsyncReturnType.Task then
             // from the Ply package
             yield SynModuleDecl.CreateOpen "FSharp.Control.Tasks"
@@ -1508,7 +1569,7 @@ let createOpenApiClient
         yield clientType
     ]
 
-    let clientModule = CodeGen.createNamespace [ config.projectName ] moduleContents
+    let clientModule = CodeGen.createNamespace [ config.project ] moduleContents
     clientModule
 
 let rec deleteFilesAndFolders directory isRoot =
@@ -1553,75 +1614,77 @@ let generateProjectDocument
         })
     )
 
+let localScheme = resolveFile "./schemas/petstore-modified.json"
+let ghibliSchema = resolveFile "./schemas/ghibli.json"
+let simpleNSwag = resolveFile "./schemas/simple-nswag.json"
+let simpleSwashbuckle = resolveFile "./schemas/simple-swashbuckle.json"
+let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
+
 [<EntryPoint>]
 let main argv =
     try
-        let localScheme = resolveFile "./schemas/petstore-modified.json"
-        let ghibliSchema = resolveFile "./schemas/ghibli.json"
-        let simpleNSwag = resolveFile "./schemas/simple-nswag.json"
-        let simpleSwashbuckle = resolveFile "./schemas/simple-swashbuckle.json"
-        let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
-        let schema = getSchema simpleSwashbuckle
-        let reader = new OpenApiStreamReader()
-        let (openApiDocument, diagnostics) =  reader.Read(schema)
-        if diagnostics.Errors.Count > 0 && isNull openApiDocument then
-            for error in diagnostics.Errors do
-                System.Console.WriteLine error.Message
+        let config = resolveFile "./hawaii.json"
+        match readConfig config with
+        | Error errorMsg ->
+            Console.WriteLine errorMsg
             1
-        else
-            let outputDir = resolveFile "./output"
+        | Ok config ->
+            let schema =
+                if config.schema.StartsWith "http"
+                then getSchema config.schema
+                else getSchema (resolveFile config.schema)
+            let reader = new OpenApiStreamReader()
+            let (openApiDocument, diagnostics) =  reader.Read(schema)
+            if diagnostics.Errors.Count > 0 && isNull openApiDocument then
+                for error in diagnostics.Errors do
+                    System.Console.WriteLine error.Message
+                1
+            else
+                let outputDir = config.output
+                // prepare output directory
+                if Directory.Exists outputDir
+                then deleteFilesAndFolders outputDir true
+                else ignore(Directory.CreateDirectory outputDir)
+                // generate global schema types
+                let visitedTypes, globalTypesModule = createGlobalTypesModule openApiDocument config
+                let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
+                // generate HTTP client wrapper, pass visited types
+                let clientModule = createOpenApiClient openApiDocument visitedTypes config
+                let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
+                write code [ outputDir; "Types.fs" ]
+                write clientModuleCode [ outputDir; "Client.fs" ]
+                let projectFile =
+                    let packages = [
+                        if config.target = Target.FSharp then
+                            XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
+                            XElement.PackageReference("Newtonsoft.Json", "13.0.1")
+                            if config.asyncReturnType = AsyncReturnType.Task
+                            then XElement.PackageReference("Ply", "0.3.1")
+                        else
+                            XElement.PackageReference("Fable.SimpleJson", "3.19.0")
+                            XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
+                    ]
 
-            let config = {
-                target = Target.FSharp
-                projectName = "NSwag"
-                asyncReturnType = AsyncReturnType.Async
-                synchornousMethods = false
-            }
+                    let files = [
+                        if config.target = Target.FSharp then
+                            XElement.Compile "StringEnum.fs"
+                            XElement.Compile "OpenApiHttp.fs"
+                        XElement.Compile "Types.fs"
+                        XElement.Compile "Client.fs"
+                    ]
 
-            // prepare output directory
-            if Directory.Exists outputDir
-            then deleteFilesAndFolders outputDir true
-            else ignore(Directory.CreateDirectory outputDir)
-            // generate global schema types
-            let visitedTypes, globalTypesModule = createGlobalTypesModule openApiDocument config
-            let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-            // generate HTTP client wrapper, pass visited types
-            let clientModule = createOpenApiClient openApiDocument visitedTypes config
-            let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
-            write code [ outputDir; "Types.fs" ]
-            write clientModuleCode [ outputDir; "Client.fs" ]
-            let projectFile =
-                let packages = [
-                    if config.target = Target.FSharp then
-                        XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
-                        XElement.PackageReference("Newtonsoft.Json", "13.0.1")
-                        if config.asyncReturnType = AsyncReturnType.Task
-                        then XElement.PackageReference("Ply", "0.3.1")
-                    else
-                        XElement.PackageReference("Fable.SimpleJson", "3.19.0")
-                        XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
-                ]
+                    let copyLocalLockFileAssemblies = None
+                    let contentItems = [ ]
+                    let projectReferences = [ ]
+                    generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
 
-                let files = [
-                    if config.target = Target.FSharp then
-                        XElement.Compile "StringEnum.fs"
-                        XElement.Compile "OpenApiHttp.fs"
-                    XElement.Compile "Types.fs"
-                    XElement.Compile "Client.fs"
-                ]
+                if config.target = Target.FSharp then
+                    let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.project
+                    write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
+                    write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
 
-                let copyLocalLockFileAssemblies = None
-                let contentItems = [ ]
-                let projectReferences = [ ]
-                generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
-
-            if config.target = Target.FSharp then
-                let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.projectName
-                write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
-                write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
-
-            write (projectFile.ToString()) [ outputDir; $"{config.projectName}.fsproj" ]
-            0 // return an integer exit code
+                write (projectFile.ToString()) [ outputDir; $"{config.project}.fsproj" ]
+                0 // return an integer exit code
     with
     | error ->
         System.Console.WriteLine(error.Message)
