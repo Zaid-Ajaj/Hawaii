@@ -1020,7 +1020,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     required = true
                     parameterType = readParamType schema
                     docs = schema.Description
-                    location = "body"
+                    location = "jsonContent"
                     style = "none"
                 }
 
@@ -1128,7 +1128,7 @@ let createOpenApiClient
                     for parameter in parameters do
                         if parameter.required then
                             yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
-                                if parameter.location <> "body" && parameter.location <> "binaryContent" then
+                                if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
                                     SynExpr.CreateParen(SynExpr.CreateTuple [
                                         stringExpr parameter.parameterName
                                         createIdent [ parameter.parameterName ]
@@ -1140,7 +1140,7 @@ let createOpenApiClient
                             let condition = createIdent [ parameter.parameterName; "IsSome" ]
                             let value =
                                 SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
-                                    if parameter.location <> "body" && parameter.location <> "binaryContent" then
+                                    if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
                                         SynExpr.CreateParen(SynExpr.CreateTuple [
                                             stringExpr parameter.parameterName
                                             createIdent [ parameter.parameterName; "Value" ]

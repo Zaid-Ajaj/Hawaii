@@ -38,7 +38,7 @@ type RequestPart =
     | Header of string * OpenApiValue
     | MultiPartFormData of string * MultiPartFormData
     | UrlEncodedFormData of string * OpenApiValue
-    | Body of string
+    | JsonContent of string
     | BinaryContent of byte[]
 
     static member query(key: string, value: int) = Query(key, OpenApiValue.Int value)
@@ -85,7 +85,7 @@ type RequestPart =
     static member header(key: string, value: double) = Header(key, OpenApiValue.Double value)
     static member header(key: string, value: float32) = Header(key, OpenApiValue.Float value)
     static member header(key: string, value: Guid) = Header(key, OpenApiValue.String (value.ToString()))
-    static member body<'t>(content: 't) = Body(Serializer.serialize content)
+    static member jsonContent<'t>(content: 't) = JsonContent(Serializer.serialize content)
     static member binaryContent(content: byte[]) = BinaryContent(content)
 
 module OpenApiHttp =
@@ -127,11 +127,20 @@ module OpenApiHttp =
 
             cleanedPath + "?" + combinedParamters
 
-    let applyJsonBodyContent (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
+    let applyJsonContent (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
         for part in parts do
             match part with
-            | Body content ->
+            | JsonContent content ->
                 httpRequest.Content <- new StringContent(content, Encoding.UTF8, "application/json")
+            | _ -> ()
+
+        httpRequest
+
+    let applyBinaryContent (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
+        for part in parts do
+            match part with
+            | BinaryContent content ->
+                httpRequest.Content <- new ByteArray(content)
             | _ -> ()
 
         httpRequest
@@ -186,7 +195,8 @@ module OpenApiHttp =
         use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
         let populatedRequest =
             request
-            |> applyJsonBodyContent parts
+            |> applyJsonContent parts
+            |> applyBinaryContent parts
             |> applyUrlEncodedFormData parts
             |> applyMultiPartFormData parts
 
