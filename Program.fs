@@ -10,6 +10,7 @@ open Microsoft.OpenApi.Models
 open System.Linq
 open System.IO
 open System.Xml.Linq
+open System.Net
 
 [<RequireQualifiedAccess>]
 /// <summary>Describes the compilation target</summary>
@@ -184,6 +185,28 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
     else
         None
 
+let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
+    if not (String.IsNullOrWhiteSpace operationName) then
+        operationName
+    else
+        let parts = path.Split("/")
+        let parameters =
+            parts
+            |> Array.filter (fun part -> part.StartsWith "{" && part.EndsWith "}")
+            |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
+            |> String.concat "And"
+
+        let segments =
+            parts
+            |> Array.filter (fun part -> not (part.StartsWith "{" && part.EndsWith "}"))
+            |> Array.mapi (fun index part -> if index <> 0 then capitalize part else part)
+            |> String.concat ""
+
+        if String.IsNullOrEmpty parameters then
+            string operationType + segments
+        else
+            string operationType + segments + "By" + parameters
+
 let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
     if isEnumType schema then
         let cases =
@@ -299,6 +322,90 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
     ]
 
     SynModuleDecl.CreateSimpleType(info, simpleType, members)
+
+let rec getFieldType (schema: OpenApiSchema) =
+    match schema.Type with
+    | "integer" when schema.Format = "int64" -> SynType.Int64()
+    | "integer" -> SynType.Int()
+    | "number" when schema.Format = "float" -> SynType.Float32()
+    | "number" ->  SynType.Double()
+    | "boolean" -> SynType.Bool()
+    | "string" when schema.Format = "uuid" -> SynType.Guid()
+    | "string" when schema.Format = "guid" -> SynType.Guid()
+    | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
+    | "string" when schema.Format = "byte" ->
+        // base64 encoded characters
+        SynType.ByteArray()
+    | "file" ->
+        SynType.ByteArray()
+    | "array" ->
+        let elementSchema = schema.Items
+        let elementType = getFieldType elementSchema
+        SynType.List elementType
+    | _ when not (isNull schema.Reference) ->
+        // working with a reference type
+        let typeName =
+            if String.IsNullOrEmpty schema.Title
+            then schema.Reference.Id
+            else schema.Title
+        SynType.Create typeName
+    | _ when schema.AdditionalPropertiesAllowed && not (isNull schema.AdditionalProperties) ->
+        let valueType = getFieldType schema.AdditionalProperties
+        let keyType = SynType.String()
+        SynType.Map(keyType, valueType)
+    | _ ->
+        SynType.String()
+
+let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
+
+    let typeName = deriveOperationName (capitalize operation.OperationId) path operationType
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [
+            SynAttributeList.Create [
+                SynAttribute.RequireQualifiedAccess()
+            ]
+        ]
+        Id = [ Ident.Create typeName ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ ]
+        Constraints = [ ]
+        PreferPostfix = false
+        Range = range0
+    }
+
+    let statusCode = function
+        | "200" | "default" -> Some (nameof HttpStatusCode.OK)
+        | "404" -> Some (nameof HttpStatusCode.NotFound)
+        | "400" -> Some (nameof HttpStatusCode.BadRequest)
+        | "401" -> Some (nameof HttpStatusCode.Unauthorized)
+        | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
+        | "500" -> Some (nameof HttpStatusCode.InternalServerError)
+        | _ -> None
+
+    let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
+        for response in operation.Responses do
+            if response.Key = "default" && operation.Responses.ContainsKey "200" then
+                ()
+            else
+                match statusCode response.Key with
+                | Some caseName ->
+                    let fieldTypes =
+                        if response.Value.Content.ContainsKey "application/json" then
+                            let responsePayloadType = response.Value.Content.["application/json"]
+                            let fieldType = getFieldType responsePayloadType.Schema
+                            [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                        else
+                            []
+                    let docs = PreXmlDoc.Create response.Value.Description
+                    yield SynUnionCase.UnionCase([], Ident.Create (capitalize caseName), SynUnionCaseType.UnionCaseFields fieldTypes, docs, None, range0)
+                | None ->
+                    ()
+    ])
+
+    let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
+
+    SynModuleDecl.CreateSimpleType(info, simpleType, [])
 
 let createFlagsEnum (enumName: string) (values: seq<string * int>) =
     let info : SynComponentInfoRcd = {
@@ -903,30 +1010,16 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
         else
             ()
 
+    for path in openApiDocument.Paths do
+        for operation in path.Value.Operations do
+            let responseType = createResponseType operation.Value path.Key operation.Key
+            moduleTypes.Add responseType
+
     let globalTypesModule = CodeGen.createNamespace [ config.projectName; "Types" ] (Seq.toList moduleTypes)
+
     visitedTypes, globalTypesModule
 
-let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
-    if not (String.IsNullOrWhiteSpace operationName) then
-        operationName
-    else
-        let parts = path.Split("/")
-        let parameters =
-            parts
-            |> Array.filter (fun part -> part.StartsWith "{" && part.EndsWith "}")
-            |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
-            |> String.concat "And"
 
-        let segments =
-            parts
-            |> Array.filter (fun part -> not (part.StartsWith "{" && part.EndsWith "}"))
-            |> Array.mapi (fun index part -> if index <> 0 then capitalize part else part)
-            |> String.concat ""
-
-        if String.IsNullOrEmpty parameters then
-            string operationType + segments
-        else
-            string operationType + segments + "By" + parameters
 
 type OperationParameter = {
     parameterName: string
@@ -1300,8 +1393,8 @@ let main argv =
             let config = {
                 target = Target.FSharp
                 projectName = "PetStore"
-                asyncReturnType = AsyncReturnType.Task
-                synchornousMethods = false
+                asyncReturnType = AsyncReturnType.Async
+                synchornousMethods = true
             }
 
             // prepare output directory

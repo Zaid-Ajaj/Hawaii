@@ -126,7 +126,6 @@ type SynExpr with
         let functionArg = SynExpr.CreateLongIdent names
         exprs
         |> List.fold (fun expr argument -> SynExpr.CreateApp(expr, argument)) functionArg
-
     static member CreateRecordUpdate (copyInfo: SynExpr, fieldUpdates ) =
         let blockSep = (range.Zero, None) : BlockSeparator
         let copyInfo = Some (copyInfo, blockSep)
