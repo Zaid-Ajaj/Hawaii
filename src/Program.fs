@@ -14,6 +14,7 @@ open System.Net
 open System.Collections.Generic
 open Newtonsoft.Json.Linq
 open System.Text
+open Newtonsoft.Json
 
 let logo = """
 
@@ -92,7 +93,6 @@ let readConfig file =
         elif isNotNull parts.["synchronous"] && parts.["synchronous"].Type <> JTokenType.Boolean then
             Error "The 'synchronous' configuration element must be a boolean"
         else
-
             Ok {
                 schema = parts.["schema"].ToObject<string>()
                 output = resolveFile (parts.["output"].ToObject<string>())
@@ -581,8 +581,6 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             && propertyType.Items.Type = "object"
             && isNull propertyType.Items.Reference
             && propertyType.Items.Properties.Count > 0
-
-        let isReference = not (isNull propertyType.Reference)
 
         let isAdditionalProperties =
             propertyType.AdditionalPropertiesAllowed
@@ -1098,7 +1096,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
         elif isKeyValuePairObject then
             // skip generating more key value pair type
             ()
-        elif topLevelObject.Value.Type = "object" || isAllOf  then
+        elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
             visitedTypes.Add typeName
             for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
                 moduleTypes.Add createdType
@@ -1629,14 +1627,53 @@ let generateProjectDocument
         })
     )
 
-let localScheme = resolveFile "./schemas/petstore-modified.json"
-let ghibliSchema = resolveFile "./schemas/ghibli.json"
-let simpleNSwag = resolveFile "./schemas/simple-nswag.json"
-let simpleSwashbuckle = resolveFile "./schemas/simple-swashbuckle.json"
-let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
+let preprocessRelativeExternalReferences (schema: JObject) (url: string) =
+    let rec iterate (part: JObject) =
+        let properties = List.ofSeq(part.Properties())
+        for property in properties do
+            if property.Value.Type = JTokenType.Object then
+                iterate (unbox<JObject> property.Value)
+            elif property.Value.Type = JTokenType.Array then
+                let elements = unbox<JArray> property.Value
+                for element in elements do
+                    if element.Type = JTokenType.Object then
+                        iterate (unbox<JObject> element)
+            elif property.Name = "$ref" && property.Value.Type = JTokenType.String then
+                let refUrl = property.Value.ToObject<string>()
+                if not (refUrl.StartsWith "http") then
+                    // relative url
+                    let modifiedUrl = Uri(Uri(url), refUrl)
+                    property.Value <- JValue(modifiedUrl.AbsoluteUri)
+                    ()
+                else
+                    ()
+
+    iterate schema
+    schema
+
+type ExternalResouceLoader(schema: string) =
+    interface Interface.IStreamLoader with
+        member self.Load(uri: Uri) =
+            let absoluteUri =
+                if not uri.IsAbsoluteUri then
+                    Uri(Uri(schema), uri.OriginalString)
+                else
+                    uri
+
+            client.GetStreamAsync(absoluteUri)
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        member self.LoadAsync(uri: Uri) =
+            let absoluteUri =
+                if not uri.IsAbsoluteUri then
+                    Uri(Uri(schema), uri.OriginalString)
+                else
+                    uri
+
+            client.GetStreamAsync(absoluteUri)
 
 let runConfig filePath =
-
     let config = resolveFile filePath
     match readConfig config with
     | Error errorMsg ->
@@ -1647,8 +1684,18 @@ let runConfig filePath =
             if config.schema.StartsWith "http"
             then getSchema config.schema
             else getSchema (resolveFile config.schema)
-        let reader = new OpenApiStreamReader()
-        let (openApiDocument, diagnostics) =  reader.Read(schema)
+        let settings = OpenApiReaderSettings()
+        settings.ReferenceResolution <- ReferenceResolutionSetting.ResolveAllReferences
+        if config.schema.StartsWith "http" then
+            // customize how external references are resolved
+            settings.CustomExternalLoader <- new ExternalResouceLoader(config.schema)
+        let reader = new OpenApiStreamReader(settings)
+        let openApi =
+            reader.ReadAsync(schema)
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        let (openApiDocument, diagnostics) = openApi.OpenApiDocument, openApi.OpenApiDiagnostic
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
             for error in diagnostics.Errors do
                 System.Console.WriteLine error.Message

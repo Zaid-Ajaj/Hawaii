@@ -1,0 +1,6 @@
+{
+    "schema": "./appinsights-schema.json",
+    "project": "AppInsights",
+    "output": "./output",
+    "resolveReferences": true
+}
