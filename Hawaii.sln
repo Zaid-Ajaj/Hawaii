@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Hawaii", "src\Hawaii.fsproj", "{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Hawaii.Build", "build\Hawaii.Build.fsproj", "{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DAF24ADD-DF64-43B8-9D7B-C08EC7B5D38F}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		logo.png = logo.png
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|x64.Build.0 = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Debug|x86.Build.0 = Debug|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|x64.ActiveCfg = Release|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|x64.Build.0 = Release|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|x86.ActiveCfg = Release|Any CPU
+		{5D9EE1F3-DF9B-4625-85A7-5729EC5F85EE}.Release|x86.Build.0 = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|x64.Build.0 = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Debug|x86.Build.0 = Debug|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|x64.ActiveCfg = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|x64.Build.0 = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|x86.ActiveCfg = Release|Any CPU
+		{BE2103F8-B656-4CB3-91DA-DDFB2E66DF27}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {333D0EDA-2262-4078-8799-2914B359D79C}
+	EndGlobalSection
+EndGlobal

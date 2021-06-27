@@ -2,7 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <ToolCommandName>hawaii</ToolCommandName>
     <TargetFramework>net5.0</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+    <IsPackable>true</IsPackable>
+    <RollForward>Major</RollForward>
+    <Version>0.1.0</Version>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

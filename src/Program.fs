@@ -1,4 +1,4 @@
-open System
+﻿open System
 open Microsoft.OpenApi.Readers
 open System.Net.Http
 open FsAst
@@ -13,6 +13,21 @@ open System.Xml.Linq
 open System.Net
 open System.Collections.Generic
 open Newtonsoft.Json.Linq
+open System.Text
+
+let logo = """
+
+    _   _                     _ _
+    | | | |                   (_|_)
+    | |_| | __ ___      ____ _ _ _
+    |  _  |/ _` \ \ /\ / / _` | | |
+    | | | | (_| |\ V  V / (_| | | |
+    \_| |_/\__,_| \_/\_/ \__,_|_|_|
+
+
+    ❤️  Open source https://www.github.com/Zaid-Ajaj/Hawaii
+    ⚖️  MIT LICENSE
+"""
 
 [<RequireQualifiedAccess>]
 /// <summary>Describes the compilation target</summary>
@@ -1620,73 +1635,86 @@ let simpleNSwag = resolveFile "./schemas/simple-nswag.json"
 let simpleSwashbuckle = resolveFile "./schemas/simple-swashbuckle.json"
 let remoteSchema = "https://petstore3.swagger.io/api/v3/openapi.json"
 
+let runConfig filePath =
+
+    let config = resolveFile filePath
+    match readConfig config with
+    | Error errorMsg ->
+        Console.WriteLine errorMsg
+        1
+    | Ok config ->
+        let schema =
+            if config.schema.StartsWith "http"
+            then getSchema config.schema
+            else getSchema (resolveFile config.schema)
+        let reader = new OpenApiStreamReader()
+        let (openApiDocument, diagnostics) =  reader.Read(schema)
+        if diagnostics.Errors.Count > 0 && isNull openApiDocument then
+            for error in diagnostics.Errors do
+                System.Console.WriteLine error.Message
+            1
+        else
+            let outputDir = config.output
+            // prepare output directory
+            if Directory.Exists outputDir
+            then deleteFilesAndFolders outputDir true
+            else ignore(Directory.CreateDirectory outputDir)
+            // generate global schema types
+            let visitedTypes, globalTypesModule = createGlobalTypesModule openApiDocument config
+            let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
+            // generate HTTP client wrapper, pass visited types
+            let clientModule = createOpenApiClient openApiDocument visitedTypes config
+            let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
+            write code [ outputDir; "Types.fs" ]
+            write clientModuleCode [ outputDir; "Client.fs" ]
+            let projectFile =
+                let packages = [
+                    if config.target = Target.FSharp then
+                        XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
+                        XElement.PackageReference("Newtonsoft.Json", "13.0.1")
+                        if config.asyncReturnType = AsyncReturnType.Task
+                        then XElement.PackageReference("Ply", "0.3.1")
+                    else
+                        XElement.PackageReference("Fable.SimpleJson", "3.21.0")
+                        XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
+                ]
+
+                let files = [
+                    if config.target = Target.FSharp then
+                        XElement.Compile "StringEnum.fs"
+                        XElement.Compile "OpenApiHttp.fs"
+                    XElement.Compile "Types.fs"
+                    XElement.Compile "Client.fs"
+                ]
+
+                let copyLocalLockFileAssemblies = None
+                let contentItems = [ ]
+                let projectReferences = [ ]
+                generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
+
+            if config.target = Target.FSharp then
+                let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.project
+                write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
+                write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
+
+            write (projectFile.ToString()) [ outputDir; $"{config.project}.fsproj" ]
+            printfn "Succesfully generated project %s" (path [outputDir; $"{config.project}.fsproj" ])
+            0
+
 [<EntryPoint>]
 let main argv =
-    try
-        let config = resolveFile "./hawaii.json"
-        match readConfig config with
-        | Error errorMsg ->
-            Console.WriteLine errorMsg
-            1
-        | Ok config ->
-            let schema =
-                if config.schema.StartsWith "http"
-                then getSchema config.schema
-                else getSchema (resolveFile config.schema)
-            let reader = new OpenApiStreamReader()
-            let (openApiDocument, diagnostics) =  reader.Read(schema)
-            if diagnostics.Errors.Count > 0 && isNull openApiDocument then
-                for error in diagnostics.Errors do
-                    System.Console.WriteLine error.Message
-                1
-            else
-                let outputDir = config.output
-                // prepare output directory
-                if Directory.Exists outputDir
-                then deleteFilesAndFolders outputDir true
-                else ignore(Directory.CreateDirectory outputDir)
-                // generate global schema types
-                let visitedTypes, globalTypesModule = createGlobalTypesModule openApiDocument config
-                let code = CodeGen.formatAst (CodeGen.createFile [ globalTypesModule ])
-                // generate HTTP client wrapper, pass visited types
-                let clientModule = createOpenApiClient openApiDocument visitedTypes config
-                let clientModuleCode = CodeGen.formatAst (CodeGen.createFile [ clientModule ])
-                write code [ outputDir; "Types.fs" ]
-                write clientModuleCode [ outputDir; "Client.fs" ]
-                let projectFile =
-                    let packages = [
-                        if config.target = Target.FSharp then
-                            XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
-                            XElement.PackageReference("Newtonsoft.Json", "13.0.1")
-                            if config.asyncReturnType = AsyncReturnType.Task
-                            then XElement.PackageReference("Ply", "0.3.1")
-                        else
-                            XElement.PackageReference("Fable.SimpleJson", "3.19.0")
-                            XElement.PackageReference("Fable.SimpleHttp", "3.0.0")
-                    ]
-
-                    let files = [
-                        if config.target = Target.FSharp then
-                            XElement.Compile "StringEnum.fs"
-                            XElement.Compile "OpenApiHttp.fs"
-                        XElement.Compile "Types.fs"
-                        XElement.Compile "Client.fs"
-                    ]
-
-                    let copyLocalLockFileAssemblies = None
-                    let contentItems = [ ]
-                    let projectReferences = [ ]
-                    generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
-
-                if config.target = Target.FSharp then
-                    let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.project
-                    write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
-                    write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
-
-                write (projectFile.ToString()) [ outputDir; $"{config.project}.fsproj" ]
-                0 // return an integer exit code
-    with
-    | error ->
-        System.Console.WriteLine(error.Message)
-        System.Console.WriteLine(error.StackTrace)
+    Console.InputEncoding <- Encoding.UTF8
+    Console.OutputEncoding <- Encoding.UTF8
+    match argv with
+    | [| "--version" |] ->
+        printfn "0.1.0"
+        0
+    | [| |] ->
+        Console.WriteLine(logo)
+        runConfig "./hawaii.json"
+    | [|"--config"; file|] ->
+        Console.WriteLine(logo)
+        runConfig file
+    | arguments ->
+        printfn "Unknown arguments [%s]" (String.concat ", " arguments)
         1
