@@ -19,7 +19,8 @@ Create a configuration file called `hawaii.json` with the following shape:
     "project": <project>,
     "output": <output>,
     ["synchronous"]: <true | false>,
-    ["asyncReturnType"]: <"async" | "task">
+    ["asyncReturnType"]: <"async" | "task">,
+    ["resolveReferences]": <true | false>
 }
 ```
 Where
@@ -28,6 +29,7 @@ Where
  - `<output>` is a relative path to the output directory where the project will be generated. (Note: this directory is deleted and re-generated when you run `hawaii`)
  - `<synchronous>` is an optional flag that determines whether hawaii should generate client methods that run http requests synchronously. This is useful when used inside console applications. (set to false by default)
  - `<asyncReturnType>` is an option to determine whether hawaii should generate client methods that return `Async<'T>` when set to "async" (default) or `Task<'T>` when set to "task" (this option is irrelevant when the `synchronous` option is set to `true`)
+ - `<resolveReferences>` determines whether hawaii will attempt to resolve external references via schema pre-processing. This is set to `false` by default but sometimes an OpenApi schema is scattered into multiple schemas across a repository and this might help with the resolution.
 
 ### Example
 Here is an example configuration for the pet store API:

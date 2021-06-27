@@ -233,6 +233,13 @@ module OpenApiHttp =
     let put (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         putAsync httpClient path parts
         {convertSync}
+
+    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendAsync httpClient (HttpMethod "PATCH") path parts
+
+    let patch (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        patchAsync httpClient path parts
+        {convertSync}
 """
 
 let library isTask projectName =

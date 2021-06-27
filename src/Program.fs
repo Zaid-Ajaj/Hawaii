@@ -49,6 +49,7 @@ type CodegenConfig = {
     project : string
     asyncReturnType: AsyncReturnType
     synchronous: bool
+    resolveReferences: bool
 }
 
 let inline isNotNull (x: 't) = not (isNull x)
@@ -92,6 +93,8 @@ let readConfig file =
             Error "The 'asyncReturnType' configuration element can only be 'async' (default) or 'task'"
         elif isNotNull parts.["synchronous"] && parts.["synchronous"].Type <> JTokenType.Boolean then
             Error "The 'synchronous' configuration element must be a boolean"
+        elif isNotNull parts.["resolveReferences"] && parts.["resolveReferences"].Type <> JTokenType.Boolean then
+            Error "The 'resolveReferences' configuration element must be a boolean"
         else
             Ok {
                 schema = parts.["schema"].ToObject<string>()
@@ -108,6 +111,10 @@ let readConfig file =
                 synchronous =
                     if isNotNull parts.["synchronous"]
                     then parts.["synchronous"].ToObject<bool>()
+                    else false
+                resolveReferences =
+                    if isNotNull parts.["resolveReferences"]
+                    then parts.["resolveReferences"].ToObject<bool>()
                     else false
             }
     with
@@ -435,12 +442,14 @@ let rec getFieldType (schema: OpenApiSchema) =
 
 let statusCode = function
     | "200" -> Some (nameof HttpStatusCode.OK)
+    | "201" -> Some (nameof HttpStatusCode.Created)
+    | "204" -> Some (nameof HttpStatusCode.NoContent)
     | "404" -> Some (nameof HttpStatusCode.NotFound)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
     | "401" -> Some (nameof HttpStatusCode.Unauthorized)
     | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
-    | "default" -> Some (nameof HttpStatusCode.OK)
+    | "default" -> Some "DefaultResponse"
     | _ -> None
 
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
@@ -461,7 +470,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         Range = range0
     }
 
-    let containsOk =
+    let containsOkOrDefault =
         operation.Responses.ContainsKey "200"
         || operation.Responses.ContainsKey "201"
         || operation.Responses.ContainsKey "204"
@@ -470,32 +479,29 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
 
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
         for response in operation.Responses do
-            if response.Key = "default" && operation.Responses.ContainsKey "200" then
-                ()
-            else
-                match statusCode response.Key with
-                | Some caseName ->
-                    let fieldTypes =
-                        if response.Value.Content.ContainsKey "application/json" then
-                            let responsePayloadType = response.Value.Content.["application/json"]
-                            if not (isNull responsePayloadType.Schema) then
-                                let fieldType = getFieldType responsePayloadType.Schema
-                                [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                            else
-                                []
-                        elif response.Value.Content.ContainsKey "application/octet-stream" then
-                            let fieldType = SynType.ByteArray()
+            match statusCode response.Key with
+            | Some caseName ->
+                let fieldTypes =
+                    if response.Value.Content.ContainsKey "application/json" then
+                        let responsePayloadType = response.Value.Content.["application/json"]
+                        if not (isNull responsePayloadType.Schema) then
+                            let fieldType = getFieldType responsePayloadType.Schema
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
-                    let docs = PreXmlDoc.Create response.Value.Description
-                    yield SynUnionCase.UnionCase([], Ident.Create (capitalize caseName), SynUnionCaseType.UnionCaseFields fieldTypes, docs, None, range0)
-                | None ->
-                    ()
+                    elif response.Value.Content.ContainsKey "application/octet-stream" then
+                        let fieldType = SynType.ByteArray()
+                        [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                    else
+                        []
+                let docs = PreXmlDoc.Create response.Value.Description
+                yield SynUnionCase.UnionCase([], Ident.Create (capitalize caseName), SynUnionCaseType.UnionCaseFields fieldTypes, docs, None, range0)
+            | None ->
+                ()
 
-        if not containsOk then
+        if not containsOkOrDefault then
             let docs = PreXmlDoc.Empty
-            yield SynUnionCase.UnionCase([], Ident.Create (capitalize "OK"), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
+            yield SynUnionCase.UnionCase([], Ident.Create (capitalize "DefaultResponse"), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
     ])
 
     let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
@@ -1116,6 +1122,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
 type OperationParameter = {
     parameterName: string
+    parameterIdent: string
     required: bool
     parameterType: SynType
     docs : string
@@ -1130,6 +1137,32 @@ let sanitizeParameterName (name: string) =
         | _ -> name.Replace(".", "")
     else
         name
+
+let cleanParamIdent (parameter: string) =
+    if parameter.Contains "-" then
+        let parts = parameter.Split('-')
+        let firstPart = parts.[0]
+        let otherParts = parts.[1..]
+        let modified = [
+            yield firstPart
+            for part in otherParts do
+                yield capitalize part
+        ]
+
+        camelCase (String.concat "" modified)
+    elif parameter.Contains "_" then
+        let parts = parameter.Split('_')
+        let firstPart = parts.[0]
+        let otherParts = parts.[1..]
+        let modified = [
+            yield firstPart
+            for part in otherParts do
+                yield capitalize part
+        ]
+
+        camelCase (String.concat "" modified)
+    else
+        camelCase parameter
 
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) =
     let parameters = ResizeArray<OperationParameter>()
@@ -1167,6 +1200,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             let paramType = readParamType parameter.Schema
             parameters.Add {
                 parameterName = sanitizeParameterName parameter.Name
+                parameterIdent = cleanParamIdent (sanitizeParameterName parameter.Name)
                 required = parameter.Required
                 parameterType = paramType
                 docs = parameter.Description
@@ -1183,6 +1217,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                 for property in pair.Value.Schema.Properties do
                     parameters.Add {
                         parameterName = property.Key
+                        parameterIdent = cleanParamIdent property.Key
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
@@ -1203,6 +1238,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
 
                 parameters.Add {
                     parameterName = parameterName
+                    parameterIdent = cleanParamIdent parameterName
                     required = true
                     parameterType = readParamType schema
                     docs = schema.Description
@@ -1219,6 +1255,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     for property in pair.Value.Schema.Properties do
                         parameters.Add {
                             parameterName = property.Key
+                            parameterIdent = cleanParamIdent property.Key
                             required = pair.Value.Schema.Required.Contains property.Key
                             parameterType = readParamType property.Value
                             docs = property.Value.Description
@@ -1228,6 +1265,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             if pair.Key = "application/octet-stream" then
                 parameters.Add {
                     parameterName = "requestBody"
+                    parameterIdent = "requestBody"
                     required = false
                     parameterType = SynType.ByteArray()
                     docs = ""
@@ -1280,7 +1318,7 @@ let createOpenApiClient
                     else operationInfo.Description
 
                 let parameterDocs = [
-                    for p in parameters -> (p.parameterName, p.docs)
+                    for p in parameters -> (p.parameterIdent, p.docs)
                 ]
 
                 let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key
@@ -1317,22 +1355,22 @@ let createOpenApiClient
                                 if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
                                     SynExpr.CreateParen(SynExpr.CreateTuple [
                                         stringExpr parameter.parameterName
-                                        createIdent [ parameter.parameterName ]
+                                        createIdent [ parameter.parameterIdent ]
                                     ])
                                 else
-                                    createIdent [ parameter.parameterName ]
+                                    createIdent [ parameter.parameterIdent ]
                             ])
                         else
-                            let condition = createIdent [ parameter.parameterName; "IsSome" ]
+                            let condition = createIdent [ parameter.parameterIdent; "IsSome" ]
                             let value =
                                 SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
                                     if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
                                         SynExpr.CreateParen(SynExpr.CreateTuple [
                                             stringExpr parameter.parameterName
-                                            createIdent [ parameter.parameterName; "Value" ]
+                                            createIdent [ parameter.parameterIdent; "Value" ]
                                         ])
                                     else
-                                        createIdent [ parameter.parameterName; "Value" ]
+                                        createIdent [ parameter.parameterIdent; "Value" ]
                                 ])
 
                             yield SynExpr.CreateIfThen(condition, value)
@@ -1377,25 +1415,25 @@ let createOpenApiClient
                             group
                     )
 
-                let containsOk =
+                let containsOkOrDefault =
                     responses
                     |> List.exists (fun (status, response) ->
                         status = "OK"
                         || status = "Created"
                         || status = "Accepted"
-                        || status = "NoContent")
+                        || status = "NoContent"
+                        || status = "DefaultResponse")
 
                 let responses =
-                    if not containsOk then
+                    if not containsOkOrDefault then
                         [
-                            yield ("OK", new OpenApiResponse(Content = new Dictionary<_,_>()))
                             yield! responses
+                            yield ("DefaultResponse", new OpenApiResponse(Content = new Dictionary<_,_>()))
                         ]
                     else
                         responses
 
                 let responseType = capitalize memberName
-                // TODO
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
                         if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) then
@@ -1547,10 +1585,10 @@ let createOpenApiClient
                                                     Type = parameter.parameterType
                                                     Pattern =
                                                         if parameter.required
-                                                        then SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString(parameter.parameterName), [])
+                                                        then SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString(parameter.parameterIdent), [])
                                                         else SynPatRcd.OptionalVal {
                                                             Range = range0
-                                                            Id = Ident.Create parameter.parameterName
+                                                            Id = Ident.Create parameter.parameterIdent
                                                         }
                                                 }
                                         ]
@@ -1627,6 +1665,37 @@ let generateProjectDocument
         })
     )
 
+let getJsonPart (url: string) : JObject option =
+    match url.Split('#', StringSplitOptions.RemoveEmptyEntries) with
+    | [| schemaUrl; path |] ->
+        let schemaContent =
+            client.GetStringAsync(schemaUrl)
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        let schemaJson = JObject.Parse(schemaContent)
+
+        let jsonPath =
+            path.Split('/', StringSplitOptions.RemoveEmptyEntries)
+            |> String.concat "."
+
+        let token = schemaJson.SelectToken(jsonPath)
+        if token.Type = JTokenType.Object
+        then Some (unbox<JObject> token)
+        else None
+
+    | [| schemaUrl |] ->
+        let schemaContent =
+            client.GetStringAsync(schemaUrl)
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        let schemaJson = JObject.Parse(schemaContent)
+        Some schemaJson
+
+    | _ ->
+        None
+
 let preprocessRelativeExternalReferences (schema: JObject) (url: string) =
     let rec iterate (part: JObject) =
         let properties = List.ofSeq(part.Properties())
@@ -1640,11 +1709,18 @@ let preprocessRelativeExternalReferences (schema: JObject) (url: string) =
                         iterate (unbox<JObject> element)
             elif property.Name = "$ref" && property.Value.Type = JTokenType.String then
                 let refUrl = property.Value.ToObject<string>()
-                if not (refUrl.StartsWith "http") then
+                // not absolute && not local -> relative
+                if not (refUrl.StartsWith "http") && not (refUrl.StartsWith "#") then
                     // relative url
                     let modifiedUrl = Uri(Uri(url), refUrl)
-                    property.Value <- JValue(modifiedUrl.AbsoluteUri)
-                    ()
+                    match getJsonPart modifiedUrl.AbsoluteUri with
+                    | Some resolvedObject ->
+                        part.RemoveAll()
+                        for resolvedProp in resolvedObject.Properties() do
+                            part.Add(resolvedProp)
+                        // part.["$ref"].Remove()
+                    | None ->
+                        property.Value <- JValue modifiedUrl.AbsoluteUri
                 else
                     ()
 
@@ -1681,7 +1757,17 @@ let runConfig filePath =
         1
     | Ok config ->
         let schema =
-            if config.schema.StartsWith "http"
+            if config.schema.StartsWith "http" && config.resolveReferences then
+                let schemaContent =
+                    config.schema
+                    |> client.GetStringAsync
+                    |> Async.AwaitTask
+                    |> Async.RunSynchronously
+
+                let schemaJson = JObject.Parse(schemaContent)
+                let processedSchema = preprocessRelativeExternalReferences schemaJson config.schema
+                getSchema(processedSchema.ToString())
+            elif config.schema.StartsWith "http"
             then getSchema config.schema
             else getSchema (resolveFile config.schema)
         let settings = OpenApiReaderSettings()
@@ -1754,7 +1840,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.1.0"
+        printfn "0.2.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

@@ -1,5 +1,5 @@
 {
-    "schema": "./appinsights-schema.json",
+    "schema": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/applicationinsights/resource-manager/Microsoft.Insights/stable/2021-03-08/workbooks_API.json",
     "project": "AppInsights",
     "output": "./output",
     "resolveReferences": true
