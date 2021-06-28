@@ -5,8 +5,14 @@ open System.IO
 open System.Text
 open System.Xml
 open System.Xml.Linq
+open System.Net
+open System.Net.Http
 open Fake.IO
 open Fake.Core
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
+open System.Linq
+
 
 let path xs = Path.Combine(Array.ofList xs)
 
@@ -16,6 +22,32 @@ let src = path [ solutionRoot; "src" ]
 
 let [<Literal>] TargetFramework = "net5.0"
 
+let httpClient = new HttpClient()
+
+type ApiGuruSchema = {
+    schemaUrl: string
+    title: string
+}
+
+let apiGuruList() = 
+    let guruJson = 
+        httpClient.GetStringAsync("https://api.apis.guru/v2/list.json")
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+        |> JObject.Parse
+
+    let schemas = ResizeArray<ApiGuruSchema>()
+
+    for property in guruJson.Properties() do 
+        let schemaJson = unbox<JObject> property.Value
+        let versions = unbox<JObject> schemaJson.["versions"]
+        let lastVersion = unbox<JObject> (versions.Properties().Last().Value)
+        schemas.Add {
+            schemaUrl = string lastVersion.["swaggerUrl"]
+            title = string lastVersion.["info"].["title"]
+        }
+
+    schemas
 
 let build() =
     if Shell.Exec(Tools.dotnet, "build --configuration Release", solutionRoot) <> 0
@@ -51,6 +83,16 @@ let publish() =
         if Shell.Exec(Tools.dotnet, sprintf "nuget push %s -s nuget.org -k %s" nugetPath nugetKey, src) <> 0
         then failwith "Publish failed"
 
+let generateAndBuild(schema: ApiGuruSchema) = 
+    // TODO - generate project and build
+    ()
+
+let integration() = 
+    let schemas = apiGuruList()
+
+    schemas
+    |> Seq.truncate 50
+    |> Seq.iter (fun schema -> printfn $"{schema.title} - {schema.schemaUrl}")
 
 [<EntryPoint>]
 let main (args: string[]) =
@@ -62,6 +104,7 @@ let main (args: string[]) =
         | [| "build"   |] -> build()
         | [| "pack"    |] -> pack()
         | [| "publish" |] -> publish()
+        | [| "integration" |] -> integration()
 
         | _ -> printfn "Unknown args %A" args
         0

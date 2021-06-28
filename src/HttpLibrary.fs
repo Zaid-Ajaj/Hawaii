@@ -72,6 +72,8 @@ type RequestPart =
         MultiPartFormData(key, Primitive(OpenApiValue.Float value))
     static member multipartFormData(key: string, value: Guid) =
         MultiPartFormData(key, Primitive(OpenApiValue.String (value.ToString())))
+    static member multipartFormData(key: string, value: DateTimeOffset) =
+        MultiPartFormData(key, Primitive(OpenApiValue.String (value.ToString("O"))))
     static member multipartFormData(key: string, value: byte[]) =
         MultiPartFormData(key, File value)
     static member urlEncodedFormData(key: string, value: string) = UrlEncodedFormData(key, OpenApiValue.String value)
@@ -79,6 +81,7 @@ type RequestPart =
     static member urlEncodedFormData(key: string, value: double) = UrlEncodedFormData(key, OpenApiValue.Double value)
     static member urlEncodedFormData(key: string, value: float32) = UrlEncodedFormData(key, OpenApiValue.Float value)
     static member urlEncodedFormData(key: string, value: Guid) = UrlEncodedFormData(key, OpenApiValue.String (value.ToString()))
+    static member urlEncodedFormData(key: string, value: DateTimeOffset) = UrlEncodedFormData(key, OpenApiValue.String (value.ToString("O")))
     static member header(key: string, value: int) = Header(key, OpenApiValue.Int value)
     static member header(key: string, value: int64) = Header(key, OpenApiValue.Int64 value)
     static member header(key: string, value: string) = Header(key, OpenApiValue.String value)
