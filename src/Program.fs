@@ -99,7 +99,7 @@ let readConfig file =
             Ok {
                 schema = parts.["schema"].ToObject<string>()
                 output = resolveFile (parts.["output"].ToObject<string>())
-                project = parts.["project"].ToString()
+                project = parts.["project"].ToString().Replace("(", "").Replace(")", "")
                 target =
                     if isNotNull parts.["target"] && parts.["target"].ToString() = "fable"
                     then Target.Fable
@@ -277,7 +277,12 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
 
 let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
     if not (String.IsNullOrWhiteSpace operationName) then
-        operationName
+        if operationName.Contains "-" then
+            operationName.Split('-', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map capitalize
+            |> String.concat ""
+        else
+            operationName
     else
         let parts = path.Split("/")
         let parameters =
@@ -393,8 +398,12 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         else
             capitalize case
 
+    let distinctValues = 
+        values
+        |> Seq.distinctBy (fun value -> cleanEnumValue value)
+
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
-        for value in values ->
+        for value in distinctValues ->
             let attrs = [ SynAttributeList.Create [| compiledName value  |] ]
             let docs = PreXmlDoc.Empty
             SynUnionCase.UnionCase(attrs, Ident.Create (cleanEnumValue value), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
@@ -409,7 +418,7 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         }
 
         let matchClauses = [
-            for value in values ->
+            for value in distinctValues ->
                 let id = LongIdentWithDots.CreateString (cleanEnumValue value)
                 let matchedValue = SynPat.LongIdent(id, None, None, SynArgPats.Empty, None, range0)
                 let result = SynExpr.CreateConstString value
@@ -470,6 +479,12 @@ let statusCode = function
     | "default" -> Some "DefaultResponse"
     | _ -> None
 
+let isEmptySchema (schema: OpenApiSchema) = 
+    isNull schema.Type 
+    && schema.Properties.Count = 0 
+    && schema.AllOf.Count = 0
+    && schema.AnyOf.Count = 0
+
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
 
     let typeName = deriveOperationName (capitalize operation.OperationId) path operationType
@@ -502,7 +517,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                 let fieldTypes =
                     if response.Value.Content.ContainsKey "application/json" then
                         let responsePayloadType = response.Value.Content.["application/json"]
-                        if not (isNull responsePayloadType.Schema) then
+                        if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
                             let fieldType = getFieldType responsePayloadType.Schema
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
@@ -1198,7 +1213,7 @@ let paramReplace (parameter: string) (sep: char) =
     ]
 
     modified
-    |> List.map (fun part -> part.Replace("$", ""))
+    |> List.map (fun part -> part.Replace("$", "").Replace("@", "").Replace(":", ""))
     |> String.concat ""
     |> camelCase
 
@@ -1210,7 +1225,7 @@ let cleanParamIdent (parameter: string) =
     elif parameter.Contains "." then 
         paramReplace parameter '.'
     else
-        camelCase (parameter.Replace("$", ""))
+        camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
 
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) =
     let parameters = ResizeArray<OperationParameter>()
@@ -1299,7 +1314,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             if pair.Key = "application/x-www-form-urlencoded" then
                 // make sure the form schema isn't the same as the JSON schema
                 // use one or the other
-                if hasJsonContent && pair.Value.Schema <> operation.RequestBody.Content.["application/json"].Schema then
+                if hasJsonContent && pair.Value.Schema <> operation.RequestBody.Content.["application/json"].Schema && pair.Value.Schema.Type <> "object" then
                     for property in pair.Value.Schema.Properties do
                         parameters.Add {
                             parameterName = property.Key
@@ -1484,7 +1499,7 @@ let createOpenApiClient
                 let responseType = capitalize memberName
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
-                        if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) then
+                        if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) && not (isEmptySchema response.Content.["application/json"].Schema) then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
@@ -1887,7 +1902,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.6.0"
+        printfn "0.7.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

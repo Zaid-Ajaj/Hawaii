@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>dotnet CLI tool to generate type-safe F# clients from OpenAPI/Swagger services</Description>
     <OutputType>Exe</OutputType>
     <ToolCommandName>hawaii</ToolCommandName>
     <TargetFramework>net5.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.6.0</Version>
-    <PackageReleaseNotes>Add Guid list to query inputs</PackageReleaseNotes>
+    <Version>0.7.0</Version>
+    <PackageReleaseNotes>Operation ID value normalization and distinct values for enums</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

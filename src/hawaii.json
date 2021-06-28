@@ -1,5 +1,5 @@
 {
-  "schema": "https://api.apis.guru/v2/specs/ably.io/1.1.0/openapi.json",
-  "project": "AblyRestApi",
+  "schema": "https://api.apis.guru/v2/specs/adyen.com/BinLookupService/50/openapi.json",
+  "project": "AdyenBinlookupApi",
   "output": "./output"
 }
