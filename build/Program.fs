@@ -117,9 +117,14 @@ let integration() =
         )
         |> String.concat ""
 
+    printfn $"Found {schemas.Count} OpenAPI schemas from API Guru list"
+    let n = 20; 
+    printfn $"Generating and building the first {n} OpenAPI schemas from that list"
+
     schemas
-    |> Seq.truncate 20
+    |> Seq.truncate n
     |> Seq.map (fun schema -> { schema with title = normalize schema.title })
+    |> Seq.filter (fun schema -> schema.title <> "AdyenForPlatformsNotifications") // OpenApi 3.1 not supported
     |> Seq.iter generateAndBuild
 
 [<EntryPoint>]

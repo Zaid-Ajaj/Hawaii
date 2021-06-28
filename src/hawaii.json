@@ -1,5 +1,5 @@
 {
-  "schema": "https://api.apis.guru/v2/specs/adyen.com/MarketPayNotificationService/6/openapi.json",
-  "project": "AdyenForPlatformsNotifications",
+  "schema": "https://api.apis.guru/v2/specs/adyen.com/TestCardService/1/openapi.json",
+  "project": "AdyenTestCardsApi",
   "output": "./output"
 }

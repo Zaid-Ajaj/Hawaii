@@ -394,7 +394,7 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         if String.IsNullOrWhiteSpace case then 
             "EmptyString"
         else
-        let parts = case.Split([| '/'; '.'; ',' |], StringSplitOptions.RemoveEmptyEntries)
+        let parts = case.Split([| '/'; '.'; ','; '['; '-'; ']' |], StringSplitOptions.RemoveEmptyEntries)
         if parts.Length > 1 then 
             parts
             |> Array.map capitalize
@@ -1296,7 +1296,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         style = "formfield"
                     }
 
-            if pair.Key = "application/json" then
+            if pair.Key = "application/json" && not (isEmptySchema pair.Value.Schema) then
                 let schema = pair.Value.Schema
                 let typeName = "body"
                 let parameterName =
@@ -1910,7 +1910,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.8.0"
+        printfn "0.9.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

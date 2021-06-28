@@ -77,11 +77,20 @@ let availablePets() =
 availablePets()
 ```
 Notice that you have to provide your own `HttpClient` to the `PetStoreClient` and setting the `BaseAddress` to the base path of the service.
+
 ### Version
 You can ask hawaii which version it is currently on:
 ```
 hawaii --version
 ```
+
+### No Logo
+If you don't want the logo to show up in your CI or local machine, add `--no-logo` as the last parameter
+```
+hawaii --no-logo
+hawaii --config ./hawaii.json --no-logo
+```
+
 ### Limitations
 These are the very early days of Hawaii as a tool to generate F# clients and there are some known limitations and rough edges that I will be working on:
  - Fable support: coming soon
@@ -89,3 +98,9 @@ These are the very early days of Hawaii as a tool to generate F# clients and the
 
 
 > You can watch the live coding sessions as a playlist published on [YouTube here](https://www.youtube.com/watch?v=8dgjD6vG7yw&list=PLBzGkJMamtz0KCkK7OFnuXyXP7yUtnt9o)
+
+### Integration testings 
+```bash
+cd ./build
+dotnet run -- integration
+```
