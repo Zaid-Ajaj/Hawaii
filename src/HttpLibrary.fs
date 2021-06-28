@@ -50,6 +50,7 @@ type RequestPart =
     static member query(key: string, value: double) = Query(key, OpenApiValue.Double value)
     static member query(key: string, value: float32) = Query(key, OpenApiValue.Float value)
     static member query(key: string, value: Guid) = Query(key, OpenApiValue.String (value.ToString()))
+    static member query(key: string, value: DateTimeOffset) = Query(key, OpenApiValue.String (value.ToString("O")))
     static member path(key: string, value: int) = Path(key, OpenApiValue.Int value)
     static member path(key: string, value: int64) = Path(key, OpenApiValue.Int64 value)
     static member path(key: string, value: string) = Path(key, OpenApiValue.String value)
