@@ -122,7 +122,7 @@ module OpenApiHttp =
         else
             let combinedParamters =
                 queryParams
-                |> List.map (fun (key, value) -> $"{key}={Uri.EscapeUriString(serializeValue value)}")
+                |> List.map (fun (key, value) -> $"{key}={Uri.EscapeDataString(serializeValue value)}")
                 |> String.concat "&"
 
             cleanedPath + "?" + combinedParamters
