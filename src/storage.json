@@ -1,0 +1,7 @@
+﻿{
+  "schema": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/storage/resource-manager/Microsoft.Storage/stable/2021-04-01/storage.json",
+  "project": "Storage",
+  "output": "./output",
+  "resolveReferences": true,
+  "synchronous":  true
+}

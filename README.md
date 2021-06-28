@@ -52,7 +52,7 @@ hawaii --config ./petstore-hawaii.json
 ### Using the generated project
 Once hawaii has finished running, you find a full generated F# project inside of the `<output>` directory. This project can be referenced from your application so you can start using it.
 
-You can reference the project like this from you app like this:
+You can reference the project like this from your app like this:
 ```xml
 <ItemGroup>
   <ProjectReference Include="..\path\to\output\PetStore.fsproj" />
@@ -77,7 +77,6 @@ let availablePets() =
 availablePets()
 ```
 Notice that you have to provide your own `HttpClient` to the `PetStoreClient` and setting the `BaseAddress` to the base path of the service.
-
 ### Version
 You can ask hawaii which version it is currently on:
 ```

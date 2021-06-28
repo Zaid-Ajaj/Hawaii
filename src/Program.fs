@@ -375,11 +375,20 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         Range = range0
     }
 
+    let cleanEnumValue (case: string) = 
+        let parts = case.Split([| '/'; '.'; ',' |], StringSplitOptions.RemoveEmptyEntries)
+        if parts.Length > 1 then 
+            parts
+            |> Array.map capitalize
+            |> String.concat ""
+        else
+            capitalize case
+
     let enumRepresentation = SynTypeDefnSimpleReprUnionRcd.Create([
         for value in values ->
             let attrs = [ SynAttributeList.Create [| compiledName value  |] ]
             let docs = PreXmlDoc.Empty
-            SynUnionCase.UnionCase(attrs, Ident.Create (capitalize value), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
+            SynUnionCase.UnionCase(attrs, Ident.Create (cleanEnumValue value), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
     ])
 
     let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
@@ -392,7 +401,7 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
 
         let matchClauses = [
             for value in values ->
-                let id = LongIdentWithDots.CreateString (capitalize value)
+                let id = LongIdentWithDots.CreateString (cleanEnumValue value)
                 let matchedValue = SynPat.LongIdent(id, None, None, SynArgPats.Empty, None, range0)
                 let result = SynExpr.CreateConstString value
                 SynMatchClause.Clause(matchedValue, None, result, range0, DebugPointForTarget.No)
@@ -1138,31 +1147,30 @@ let sanitizeParameterName (name: string) =
     else
         name
 
-let cleanParamIdent (parameter: string) =
+let paramReplace (parameter: string) (sep: char) = 
+    let parts = parameter.Split(sep)
+    let firstPart = parts.[0]
+    let otherParts = parts.[1..]
+    let modified = [
+        yield firstPart
+        for part in otherParts do
+            yield capitalize part
+    ]
+
+    modified
+    |> List.map (fun part -> part.Replace("$", ""))
+    |> String.concat ""
+    |> camelCase
+
+let cleanParamIdent (parameter: string) = 
     if parameter.Contains "-" then
-        let parts = parameter.Split('-')
-        let firstPart = parts.[0]
-        let otherParts = parts.[1..]
-        let modified = [
-            yield firstPart
-            for part in otherParts do
-                yield capitalize part
-        ]
-
-        camelCase (String.concat "" modified)
+        paramReplace parameter '-'
     elif parameter.Contains "_" then
-        let parts = parameter.Split('_')
-        let firstPart = parts.[0]
-        let otherParts = parts.[1..]
-        let modified = [
-            yield firstPart
-            for part in otherParts do
-                yield capitalize part
-        ]
-
-        camelCase (String.concat "" modified)
+        paramReplace parameter '-'
+    elif parameter.Contains "." then 
+        paramReplace parameter '.'
     else
-        camelCase parameter
+        camelCase (parameter.Replace("$", ""))
 
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) =
     let parameters = ResizeArray<OperationParameter>()
@@ -1718,7 +1726,6 @@ let preprocessRelativeExternalReferences (schema: JObject) (url: string) =
                         part.RemoveAll()
                         for resolvedProp in resolvedObject.Properties() do
                             part.Add(resolvedProp)
-                        // part.["$ref"].Remove()
                     | None ->
                         property.Value <- JValue modifiedUrl.AbsoluteUri
                 else
@@ -1840,7 +1847,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.2.0"
+        printfn "0.3.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

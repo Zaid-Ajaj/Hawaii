@@ -7,11 +7,14 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.2.0</Version>
-    <PackageReleaseNotes>Implement external reference resolution mechanism</PackageReleaseNotes>
+    <Version>0.3.0</Version>
+    <PackageReleaseNotes>Clean dollar sign from parameter names and normalize enum cases</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="./storage.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="./hawaii.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
