@@ -7,8 +7,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.5.0</Version>
-    <PackageReleaseNotes>Fix various type name collisions</PackageReleaseNotes>
+    <Version>0.6.0</Version>
+    <PackageReleaseNotes>Add Guid list to query inputs</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

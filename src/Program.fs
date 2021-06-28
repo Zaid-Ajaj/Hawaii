@@ -1887,7 +1887,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.5.0"
+        printfn "0.6.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

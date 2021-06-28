@@ -46,6 +46,7 @@ type RequestPart =
     static member query(key: string, value: int64) = Query(key, OpenApiValue.Int64 value)
     static member query(key: string, value: string) = Query(key, OpenApiValue.String value)
     static member query(key: string, values: string list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.String value ])
+    static member query(key: string, values: Guid list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.String (value.ToString()) ])
     static member query(key: string, value: bool) = Query(key, OpenApiValue.Bool value)
     static member query(key: string, value: double) = Query(key, OpenApiValue.Double value)
     static member query(key: string, value: float32) = Query(key, OpenApiValue.Float value)
