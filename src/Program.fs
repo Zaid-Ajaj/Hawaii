@@ -242,6 +242,10 @@ let findNextEnumTypeName (fieldName: string) objectName (visitedTypes: ResizeArr
             fieldName.Split('.')
             |> Array.map capitalize
             |> String.concat ""
+        elif fieldName.Contains " " then 
+            fieldName.Split(' ')
+            |> Array.map capitalize
+            |> String.concat ""
         else 
             fieldName
 
@@ -1140,10 +1144,14 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
         // then handle the global objects
         for topLevelObject in openApiDocument.Components.Schemas do
+            let canUseTitle = 
+                not (String.IsNullOrEmpty topLevelObject.Value.Title)
+                && not (isGlobalRef topLevelObject.Value.Title openApiDocument)
+
             let typeName =
-                if String.IsNullOrEmpty topLevelObject.Value.Title
-                then sanitizeTypeName topLevelObject.Key
-                else sanitizeTypeName topLevelObject.Value.Title
+                if canUseTitle
+                then sanitizeTypeName topLevelObject.Value.Title
+                else sanitizeTypeName topLevelObject.Key
 
             let isAllOf =
                 isNull topLevelObject.Value.Type
@@ -1902,13 +1910,17 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.7.0"
+        printfn "0.8.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
         runConfig "./hawaii.json"
+    | [| "--no-logo" |] -> 
+        runConfig "./hawaii.json"
     | [|"--config"; file|] ->
         Console.WriteLine(logo)
+        runConfig file
+    | [|"--config"; file; "--no-logo" |] ->
         runConfig file
     | arguments ->
         printfn "Unknown arguments [%s]" (String.concat ", " arguments)

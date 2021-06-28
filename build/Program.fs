@@ -98,7 +98,7 @@ let generateAndBuild(schema: ApiGuruSchema) =
     content.Add(JProperty("output", "./output"))
     File.WriteAllText(integrationSchema, content.ToString(Formatting.Indented))
     printfn $"Attempting to generate project {schema.title} from {schema.schemaUrl}"
-    if Shell.Exec(Tools.dotnet, "run", src) <> 0 then
+    if Shell.Exec(Tools.dotnet, "run -- --no-logo", src) <> 0 then
         failwith $"Failed to generate project {schema.title}"
     else
         if Shell.Exec(Tools.dotnet, "build --configuration Release", path [ src; "output" ]) <> 0
@@ -118,7 +118,7 @@ let integration() =
         |> String.concat ""
 
     schemas
-    |> Seq.truncate 10
+    |> Seq.truncate 20
     |> Seq.map (fun schema -> { schema with title = normalize schema.title })
     |> Seq.iter generateAndBuild
 
