@@ -24,10 +24,7 @@ let [<Literal>] TargetFramework = "net5.0"
 
 let httpClient = new HttpClient()
 
-type ApiGuruSchema = {
-    schemaUrl: string
-    title: string
-}
+type ApiGuruSchema = { schemaUrl: string; title: string }
 
 let apiGuruList() = 
     let guruJson = 
@@ -63,6 +60,16 @@ let pack() =
         if Shell.Exec(Tools.dotnet, sprintf "tool install -g hawaii --add-source %s" outputPath) <> 0
         then failwith "Local install failed"
 
+let capitalize (input: string) =
+    if String.IsNullOrWhiteSpace input
+    then ""
+    else input.First().ToString().ToUpper() + String.Join("", input.Skip(1))
+
+let camelCase (input: string) =
+    if String.IsNullOrWhiteSpace input
+    then ""
+    else input.First().ToString().ToLower() + String.Join("", input.Skip(1))
+
 let publish() =
     Shell.deleteDir (path [ src; "bin" ])
     Shell.deleteDir (path [ src; "obj" ])
@@ -84,21 +91,41 @@ let publish() =
         then failwith "Publish failed"
 
 let generateAndBuild(schema: ApiGuruSchema) = 
-    // TODO - generate project and build
-    ()
+    let integrationSchema = path [ src; "hawaii.json" ]
+    let content = JObject()
+    content.Add(JProperty("schema", schema.schemaUrl))
+    content.Add(JProperty("project", schema.title))
+    content.Add(JProperty("output", "./output"))
+    File.WriteAllText(integrationSchema, content.ToString(Formatting.Indented))
+    printfn $"Attempting to generate project {schema.title} from {schema.schemaUrl}"
+    if Shell.Exec(Tools.dotnet, "run", src) <> 0 then
+        failwith $"Failed to generate project {schema.title}"
+    else
+        if Shell.Exec(Tools.dotnet, "build --configuration Release", path [ src; "output" ]) <> 0
+        then failwith "build failed"
 
 let integration() = 
     let schemas = apiGuruList()
 
+    let normalize (name: string) = 
+        name.Split ' '
+        |> Array.map (fun part -> 
+            let modified = capitalize (part.ToLower().Replace(":", "").Replace("-", ""))
+            if modified.StartsWith "1" 
+            then capitalize (String.Join("", modified.Skip(1)))
+            else modified
+        )
+        |> String.concat ""
+
     schemas
-    |> Seq.truncate 50
-    |> Seq.iter (fun schema -> printfn $"{schema.title} - {schema.schemaUrl}")
+    |> Seq.truncate 10
+    |> Seq.map (fun schema -> { schema with title = normalize schema.title })
+    |> Seq.iter generateAndBuild
 
 [<EntryPoint>]
 let main (args: string[]) =
     Console.InputEncoding <- Encoding.UTF8
     Console.OutputEncoding <- Encoding.UTF8
-    Console.WriteLine(Swag.logo)
     try
         match args with
         | [| "build"   |] -> build()

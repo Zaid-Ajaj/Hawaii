@@ -128,7 +128,7 @@ let xmlDocs (description: string) =
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
+        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;"))
         |> PreXmlDoc.Create
 
 let xmlDocsWithParams (description: string) (parameters: (string * string) seq) =
@@ -138,7 +138,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
+        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;"))
         |> fun summary ->
             let containsParamDocs =
                 parameters
@@ -166,8 +166,6 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
                         else
                             yield $"<param name=\"{param}\"></param>"
             ]
-
-
 
 let client = new HttpClient()
 let getSchema(schema: string) =
@@ -219,17 +217,17 @@ let nextTick (name: string) (visited: ResizeArray<string>) =
         | [ ] -> name + "1"
         | ns -> name + (string (List.max ns + 1))
 
-let findNextTypeName fieldName objectName (selections: string list) (visitedTypes: ResizeArray<string>) =
+let findNextTypeName fieldName objectName (selections: string list) (visitedTypes: ResizeArray<string>) (isGlobalRef: bool) =
     let nestedSelectionType =
         selections
         |> List.map capitalize
         |> String.concat "And"
 
-    if not (visitedTypes.Contains objectName) then
+    if not (visitedTypes.Contains objectName) && not isGlobalRef then
         objectName
-    elif not (visitedTypes.Contains (capitalize fieldName)) then
+    elif not (visitedTypes.Contains (capitalize fieldName)) && not isGlobalRef then
         capitalize fieldName
-    elif not (visitedTypes.Contains (objectName + capitalize fieldName)) then
+    elif not (visitedTypes.Contains (objectName + capitalize fieldName)) && not isGlobalRef then
         objectName + capitalize fieldName
     elif not (visitedTypes.Contains nestedSelectionType) && selections.Length <= 3 && selections.Length > 1 then
         nestedSelectionType
@@ -238,7 +236,15 @@ let findNextTypeName fieldName objectName (selections: string list) (visitedType
     else
         nextTick (capitalize fieldName + "From" + objectName) visitedTypes
 
-let findNextEnumTypeName fieldName objectName (visitedTypes: ResizeArray<string>) =
+let findNextEnumTypeName (fieldName: string) objectName (visitedTypes: ResizeArray<string>) =
+    let fieldName = 
+        if fieldName.Contains "." then
+            fieldName.Split('.')
+            |> Array.map capitalize
+            |> String.concat ""
+        else 
+            fieldName
+
     if not (visitedTypes.Contains (capitalize fieldName)) then
         capitalize fieldName
     elif not (visitedTypes.Contains (objectName + capitalize fieldName)) then
@@ -376,6 +382,9 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
     }
 
     let cleanEnumValue (case: string) = 
+        if String.IsNullOrWhiteSpace case then 
+            "EmptyString"
+        else
         let parts = case.Split([| '/'; '.'; ',' |], StringSplitOptions.RemoveEmptyEntries)
         if parts.Length > 1 then 
             parts
@@ -572,7 +581,23 @@ let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
     let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
     SynModuleDecl.Types ([ typeInfo ], range0)
 
-let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) : SynModuleDecl list =
+let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) = 
+    let schemas = 
+        if isNotNull openApiDocument.Components
+        then List.ofSeq (openApiDocument.Components.Schemas)
+        else []
+
+    let isGlobal = 
+        schemas
+        |> List.exists (fun pair -> 
+            let typeName = pair.Key
+            let isRef = isNotNull pair.Value.Reference
+            isRef && (name = typeName || name = pair.Value.Title || name = pair.Value.Reference.Id)
+        )
+
+    isGlobal
+
+let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) (openApiDocument: OpenApiDocument) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
@@ -724,9 +749,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
+            let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
+            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config
+            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
@@ -741,9 +767,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes
+            let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
+            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config
+            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config openApiDocument
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
@@ -928,9 +955,18 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 }
         ]
 
+        let anyFieldHasDots = 
+            addedFields
+            |> Seq.exists (fun (fieldName, _, _) -> fieldName.Contains "." || fieldName.Contains "/")
+
+        // when fields have dots, they are not escaped for some reason
+        // TODO: fix it later in fantomas
+        // right now, we just won't generate the `Create` function
+        let eventualMembers = if anyFieldHasDots then [] else members
+
         [
             yield! nestedObjects
-            SynModuleDecl.CreateSimpleType(info, simpleRecordType, members)
+            SynModuleDecl.CreateSimpleType(info, simpleRecordType, eventualMembers)
         ]
 
 // type KeyValuePair<'TKey, 'TValue> = { Key: 'TKey, Value: 'TValue }
@@ -961,80 +997,28 @@ let createKeyValuePair() =
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
 
+
+
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
 
-    // first add all global enum types
-    for topLevelObject in openApiDocument.Components.Schemas do
-        let typeName =
-            if String.IsNullOrEmpty topLevelObject.Value.Title
-            then sanitizeTypeName topLevelObject.Key
-            else sanitizeTypeName topLevelObject.Value.Title
 
-        if topLevelObject.Value.Type = "string" then
-            match topLevelObject.Value with
-            | StringEnum cases ->
-                // create global enum type
-                moduleTypes.Add (createEnumType typeName cases config)
-                visitedTypes.Add typeName
-            | _ ->
-                // create abbreviated type
-                let abbreviatedType =
-                    match topLevelObject.Value.Format with
-                    | "guid" | "uuid" -> SynType.Guid()
-                    | "date-time" -> SynType.DateTimeOffset()
-                    | "byte" -> SynType.ByteArray()
-                    | _ -> SynType.String()
 
-                moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
-                visitedTypes.Add typeName
-        elif topLevelObject.Value.Type = "integer" then
-            match topLevelObject.Value with
-            | IntEnum typeName cases ->
-                // create global enum type
-                moduleTypes.Add(createFlagsEnum typeName cases)
-                visitedTypes.Add typeName
-            | _ ->
-                // create type abbreviation
-                let abbreviatedType =
-                    match topLevelObject.Value.Format with
-                    | "int64" -> SynType.Int64()
-                    | _ -> SynType.Int()
-                moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
-                visitedTypes.Add typeName
-        elif topLevelObject.Value.Type = "number" then
-            // create type abbreviation
-            let abbreviatedType =
-                match topLevelObject.Value.Format with
-                | "float" -> SynType.Float32()
-                | _ -> SynType.Double()
-            moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
-            visitedTypes.Add typeName
-        elif topLevelObject.Value.Type = "boolean" then
-            // create type abbreviation
-            moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
-            visitedTypes.Add typeName
-        elif topLevelObject.Value.Type = "array" then
-            let elementType = topLevelObject.Value.Items
-            if not (isNull elementType.Reference) then
-                let referencedType =
-                    if String.IsNullOrEmpty elementType.Title
-                    then elementType.Reference.Id
-                    else elementType.Title
+    if isNotNull openApiDocument.Components then 
 
-                moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Create referencedType)))
-                visitedTypes.Add typeName
-            elif elementType.Type = "string" then
-                match elementType with
+        // first add all global enum types
+        for topLevelObject in openApiDocument.Components.Schemas do
+            let typeName =
+                if String.IsNullOrEmpty topLevelObject.Value.Title
+                then sanitizeTypeName topLevelObject.Key
+                else sanitizeTypeName topLevelObject.Value.Title
+
+            if topLevelObject.Value.Type = "string" then
+                match topLevelObject.Value with
                 | StringEnum cases ->
                     // create global enum type
-                    let enumTypeName = $"EnumFor{typeName}";
-                    moduleTypes.Add (createEnumType enumTypeName cases config)
-                    let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
-                    moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
-
-                    visitedTypes.Add enumTypeName
+                    moduleTypes.Add (createEnumType typeName cases config)
                     visitedTypes.Add typeName
                 | _ ->
                     // create abbreviated type
@@ -1045,78 +1029,136 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                         | "byte" -> SynType.ByteArray()
                         | _ -> SynType.String()
 
-                    let listOfAbbrev = SynType.List abbreviatedType
-
-                    moduleTypes.Add (createTypeAbbreviation typeName listOfAbbrev)
+                    moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
                     visitedTypes.Add typeName
-            elif elementType.Type = "integer" then
-                match elementType with
+            elif topLevelObject.Value.Type = "integer" then
+                match topLevelObject.Value with
                 | IntEnum typeName cases ->
                     // create global enum type
-                    let enumTypeName = $"EnumFor{typeName}";
                     moduleTypes.Add(createFlagsEnum typeName cases)
-                    let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
-                    moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
                     visitedTypes.Add typeName
                 | _ ->
                     // create type abbreviation
                     let abbreviatedType =
-                        match elementType.Format with
-                        | "int64" -> SynType.List(SynType.Int64())
-                        | _ -> SynType.List(SynType.Int())
+                        match topLevelObject.Value.Format with
+                        | "int64" -> SynType.Int64()
+                        | _ -> SynType.Int()
                     moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
                     visitedTypes.Add typeName
-            elif elementType.Type = "number" then
+            elif topLevelObject.Value.Type = "number" then
                 // create type abbreviation
                 let abbreviatedType =
-                    match elementType.Format with
-                    | "float" -> SynType.List(SynType.Float32())
-                    | _ -> SynType.List(SynType.Double())
+                    match topLevelObject.Value.Format with
+                    | "float" -> SynType.Float32()
+                    | _ -> SynType.Double()
                 moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
                 visitedTypes.Add typeName
-            elif elementType.Type = "boolean" then
+            elif topLevelObject.Value.Type = "boolean" then
                 // create type abbreviation
-                moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
+                moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
                 visitedTypes.Add typeName
-        else
-            ()
+            elif topLevelObject.Value.Type = "array" then
+                let elementType = topLevelObject.Value.Items
+                if not (isNull elementType.Reference) then
+                    let referencedType =
+                        if String.IsNullOrEmpty elementType.Title
+                        then elementType.Reference.Id
+                        else elementType.Title
 
-    // then handle the global objects
-    for topLevelObject in openApiDocument.Components.Schemas do
-        let typeName =
-            if String.IsNullOrEmpty topLevelObject.Value.Title
-            then sanitizeTypeName topLevelObject.Key
-            else sanitizeTypeName topLevelObject.Value.Title
+                    moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Create referencedType)))
+                    visitedTypes.Add typeName
+                elif elementType.Type = "string" then
+                    match elementType with
+                    | StringEnum cases ->
+                        // create global enum type
+                        let enumTypeName = $"EnumFor{typeName}";
+                        moduleTypes.Add (createEnumType enumTypeName cases config)
+                        let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
+                        moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
 
-        let isAllOf =
-            isNull topLevelObject.Value.Type
-            && not (isNull topLevelObject.Value.AllOf)
-            && topLevelObject.Value.AllOf.Count > 0
+                        visitedTypes.Add enumTypeName
+                        visitedTypes.Add typeName
+                    | _ ->
+                        // create abbreviated type
+                        let abbreviatedType =
+                            match topLevelObject.Value.Format with
+                            | "guid" | "uuid" -> SynType.Guid()
+                            | "date-time" -> SynType.DateTimeOffset()
+                            | "byte" -> SynType.ByteArray()
+                            | _ -> SynType.String()
 
-        let isKeyValuePairObject =
-            topLevelObject.Value.Type = "object"
-            && topLevelObject.Value.Title = "KeyValuePair`2"
-            && topLevelObject.Value.Properties.Count = 2
-            && topLevelObject.Value.Properties.ContainsKey "Key"
-            && topLevelObject.Value.Properties.ContainsKey "Value"
+                        let listOfAbbrev = SynType.List abbreviatedType
 
-        if topLevelObject.Value.Deprecated then
-            // skip deprecated global types
-            ()
-        elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
-            // create specialized key value pair when encountering auto generated type
-            // from .NET backend services that encode System.Collections.Generic.KeyValuePair
-            moduleTypes.Add(createKeyValuePair())
-            visitedTypes.Add "KeyValuePair"
-        elif isKeyValuePairObject then
-            // skip generating more key value pair type
-            ()
-        elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
-            visitedTypes.Add typeName
-            for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config do
-                moduleTypes.Add createdType
-        else
-            ()
+                        moduleTypes.Add (createTypeAbbreviation typeName listOfAbbrev)
+                        visitedTypes.Add typeName
+                elif elementType.Type = "integer" then
+                    match elementType with
+                    | IntEnum typeName cases ->
+                        // create global enum type
+                        let enumTypeName = $"EnumFor{typeName}";
+                        moduleTypes.Add(createFlagsEnum typeName cases)
+                        let arrayOfEnum = SynType.List(SynType.Create enumTypeName)
+                        moduleTypes.Add (createTypeAbbreviation typeName arrayOfEnum)
+                        visitedTypes.Add typeName
+                    | _ ->
+                        // create type abbreviation
+                        let abbreviatedType =
+                            match elementType.Format with
+                            | "int64" -> SynType.List(SynType.Int64())
+                            | _ -> SynType.List(SynType.Int())
+                        moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                        visitedTypes.Add typeName
+                elif elementType.Type = "number" then
+                    // create type abbreviation
+                    let abbreviatedType =
+                        match elementType.Format with
+                        | "float" -> SynType.List(SynType.Float32())
+                        | _ -> SynType.List(SynType.Double())
+                    moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
+                    visitedTypes.Add typeName
+                elif elementType.Type = "boolean" then
+                    // create type abbreviation
+                    moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
+                    visitedTypes.Add typeName
+            else
+                ()
+
+        // then handle the global objects
+        for topLevelObject in openApiDocument.Components.Schemas do
+            let typeName =
+                if String.IsNullOrEmpty topLevelObject.Value.Title
+                then sanitizeTypeName topLevelObject.Key
+                else sanitizeTypeName topLevelObject.Value.Title
+
+            let isAllOf =
+                isNull topLevelObject.Value.Type
+                && not (isNull topLevelObject.Value.AllOf)
+                && topLevelObject.Value.AllOf.Count > 0
+
+            let isKeyValuePairObject =
+                topLevelObject.Value.Type = "object"
+                && topLevelObject.Value.Title = "KeyValuePair`2"
+                && topLevelObject.Value.Properties.Count = 2
+                && topLevelObject.Value.Properties.ContainsKey "Key"
+                && topLevelObject.Value.Properties.ContainsKey "Value"
+
+            if topLevelObject.Value.Deprecated then
+                // skip deprecated global types
+                ()
+            elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
+                // create specialized key value pair when encountering auto generated type
+                // from .NET backend services that encode System.Collections.Generic.KeyValuePair
+                moduleTypes.Add(createKeyValuePair())
+                visitedTypes.Add "KeyValuePair"
+            elif isKeyValuePairObject then
+                // skip generating more key value pair type
+                ()
+            elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
+                visitedTypes.Add typeName
+                for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument do
+                    moduleTypes.Add createdType
+            else
+                ()
 
     for path in openApiDocument.Paths do
         for operation in path.Value.Operations do
@@ -1126,8 +1168,6 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let globalTypesModule = CodeGen.createNamespace [ config.project; "Types" ] (Seq.toList moduleTypes)
 
     visitedTypes, globalTypesModule
-
-
 
 type OperationParameter = {
     parameterName: string
@@ -1847,7 +1887,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.4.0"
+        printfn "0.5.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
