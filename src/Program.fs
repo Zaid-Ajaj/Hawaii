@@ -341,6 +341,19 @@ let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
     else
         None
 
+let sanitizeTypeName (typeName: string) =
+    if String.IsNullOrWhiteSpace typeName then 
+        typeName
+    elif typeName.Contains "`" then
+        match typeName.Split '`' with
+        | [| name; typeArgArity |] -> name
+        | _ -> typeName.Replace("`", "")
+    elif typeName.Contains "." then 
+        typeName.Split('.', StringSplitOptions.RemoveEmptyEntries)
+        |> String.concat ""
+    else
+        typeName
+
 let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
     if not required then
         let optionalType : SynType = createFieldType recordName true propertyName propertySchema
@@ -365,8 +378,8 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
             // working with a reference type
             let typeName =
                 if String.IsNullOrEmpty propertySchema.Title
-                then propertySchema.Reference.Id
-                else propertySchema.Title
+                then sanitizeTypeName propertySchema.Reference.Id
+                else sanitizeTypeName propertySchema.Title
             SynType.Create typeName
         | _ ->
             SynType.String()
@@ -461,8 +474,8 @@ let rec getFieldType (schema: OpenApiSchema) =
         // working with a reference type
         let typeName =
             if String.IsNullOrEmpty schema.Title
-            then schema.Reference.Id
-            else schema.Title
+            then sanitizeTypeName schema.Reference.Id
+            else sanitizeTypeName schema.Title
         SynType.Create typeName
     | _ when schema.AdditionalPropertiesAllowed && not (isNull schema.AdditionalProperties) ->
         let valueType = getFieldType schema.AdditionalProperties
@@ -475,16 +488,19 @@ let statusCode = function
     | "200" -> Some (nameof HttpStatusCode.OK)
     | "201" -> Some (nameof HttpStatusCode.Created)
     | "204" -> Some (nameof HttpStatusCode.NoContent)
-    | "404" -> Some (nameof HttpStatusCode.NotFound)
+    | "301" -> Some (nameof HttpStatusCode.MovedPermanently)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
     | "401" -> Some (nameof HttpStatusCode.Unauthorized)
+    | "403" -> Some (nameof HttpStatusCode.Forbidden)
+    | "404" -> Some (nameof HttpStatusCode.NotFound)
     | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
+    | "503" -> Some (nameof HttpStatusCode.ServiceUnavailable)
     | "default" -> Some "DefaultResponse"
     | _ -> None
 
 let isEmptySchema (schema: OpenApiSchema) = 
-    isNull schema.Type 
+    (isNull schema.Type || schema.Type = "object")
     && schema.Properties.Count = 0 
     && schema.AllOf.Count = 0
     && schema.AnyOf.Count = 0
@@ -572,13 +588,7 @@ let createFlagsEnum (enumName: string) (values: seq<string * int>) =
 
     SynModuleDecl.CreateSimpleType(info, simpleType)
 
-let sanitizeTypeName (typeName: string) =
-    if typeName.Contains "`" then
-        match typeName.Split '`' with
-        | [| name; typeArgArity |] -> name
-        | _ -> typeName.Replace("`", "")
-    else
-        typeName
+
 
 /// Creates a declaration: type {typeName} = {aliasedType}
 ///
@@ -601,6 +611,7 @@ let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
     SynModuleDecl.Types ([ typeInfo ], range0)
 
 let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) = 
+    let typeName = sanitizeTypeName name
     let schemas = 
         if isNotNull openApiDocument.Components
         then List.ofSeq (openApiDocument.Components.Schemas)
@@ -609,9 +620,13 @@ let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) =
     let isGlobal = 
         schemas
         |> List.exists (fun pair -> 
-            let typeName = pair.Key
+            let pairName = sanitizeTypeName pair.Key
             let isRef = isNotNull pair.Value.Reference
-            isRef && (name = typeName || name = pair.Value.Title || name = pair.Value.Reference.Id)
+            isRef && (
+                typeName = pairName 
+                || typeName = sanitizeTypeName pair.Value.Title 
+                || typeName = sanitizeTypeName pair.Value.Reference.Id
+            )
         )
 
     isGlobal
@@ -825,9 +840,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             else
                 // referenced enum type
                 let typeName =
-                    if String.IsNullOrEmpty propertyType.Title
-                    then sanitizeTypeName propertyType.Reference.Id
-                    else sanitizeTypeName propertyType.Title
+                    if String.IsNullOrEmpty arrayItemsType.Title
+                    then sanitizeTypeName arrayItemsType.Reference.Id
+                    else sanitizeTypeName arrayItemsType.Title
 
                 let fieldType =
                     if required
@@ -950,7 +965,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                                         else
                                                             if required then yield SynPatRcd.Typed {
                                                                 Type = fieldType
-                                                                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString fieldName, [])
+                                                                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString (camelCase fieldName), [])
                                                                 Range = range0
                                                             }
                                                 ]
@@ -967,7 +982,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                     if fieldName = "additionalProperties" && not containsPreservedProperty
                                     then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
                                     elif required
-                                    then Some(SynExpr.Ident(Ident.Create fieldName))
+                                    then Some(SynExpr.Ident(Ident.Create (camelCase fieldName)))
                                     else Some(SynExpr.Ident(Ident.Create "None"))
                                 ((LongIdentWithDots.CreateString fieldName, false), expr)
                         ]
@@ -1021,9 +1036,6 @@ let createKeyValuePair() =
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
-
-
-
     if isNotNull openApiDocument.Components then 
 
         // first add all global enum types
@@ -1165,7 +1177,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 && topLevelObject.Value.Properties.ContainsKey "Key"
                 && topLevelObject.Value.Properties.ContainsKey "Value"
 
-            if topLevelObject.Value.Deprecated then
+            if topLevelObject.Value.Deprecated  || isEmptySchema topLevelObject.Value then
                 // skip deprecated global types
                 ()
             elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
@@ -1260,8 +1272,8 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             // working with a reference type
             let typeName =
                 if String.IsNullOrEmpty schema.Title
-                then schema.Reference.Id
-                else schema.Title
+                then sanitizeTypeName schema.Reference.Id
+                else sanitizeTypeName schema.Title
             SynType.Create typeName
         | _ ->
             SynType.String()
@@ -1910,7 +1922,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.9.0"
+        printfn "0.10.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
