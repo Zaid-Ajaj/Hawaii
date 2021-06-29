@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.12.0</Version>
-    <PackageReleaseNotes>Implement deepObject and explode serialization for query parameters</PackageReleaseNotes>
+    <Version>0.13.0</Version>
+    <PackageReleaseNotes>Escape response case documentation</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

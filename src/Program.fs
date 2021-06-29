@@ -413,7 +413,8 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         if String.IsNullOrWhiteSpace case then 
             "EmptyString"
         else
-        let parts = case.Split([| '/'; '.'; ','; '['; '-'; ']' |], StringSplitOptions.RemoveEmptyEntries)
+        let parts = 
+            case.Split([| '/'; '.'; ','; '['; '-'; ']';'('; ')'; ' ' |], StringSplitOptions.RemoveEmptyEntries)
         if parts.Length > 1 then 
             parts
             |> Array.map capitalize
@@ -556,7 +557,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
                     else
                         []
-                let docs = PreXmlDoc.Create response.Value.Description
+                let docs = xmlDocs response.Value.Description
                 yield SynUnionCase.UnionCase([], Ident.Create (capitalize caseName), SynUnionCaseType.UnionCaseFields fieldTypes, docs, None, range0)
             | None ->
                 ()
@@ -1992,7 +1993,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.12.0"
+        printfn "0.13.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

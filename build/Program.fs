@@ -137,6 +137,7 @@ let successRate(n: int) =
     let results = 
         schemas
         |> List.ofSeq
+        |> List.rev
         |> List.truncate n
         |> List.map (fun schema -> { schema with title = normalize schema.title })
         |> List.mapi (fun index schema -> 
