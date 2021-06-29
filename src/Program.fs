@@ -478,6 +478,7 @@ let statusCode = function
     | "404" -> Some (nameof HttpStatusCode.NotFound)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
     | "401" -> Some (nameof HttpStatusCode.Unauthorized)
+    | "403" -> Some (nameof HttpStatusCode.Forbidden)
     | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
     | "default" -> Some "DefaultResponse"
