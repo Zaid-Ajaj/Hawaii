@@ -40,11 +40,42 @@ type RequestPart =
     | UrlEncodedFormData of string * OpenApiValue
     | JsonContent of string
     | BinaryContent of byte[]
+    | Ignore
 
     static member query(key: string, value: int) = Query(key, OpenApiValue.Int value)
     static member query(key: string, values: int list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int value ])
     static member query(key: string, value: int64) = Query(key, OpenApiValue.Int64 value)
     static member query(key: string, value: string) = Query(key, OpenApiValue.String value)
+    static member query(key: string, value: string option) = 
+        match value with 
+        | Some text -> Query(key, OpenApiValue.String text)
+        | None -> Ignore
+    static member query(key: string, value: int option) = 
+        match value with 
+        | Some number -> Query(key, OpenApiValue.Int number)
+        | None -> Ignore
+    static member query(key: string, value: bool option) = 
+        match value with 
+        | Some flag -> Query(key, OpenApiValue.Bool flag)
+        | None -> Ignore
+    static member query(key: string, value: double option) =
+        match value with
+        | Some number -> Query(key, OpenApiValue.Double number)
+        | None -> Ignore
+    static member inline query< ^a when ^a : (member Format: unit -> string)>(key: string, value: ^a) : RequestPart =
+        let format = (^a: (member Format: unit -> string) (value))
+        Query(key, OpenApiValue.String format)
+    static member inline query< ^a when ^a : (member Format: unit -> string)>(key: string, value: ^a option) : RequestPart =
+        match value with
+        | None -> Ignore
+        | Some instance ->
+            let format = (^a: (member Format: unit -> string) (instance))
+            Query(key, OpenApiValue.String format)
+    static member query(key: string, value: int64 option) = 
+        match value with 
+        | Some number -> Query(key, OpenApiValue.Int64 number)
+        | None -> Ignore
+
     static member query(key: string, values: string list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.String value ])
     static member query(key: string, values: Guid list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.String (value.ToString()) ])
     static member query(key: string, value: bool) = Query(key, OpenApiValue.Bool value)

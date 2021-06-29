@@ -104,19 +104,18 @@ let generateAndBuild(schema: ApiGuruSchema) =
         if Shell.Exec(Tools.dotnet, "build --configuration Release", path [ src; "output" ]) <> 0
         then failwith "build failed"
 
+let normalize (name: string) = 
+    name.Split ' '
+    |> Array.map (fun part -> 
+        let modified = capitalize (part.ToLower().Replace(":", "").Replace("-", "").Replace(",", "").Replace("&","").Replace("(", "").Replace(")", "").Replace(".", ""))
+        if modified.StartsWith "1" 
+        then capitalize (String.Join("", modified.Skip(1)))
+        else modified
+    )
+    |> String.concat ""
+
 let integration() = 
     let schemas = apiGuruList()
-
-    let normalize (name: string) = 
-        name.Split ' '
-        |> Array.map (fun part -> 
-            let modified = capitalize (part.ToLower().Replace(":", "").Replace("-", ""))
-            if modified.StartsWith "1" 
-            then capitalize (String.Join("", modified.Skip(1)))
-            else modified
-        )
-        |> String.concat ""
-
     printfn $"Found {schemas.Count} OpenAPI schemas from API Guru list"
     let n = 20; 
     printfn $"Generating and building the first {n} OpenAPI schemas from that list"
@@ -126,6 +125,51 @@ let integration() =
     |> Seq.map (fun schema -> { schema with title = normalize schema.title })
     |> Seq.filter (fun schema -> schema.title <> "AdyenForPlatformsNotifications") // OpenApi 3.1 not supported
     |> Seq.iter generateAndBuild
+
+let successRate(n: int) = 
+    let schemas = apiGuruList()
+    printfn $"Found {schemas.Count} OpenAPI schemas from API Guru list"
+    printfn $"Generating and building the first {n} OpenAPI schemas from that list"
+
+    let mutable totalSuccess = 0
+    let mutable totalFailed = 0;
+
+    let results = 
+        schemas
+        |> List.ofSeq
+        |> List.truncate n
+        |> List.map (fun schema -> { schema with title = normalize schema.title })
+        |> List.mapi (fun index schema -> 
+            let progress = Math.Round((float (index + 1) / float n) * 100.0)
+            try 
+                generateAndBuild schema
+                totalSuccess <- totalSuccess + 1
+                printfn $"Progress {int progress}%% -> success({totalSuccess} / {n}) failed({totalFailed} / {n})"
+                Ok schema
+            with error -> 
+                totalFailed <- totalFailed + 1
+                printfn $"Progress {int progress} -> success({totalSuccess} / {n}) failed({totalFailed} / {n})"
+                Error $"Failed to generate or build schema {schema.title} from {schema.schemaUrl}"
+        )
+
+    let success = 
+        results 
+        |> Seq.choose (function | Ok schema -> Some schema | _ -> None)
+        |> Seq.toList
+
+    let failed = 
+        results 
+        |> Seq.choose (function | Error message -> Some message | _ -> None)
+        |> Seq.toList
+
+    printfn $"Hawaii was able to generate and build {success.Length} / {n} APIs"
+    if failed.Length > 0 then
+        printfn "Error while generating the following schemas:"
+        for errorMessage in failed do printfn "%s" errorMessage
+
+let (|Int|_|) (input: string) = 
+    try (Some (int input))
+    with error -> None
 
 [<EntryPoint>]
 let main (args: string[]) =
@@ -137,7 +181,8 @@ let main (args: string[]) =
         | [| "pack"    |] -> pack()
         | [| "publish" |] -> publish()
         | [| "integration" |] -> integration()
-
+        | [| "rate"; Int n |] -> successRate n
+        | [| "rate" |] -> successRate 100
         | _ -> printfn "Unknown args %A" args
         0
     with ex ->

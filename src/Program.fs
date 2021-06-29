@@ -120,6 +120,8 @@ let readConfig file =
     with
     | error ->
         Error $"Error ocurred while reading the configuration file: {error.Message}"
+        
+let escapeDocs (value: string) = value.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;")
 
 let xmlDocs (description: string) =
     if String.IsNullOrWhiteSpace description then
@@ -128,7 +130,7 @@ let xmlDocs (description: string) =
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;"))
+        |> Seq.map escapeDocs
         |> PreXmlDoc.Create
 
 let xmlDocsWithParams (description: string) (parameters: (string * string) seq) =
@@ -138,7 +140,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
         description.Split("\r\n")
         |> Seq.collect (fun line -> line.Split("\n"))
         |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-        |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;"))
+        |> Seq.map escapeDocs
         |> fun summary ->
             let containsParamDocs =
                 parameters
@@ -155,7 +157,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
                                 paramDocs.Split "\r\n"
                                 |> Seq.collect (fun line -> line.Split("\n"))
                                 |> Seq.filter (fun line -> not (String.IsNullOrWhiteSpace line))
-                                |> Seq.map (fun line -> line.Replace(">", "&gt;").Replace("<", "&lt;"))
+                                |> Seq.map escapeDocs
 
                             if Seq.length docs = 1 then
                                 yield $"<param name=\"{param}\">{Seq.head docs}</param>"
@@ -283,6 +285,10 @@ let deriveOperationName (operationName: string) (path: string) (operationType: O
     if not (String.IsNullOrWhiteSpace operationName) then
         if operationName.Contains "-" then
             operationName.Split('-', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map capitalize
+            |> String.concat ""
+        elif operationName.Contains "." then 
+            operationName.Split('.', StringSplitOptions.RemoveEmptyEntries)
             |> Array.map capitalize
             |> String.concat ""
         else
@@ -542,7 +548,10 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
-                    elif response.Value.Content.ContainsKey "application/octet-stream" then
+                    elif response.Value.Content.ContainsKey "application/octet-stream" || response.Value.Content.ContainsKey "application/pdf" then
+                        let fieldType = SynType.ByteArray()
+                        [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                    elif response.Value.Content.ContainsKey "image/png" && response.Value.Content.["image/png"].Schema.Format = "binary" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
                     else
@@ -1206,6 +1215,15 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
     visitedTypes, globalTypesModule
 
+[<RequireQualifiedAccess>]
+type FormatType = 
+    /// Directly call .Format()
+    | DirectFormat 
+    /// Call ident |> Option.map (fun value -> value.Format())
+    | OptionalFormat
+    /// No format at all
+    | None
+
 type OperationParameter = {
     parameterName: string
     parameterIdent: string
@@ -1214,6 +1232,7 @@ type OperationParameter = {
     docs : string
     location: string
     style: string
+    properties: string list
 }
 
 let sanitizeParameterName (name: string) =
@@ -1281,7 +1300,20 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             SynType.String()
 
     for parameter in operation.Parameters do
+        let shouldSpreadProperties = 
+            parameter.Style.HasValue 
+            && parameter.Style.Value = ParameterStyle.DeepObject 
+            && parameter.Explode
+            && isNotNull parameter.Schema
+            && parameter.Schema.Type = "object"
+
+        let properties = 
+            if shouldSpreadProperties 
+            then List.ofSeq parameter.Schema.Properties.Keys
+            else []
+
         if not parameter.Deprecated && parameter.In.HasValue then
+            
             let paramType = readParamType parameter.Schema
             parameters.Add {
                 parameterName = sanitizeParameterName parameter.Name
@@ -1290,6 +1322,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                 parameterType = paramType
                 docs = parameter.Description
                 location = (string parameter.In.Value).ToLower()
+                properties = properties
                 style =
                     if parameter.Style.HasValue
                     then (string parameter.Style).ToLower()
@@ -1306,6 +1339,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
+                        properties = []  
                         location = "multipartFormData"
                         style = "formfield"
                     }
@@ -1329,6 +1363,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     docs = schema.Description
                     location = "jsonContent"
                     style = "none"
+                    properties = []
                 }
 
             let hasJsonContent = operation.RequestBody.Content.ContainsKey "application/json"
@@ -1344,6 +1379,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                             required = pair.Value.Schema.Required.Contains property.Key
                             parameterType = readParamType property.Value
                             docs = property.Value.Description
+                            properties = []
                             location = "urlEncodedFormData"
                             style = "formfield"
                         }
@@ -1356,6 +1392,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     docs = ""
                     location = "binaryContent"
                     style = "formfield"
+                    properties = []
                 }
 
     parameters
@@ -1436,27 +1473,49 @@ let createOpenApiClient
                 let requestValues = [
                     for parameter in parameters do
                         if parameter.required then
-                            yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
-                                if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
-                                    SynExpr.CreateParen(SynExpr.CreateTuple [
-                                        stringExpr parameter.parameterName
-                                        createIdent [ parameter.parameterIdent ]
-                                    ])
-                                else
-                                    createIdent [ parameter.parameterIdent ]
-                            ])
-                        else
-                            let condition = createIdent [ parameter.parameterIdent; "IsSome" ]
-                            let value =
-                                SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
+                            if parameter.properties.Length = 0 then
+                                yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
                                     if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
                                         SynExpr.CreateParen(SynExpr.CreateTuple [
                                             stringExpr parameter.parameterName
-                                            createIdent [ parameter.parameterIdent; "Value" ]
+                                            createIdent [ parameter.parameterIdent ]
                                         ])
                                     else
-                                        createIdent [ parameter.parameterIdent; "Value" ]
+                                        createIdent [ parameter.parameterIdent ]
                                 ])
+                            else
+                                for property in parameter.properties do 
+                                yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
+                                    SynExpr.CreateParen(SynExpr.CreateTuple [
+                                        stringExpr ($"{parameter.parameterName}[{property}]")
+                                        createIdent [ parameter.parameterIdent; property ]
+                                    ])
+                                ])
+                        else
+                            let condition = createIdent [ parameter.parameterIdent; "IsSome" ]
+                            let value =
+                                if parameter.properties.Length = 0 then
+                                    SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
+                                        if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
+                                            SynExpr.CreateParen(SynExpr.CreateTuple [
+                                                stringExpr parameter.parameterName
+                                                createIdent [ parameter.parameterIdent; "Value" ]
+                                            ])
+                                        else
+                                            createIdent [ parameter.parameterIdent; "Value" ]
+                                    ])
+                                else 
+                                    let parametersToYield = [
+                                        for property in parameter.properties do
+                                            SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
+                                                SynExpr.CreateParen(SynExpr.CreateTuple [
+                                                    stringExpr ($"{parameter.parameterName}[{property}]")
+                                                    createIdent [ parameter.parameterIdent; "Value"; property ]
+                                                ])
+                                            ])
+                                    ]
+
+                                    SynExpr.CreateSequential(parametersToYield)
 
                             yield SynExpr.CreateIfThen(condition, value)
                 ]
@@ -1530,7 +1589,16 @@ let createOpenApiClient
                                 )
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "application/octet-stream" then
+                        elif response.Content.ContainsKey "application/octet-stream" || response.Content.ContainsKey "application/pdf" then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "image/png" && response.Content.["image/png"].Schema.Format = "binary" then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
@@ -1924,7 +1992,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.11.0"
+        printfn "0.12.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
