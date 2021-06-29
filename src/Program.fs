@@ -659,6 +659,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         let isAdditionalProperties =
             propertyType.AdditionalPropertiesAllowed
             && not (isNull propertyType.AdditionalProperties)
+            && not (isNull propertyType.AdditionalProperties.Type && propertyType.AdditionalProperties.Properties.Count > 0)
 
         let isEnumArray = propertyType.Type = "array" && isEnumType propertyType.Items
 
@@ -879,18 +880,6 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         else
             None
 
-    for property in schema.Properties do
-        match createPropertyType property.Key property.Value with
-        | None -> ()
-        | Some fieldType ->
-            let propertyName = property.Key
-            let propertyType = property.Value
-            let required = schema.Required.Contains propertyName
-            let field = SynFieldRcd.Create(propertyName, fieldType)
-            let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
-
     let rec handleAllOf (currentSchema: OpenApiSchema) =
         if not (isNull currentSchema.AllOf) then
             for innerSchema in currentSchema.AllOf do
@@ -914,6 +903,18 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
     handleAllOf schema
 
+    for property in schema.Properties do
+        match createPropertyType property.Key property.Value with
+        | None -> ()
+        | Some fieldType ->
+            let propertyName = property.Key
+            let propertyType = property.Value
+            let required = schema.Required.Contains propertyName
+            let field = SynFieldRcd.Create(propertyName, fieldType)
+            let docs = xmlDocs propertyType.Description
+            recordFields.Add { field with XmlDoc = docs }
+            addedFields.Add((propertyName, required, fieldType))
+
     let containsPreservedProperty =
         schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
 
@@ -921,6 +922,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         schema.AdditionalPropertiesAllowed
         && not (isNull schema.AdditionalProperties)
         && not containsPreservedProperty
+        && not (isNull schema.AdditionalProperties.Type && schema.Properties.Count > 0)
 
     if includeAdditionalProperties then
         // when there are additional properties
@@ -1922,7 +1924,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.10.0"
+        printfn "0.11.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

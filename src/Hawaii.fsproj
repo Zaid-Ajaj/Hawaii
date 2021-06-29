@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.10.0</Version>
-    <PackageReleaseNotes>Handle fully qualified type names and global empty objects</PackageReleaseNotes>
+    <Version>0.11.0</Version>
+    <PackageReleaseNotes>Handle redundant additionalProperties information when it is not typed and schema has properties</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
