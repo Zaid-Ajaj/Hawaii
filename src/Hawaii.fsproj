@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.13.0</Version>
-    <PackageReleaseNotes>Escape response case documentation</PackageReleaseNotes>
+    <Version>0.14.0</Version>
+    <PackageReleaseNotes>Apply headers in HTTP runtime and fix duplicate operation names</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

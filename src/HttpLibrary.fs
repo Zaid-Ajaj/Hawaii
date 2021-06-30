@@ -90,6 +90,11 @@ type RequestPart =
     static member path(key: string, value: double) = Path(key, OpenApiValue.Double value)
     static member path(key: string, value: float32) = Path(key, OpenApiValue.Float value)
     static member path(key: string, value: Guid) = Path(key, OpenApiValue.String (value.ToString()))
+    static member path(key: string, values: string list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.String value ])
+    static member path(key: string, values: Guid list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.String (value.ToString()) ])
+    static member path(key: string, values: int list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int value ])
+    static member path(key: string, values: int64 list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int64 value ])
+
     static member multipartFormData(key: string, value: int) =
         MultiPartFormData(key, Primitive(OpenApiValue.Int value))
     static member multipartFormData(key: string, value: int64) =
@@ -181,6 +186,16 @@ module OpenApiHttp =
 
         httpRequest
 
+    let applyHeaders (parts: RequestPart list) (httpRequest: HttpRequestMessage) =
+        for part in parts do
+            match part with
+            | Header(key, value) ->
+                httpRequest.Headers.Add(key, serializeValue value)
+            | _ ->
+                ()
+
+        httpRequest
+
     let applyAcceptHeader (httpRequest: HttpRequestMessage) =
         httpRequest.Headers.Accept.ParseAdd "application/json"
         httpRequest
@@ -235,6 +250,7 @@ module OpenApiHttp =
             |> applyBinaryContent parts
             |> applyUrlEncodedFormData parts
             |> applyMultiPartFormData parts
+            |> applyHeaders parts
 
         {asyncBuilder} {
             let! response = {getResponse}

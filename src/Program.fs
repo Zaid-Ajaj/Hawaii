@@ -281,24 +281,29 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
     else
         None
 
+let cleanOperationName (operationName: string) = 
+    let operation = operationName.Replace("{", "").Replace("}", "")
+    if operation.Contains "-" then
+        operation.Split('-', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    elif operation.Contains "." then 
+        operation.Split('.', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    else
+        operation
+
 let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
     if not (String.IsNullOrWhiteSpace operationName) then
-        if operationName.Contains "-" then
-            operationName.Split('-', StringSplitOptions.RemoveEmptyEntries)
-            |> Array.map capitalize
-            |> String.concat ""
-        elif operationName.Contains "." then 
-            operationName.Split('.', StringSplitOptions.RemoveEmptyEntries)
-            |> Array.map capitalize
-            |> String.concat ""
-        else
-            operationName
+        cleanOperationName operationName
     else
         let parts = path.Split("/")
         let parameters =
             parts
             |> Array.filter (fun part -> part.StartsWith "{" && part.EndsWith "}")
             |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
+            |> Array.map capitalize
             |> String.concat "And"
 
         let segments =
@@ -308,9 +313,9 @@ let deriveOperationName (operationName: string) (path: string) (operationType: O
             |> String.concat ""
 
         if String.IsNullOrEmpty parameters then
-            string operationType + segments
+            cleanOperationName (string operationType + segments)
         else
-            string operationType + segments + "By" + parameters
+            cleanOperationName (string operationType + segments + "By" + parameters)
 
 let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
     if isEnumType schema then
@@ -512,9 +517,14 @@ let isEmptySchema (schema: OpenApiSchema) =
     && schema.AllOf.Count = 0
     && schema.AnyOf.Count = 0
 
-let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) =
+let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) =
+    
+    let initialOperationName = deriveOperationName (capitalize operation.OperationId) path operationType
+    let typeName = 
+        if visitedTypes.Contains initialOperationName
+        then initialOperationName + "Response"
+        else initialOperationName
 
-    let typeName = deriveOperationName (capitalize operation.OperationId) path operationType
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [
@@ -549,6 +559,17 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
+                    elif response.Value.Content.ContainsKey "*/*" then
+                        let responsePayloadType = response.Value.Content.["*/*"]
+                        if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
+                            let fieldType = getFieldType responsePayloadType.Schema
+                            [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                        else
+                            []
+                    elif response.Value.Content.ContainsKey "text/plain" then
+                        let fieldType = SynType.String()
+                        [SynFieldRcd.Create("text", fieldType).FromRcd]
+
                     elif response.Value.Content.ContainsKey "application/octet-stream" || response.Value.Content.ContainsKey "application/pdf" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
@@ -890,6 +911,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         else
             None
 
+    let alreadyContainsProperty (name: string) = 
+        addedFields
+        |> Seq.exists (fun (fieldName, _, _) -> fieldName = name)
+
     let rec handleAllOf (currentSchema: OpenApiSchema) =
         if not (isNull currentSchema.AllOf) then
             for innerSchema in currentSchema.AllOf do
@@ -903,8 +928,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                             let required = schema.Required.Contains propertyName
                             let field = SynFieldRcd.Create(propertyName, fieldType)
                             let docs = xmlDocs propertyType.Description
-                            recordFields.Add { field with XmlDoc = docs }
-                            addedFields.Add((propertyName, required, fieldType))
+                            if not (alreadyContainsProperty propertyName) then
+                                recordFields.Add { field with XmlDoc = docs }
+                                addedFields.Add((propertyName, required, fieldType))
                 else if isNull innerSchema.Type && not (isNull innerSchema.AllOf) && innerSchema.AllOf.Count > 0 then
                     // handle recursice allOf references
                     handleAllOf innerSchema
@@ -922,8 +948,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let required = schema.Required.Contains propertyName
             let field = SynFieldRcd.Create(propertyName, fieldType)
             let docs = xmlDocs propertyType.Description
-            recordFields.Add { field with XmlDoc = docs }
-            addedFields.Add((propertyName, required, fieldType))
+            if not (alreadyContainsProperty propertyName) then
+                recordFields.Add { field with XmlDoc = docs }
+                addedFields.Add((propertyName, required, fieldType))
 
     let containsPreservedProperty =
         schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
@@ -953,7 +980,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
     else
-
+        
         let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
         let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
 
@@ -1209,21 +1236,12 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
     for path in openApiDocument.Paths do
         for operation in path.Value.Operations do
-            let responseType = createResponseType operation.Value path.Key operation.Key
+            let responseType = createResponseType operation.Value path.Key operation.Key visitedTypes
             moduleTypes.Add responseType
 
     let globalTypesModule = CodeGen.createNamespace [ config.project; "Types" ] (Seq.toList moduleTypes)
 
     visitedTypes, globalTypesModule
-
-[<RequireQualifiedAccess>]
-type FormatType = 
-    /// Directly call .Format()
-    | DirectFormat 
-    /// Call ident |> Option.map (fun value -> value.Format())
-    | OptionalFormat
-    /// No format at all
-    | None
 
 type OperationParameter = {
     parameterName: string
@@ -1578,7 +1596,11 @@ let createOpenApiClient
                     else
                         responses
 
-                let responseType = capitalize memberName
+                let responseType = 
+                    if visitedTypes.Contains (capitalize memberName)
+                    then capitalize memberName + "Response"
+                    else capitalize memberName
+
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
                         if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) && not (isEmptySchema response.Content.["application/json"].Schema) then
@@ -1588,6 +1610,20 @@ let createOpenApiClient
                                         createIdent [ "content" ]
                                     ])
                                 )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "*/*" && not (isNull (response.Content.["*/*"].Schema)) && not (isEmptySchema response.Content.["*/*"].Schema) then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "text/plain"  then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                createIdent [ "content" ]
                             ])
                             |> wrappedReturn
                         elif response.Content.ContainsKey "application/octet-stream" || response.Content.ContainsKey "application/pdf" then
@@ -1993,7 +2029,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.13.0"
+        printfn "0.14.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
