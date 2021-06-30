@@ -1,5 +1,5 @@
 {
-  "schema": "https://api.apis.guru/v2/specs/wikimedia.org/1.0.0/swagger.json",
-  "project": "Wikimedia",
+  "schema": "https://api.apis.guru/v2/specs/vimeo.com/3.4/openapi.json",
+  "project": "Vimeo",
   "output": "./output"
 }

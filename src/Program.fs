@@ -281,7 +281,7 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
     else
         None
 
-let cleanOperationName (operationName: string) = 
+let rec cleanOperationName (operationName: string) = 
     let operation = operationName.Replace("{", "").Replace("}", "")
     if operation.Contains "-" then
         operation.Split('-', StringSplitOptions.RemoveEmptyEntries)
@@ -291,6 +291,24 @@ let cleanOperationName (operationName: string) =
         operation.Split('.', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
+    elif operation.Contains "#" then 
+        operation.Split('#', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    elif operation.Contains "?" then
+        match operation.Split '?' with 
+        | [| path; parameters |] -> 
+            let queryParams = 
+                parameters.Split([|'&'; '=' |], StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
+                |> Array.distinctBy id
+                |> Array.map capitalize
+                |> String.concat "And"
+            cleanOperationName (path + "By" + queryParams)
+        | _ -> 
+            operation.Split([| '?'; '='; '&' |], StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map capitalize
+            |> String.concat ""
     else
         operation
 
@@ -365,6 +383,10 @@ let sanitizeTypeName (typeName: string) =
     else
         typeName
 
+let invalidTitle (title: string) = 
+    String.IsNullOrWhiteSpace title 
+    || (title.Contains "Mediatype identifier" && title.Contains "application/")
+
 let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
     if not required then
         let optionalType : SynType = createFieldType recordName true propertyName propertySchema
@@ -388,7 +410,7 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         | _ when not (isNull propertySchema.Reference) ->
             // working with a reference type
             let typeName =
-                if String.IsNullOrEmpty propertySchema.Title
+                if invalidTitle propertySchema.Title
                 then sanitizeTypeName propertySchema.Reference.Id
                 else sanitizeTypeName propertySchema.Title
             SynType.Create typeName
@@ -485,7 +507,7 @@ let rec getFieldType (schema: OpenApiSchema) =
     | _ when not (isNull schema.Reference) ->
         // working with a reference type
         let typeName =
-            if String.IsNullOrEmpty schema.Title
+            if invalidTitle schema.Title
             then sanitizeTypeName schema.Reference.Id
             else sanitizeTypeName schema.Title
         SynType.Create typeName
@@ -773,7 +795,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         else if isEnum && not (isNull propertyType.Reference) then
             // referenced enum
             let typeName =
-                if String.IsNullOrEmpty propertyType.Title
+                if invalidTitle propertyType.Title
                 then propertyType.Reference.Id
                 else propertyType.Title
             let fieldType =
@@ -872,7 +894,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             else
                 // referenced enum type
                 let typeName =
-                    if String.IsNullOrEmpty arrayItemsType.Title
+                    if invalidTitle arrayItemsType.Title
                     then sanitizeTypeName arrayItemsType.Reference.Id
                     else sanitizeTypeName arrayItemsType.Title
 
@@ -1080,7 +1102,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
         // first add all global enum types
         for topLevelObject in openApiDocument.Components.Schemas do
             let typeName =
-                if String.IsNullOrEmpty topLevelObject.Value.Title
+                if invalidTitle topLevelObject.Value.Title
                 then sanitizeTypeName topLevelObject.Key
                 else sanitizeTypeName topLevelObject.Value.Title
 
@@ -1131,7 +1153,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 let elementType = topLevelObject.Value.Items
                 if not (isNull elementType.Reference) then
                     let referencedType =
-                        if String.IsNullOrEmpty elementType.Title
+                        if invalidTitle elementType.Title
                         then elementType.Reference.Id
                         else elementType.Title
 
@@ -1196,7 +1218,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
         // then handle the global objects
         for topLevelObject in openApiDocument.Components.Schemas do
             let canUseTitle = 
-                not (String.IsNullOrEmpty topLevelObject.Value.Title)
+                not (invalidTitle topLevelObject.Value.Title)
                 && not (isGlobalRef topLevelObject.Value.Title openApiDocument)
 
             let typeName =
@@ -1311,7 +1333,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         | _ when not (isNull schema.Reference) ->
             // working with a reference type
             let typeName =
-                if String.IsNullOrEmpty schema.Title
+                if invalidTitle schema.Title
                 then sanitizeTypeName schema.Reference.Id
                 else sanitizeTypeName schema.Title
             SynType.Create typeName
@@ -2029,7 +2051,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.14.0"
+        printfn "0.15.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
