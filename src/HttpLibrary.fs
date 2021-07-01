@@ -90,11 +90,20 @@ type RequestPart =
     static member path(key: string, value: double) = Path(key, OpenApiValue.Double value)
     static member path(key: string, value: float32) = Path(key, OpenApiValue.Float value)
     static member path(key: string, value: Guid) = Path(key, OpenApiValue.String (value.ToString()))
+    static member path(key: string, value: DateTimeOffset) = Path(key, OpenApiValue.String (value.ToString("O")))
     static member path(key: string, values: string list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.String value ])
     static member path(key: string, values: Guid list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.String (value.ToString()) ])
-    static member path(key: string, values: int list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int value ])
-    static member path(key: string, values: int64 list) = Query(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int64 value ])
-
+    static member path(key: string, values: int list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int value ])
+    static member path(key: string, values: int64 list) = Path(key, OpenApiValue.List [ for value in values -> OpenApiValue.Int64 value ])
+    static member inline path< ^a when ^a : (member Format: unit -> string)>(key: string, value: ^a) : RequestPart =
+        let format = (^a: (member Format: unit -> string) (value))
+        Path(key, OpenApiValue.String format)
+    static member inline path< ^a when ^a : (member Format: unit -> string)>(key: string, value: ^a option) : RequestPart =
+        match value with
+        | None -> Ignore
+        | Some instance ->
+            let format = (^a: (member Format: unit -> string) (instance))
+            Path(key, OpenApiValue.String format)
     static member multipartFormData(key: string, value: int) =
         MultiPartFormData(key, Primitive(OpenApiValue.Int value))
     static member multipartFormData(key: string, value: int64) =

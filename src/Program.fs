@@ -380,12 +380,15 @@ let sanitizeTypeName (typeName: string) =
     elif typeName.Contains "." then 
         typeName.Split('.', StringSplitOptions.RemoveEmptyEntries)
         |> String.concat ""
+    elif typeName.Contains "[" && typeName.Contains "]" then 
+        typeName.Replace("[", "").Replace("]", "")
     else
         typeName
 
 let invalidTitle (title: string) = 
     String.IsNullOrWhiteSpace title 
     || (title.Contains "Mediatype identifier" && title.Contains "application/")
+    || (title.Split(' ').Length > 2)
 
 let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
     if not required then
@@ -521,6 +524,7 @@ let rec getFieldType (schema: OpenApiSchema) =
 let statusCode = function
     | "200" -> Some (nameof HttpStatusCode.OK)
     | "201" -> Some (nameof HttpStatusCode.Created)
+    | "202" -> Some (nameof HttpStatusCode.Accepted)
     | "204" -> Some (nameof HttpStatusCode.NoContent)
     | "301" -> Some (nameof HttpStatusCode.MovedPermanently)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
@@ -534,10 +538,13 @@ let statusCode = function
     | _ -> None
 
 let isEmptySchema (schema: OpenApiSchema) = 
-    (isNull schema.Type || schema.Type = "object")
-    && schema.Properties.Count = 0 
-    && schema.AllOf.Count = 0
-    && schema.AnyOf.Count = 0
+    isNull schema
+    || (
+        (isNull schema.Type || schema.Type = "object")
+        && schema.Properties.Count = 0 
+        && schema.AllOf.Count = 0
+        && schema.AnyOf.Count = 0
+    )
 
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) =
     
@@ -650,7 +657,7 @@ let createTypeAbbreviation (abbreviation: string) (aliasedType: SynType) =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create abbreviation ]
+        Id = [ Ident.Create (sanitizeTypeName abbreviation) ]
         XmlDoc = PreXmlDoc.Empty
         Parameters = [ ]
         Constraints = [ ]
@@ -677,7 +684,6 @@ let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) =
             let isRef = isNotNull pair.Value.Reference
             isRef && (
                 typeName = pairName 
-                || typeName = sanitizeTypeName pair.Value.Title 
                 || typeName = sanitizeTypeName pair.Value.Reference.Id
             )
         )
@@ -719,7 +725,6 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         let isEmptyObjectDefinition =
             propertyType.Type = "object"
             && propertyType.Properties.Count = 0
-            && isNull propertyType.Reference
             && (isNull propertyType.AllOf || propertyType.AllOf.Count = 0)
             && (isNull propertyType.AnyOf || propertyType.AnyOf.Count = 0)
 
@@ -837,16 +842,23 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
-            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
-            visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument
-            nestedObjects.AddRange nestedObject
-            let fieldType =
-                if required
-                then SynType.Create nestedObjectTypeName
-                else SynType.Option(SynType.Create nestedObjectTypeName)
-            Some fieldType
+            if isEmptySchema propertyType then 
+                let freeFormType = 
+                    if config.target = Target.FSharp
+                    then SynType.JToken()
+                    else SynType.Object()
+                Some freeFormType
+            else
+                let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
+                let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
+                visitedTypes.Add nestedObjectTypeName
+                let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument
+                nestedObjects.AddRange nestedObject
+                let fieldType =
+                    if required
+                    then SynType.Create nestedObjectTypeName
+                    else SynType.Option(SynType.Create nestedObjectTypeName)
+                Some fieldType
         else if isObjectArray then
              // handle arrays of nested objects
             let arrayItemsType = propertyType.Items
@@ -1154,8 +1166,8 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 if not (isNull elementType.Reference) then
                     let referencedType =
                         if invalidTitle elementType.Title
-                        then elementType.Reference.Id
-                        else elementType.Title
+                        then sanitizeTypeName elementType.Reference.Id
+                        else sanitizeTypeName elementType.Title
 
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Create referencedType)))
                     visitedTypes.Add typeName
@@ -1238,8 +1250,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 && topLevelObject.Value.Properties.ContainsKey "Key"
                 && topLevelObject.Value.Properties.ContainsKey "Value"
 
-            if topLevelObject.Value.Deprecated  || isEmptySchema topLevelObject.Value then
-                // skip deprecated global types
+            if isEmptySchema topLevelObject.Value then
                 ()
             elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
                 // create specialized key value pair when encountering auto generated type
@@ -1321,9 +1332,6 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         | "string" when schema.Format = "uuid" -> SynType.Guid()
         | "string" when schema.Format = "guid" -> SynType.Guid()
         | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
-        | "string" when schema.Format = "byte" ->
-            // base64 encoded characters
-            SynType.ByteArray()
         | "file" ->
             SynType.ByteArray()
         | "array" ->
@@ -2051,7 +2059,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.15.0"
+        printfn "0.16.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

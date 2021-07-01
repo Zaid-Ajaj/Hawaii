@@ -121,10 +121,11 @@ let integration() =
     printfn $"Generating and building the first {n} OpenAPI schemas from that list"
 
     schemas
-    |> Seq.truncate n
-    |> Seq.map (fun schema -> { schema with title = normalize schema.title })
-    |> Seq.filter (fun schema -> schema.title <> "AdyenForPlatformsNotifications") // OpenApi 3.1 not supported
-    |> Seq.iter generateAndBuild
+    |> List.ofSeq
+    |> List.truncate n
+    |> List.map (fun schema -> { schema with title = normalize schema.title })
+    |> List.filter (fun schema -> schema.title <> "AdyenForPlatformsNotifications") // OpenApi 3.1 not supported
+    |> List.iter generateAndBuild
 
 let successRate(n: int) = 
     let schemas = apiGuruList()
