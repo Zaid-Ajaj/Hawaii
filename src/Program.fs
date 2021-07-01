@@ -261,7 +261,7 @@ let findNextEnumTypeName (fieldName: string) objectName (visitedTypes: ResizeArr
         nextTick (capitalize fieldName + "From" + objectName) visitedTypes
 
 let isEnumType (schema: OpenApiSchema) =
-    (schema.Type = "string" || schema.Type = "integer")
+    (schema.Type = "string" || schema.Type = "integer" || String.IsNullOrEmpty schema.Type)
     && not (isNull schema.Enum)
     && schema.Enum.Count > 0
 
@@ -388,7 +388,7 @@ let sanitizeTypeName (typeName: string) =
 let invalidTitle (title: string) = 
     String.IsNullOrWhiteSpace title 
     || (title.Contains "Mediatype identifier" && title.Contains "application/")
-    || (title.Split(' ').Length > 2)
+    || (title.Split(' ').Length >= 1)
 
 let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
     if not required then
@@ -447,7 +447,17 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
             case.Split([| '/'; '.'; ','; '['; '-'; ']';'('; ')'; ' ' |], StringSplitOptions.RemoveEmptyEntries)
         if parts.Length > 1 then 
             parts
-            |> Array.map capitalize
+            |> Array.map (fun part -> 
+                let removedNumberPrefix = 
+                    if Char.IsDigit part.[0] then 
+                        part
+                        |> Seq.skipWhile (Char.IsLetter >> not)
+                        |> Array.ofSeq
+                        |> String
+                    else 
+                        part
+                capitalize removedNumberPrefix
+            )
             |> String.concat ""
         else
             capitalize case
@@ -952,7 +962,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let rec handleAllOf (currentSchema: OpenApiSchema) =
         if not (isNull currentSchema.AllOf) then
             for innerSchema in currentSchema.AllOf do
-                if innerSchema.Type = "object" then
+                if innerSchema.Type = "object" || isNotNull innerSchema.Properties then
                     for property in innerSchema.Properties do
                         match createPropertyType property.Key property.Value with
                         | None -> ()
@@ -965,8 +975,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                             if not (alreadyContainsProperty propertyName) then
                                 recordFields.Add { field with XmlDoc = docs }
                                 addedFields.Add((propertyName, required, fieldType))
-                else if isNull innerSchema.Type && not (isNull innerSchema.AllOf) && innerSchema.AllOf.Count > 0 then
-                    // handle recursice allOf references
+                elif isNotNull innerSchema.AllOf && innerSchema.AllOf.Count > 0 then
+                    // handle recursive allOf references
                     handleAllOf innerSchema
                 else
                     ()
@@ -1310,13 +1320,17 @@ let paramReplace (parameter: string) (sep: char) =
     |> String.concat ""
     |> camelCase
 
-let cleanParamIdent (parameter: string) = 
+let rec cleanParamIdent (parameter: string) = 
     if parameter.Contains "-" then
         paramReplace parameter '-'
     elif parameter.Contains "_" then
         paramReplace parameter '-'
     elif parameter.Contains "." then 
         paramReplace parameter '.'
+    elif parameter.Contains "[" || parameter.Contains "]" then 
+        match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with 
+        | [| firstPart; secondPart |]  -> cleanParamIdent(camelCase firstPart + capitalize secondPart)
+        | _ -> cleanParamIdent(parameter.Replace("[", "").Replace("]", ""))
     else
         camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
 
@@ -1633,7 +1647,7 @@ let createOpenApiClient
 
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
-                        if response.Content.ContainsKey "application/json" && not (isNull (response.Content.["application/json"].Schema)) && not (isEmptySchema response.Content.["application/json"].Schema) then
+                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
@@ -1642,7 +1656,7 @@ let createOpenApiClient
                                 )
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "*/*" && not (isNull (response.Content.["*/*"].Schema)) && not (isEmptySchema response.Content.["*/*"].Schema) then
+                        elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
@@ -1651,7 +1665,7 @@ let createOpenApiClient
                                 )
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "text/plain"  then
+                        elif response.Content.ContainsKey "text/plain" && isNotNull (response.Content.["text/plain"].Schema) && not (isEmptySchema response.Content.["text/plain"].Schema) then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 createIdent [ "content" ]
                             ])
@@ -2059,7 +2073,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.16.0"
+        printfn "0.17.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
