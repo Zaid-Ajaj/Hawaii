@@ -274,7 +274,19 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
                 | :? Microsoft.OpenApi.Any.OpenApiString as primitiveValue -> Some primitiveValue.Value
                 | _ -> None)
 
-        if not (Seq.isEmpty cases) then
+        let containsDigitsOnly (case: string) = 
+            Seq.forall Char.IsDigit case
+
+        let allDigitCases = 
+            Seq.forall containsDigitsOnly cases
+
+        let containsQoutes = 
+            cases |> Seq.exists (fun case -> case.Contains "\"")
+
+        let containsTimeZone = 
+            cases |> Seq.exists (fun case -> case.Contains "00Z")
+
+        if not (Seq.isEmpty cases) && not allDigitCases && not containsQoutes && not containsTimeZone then
             Some (Seq.toList cases)
         else
             None
@@ -293,6 +305,10 @@ let rec cleanOperationName (operationName: string) =
         |> String.concat ""
     elif operation.Contains "#" then 
         operation.Split('#', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    elif operation.Contains "/" then 
+        operation.Split('/', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
     elif operation.Contains "?" then
@@ -443,24 +459,40 @@ let createEnumType (enumName: string) (values: seq<string>) (config: CodegenConf
         if String.IsNullOrWhiteSpace case then 
             "EmptyString"
         else
-        let parts = 
-            case.Split([| '/'; '.'; ','; '['; '-'; ']';'('; ')'; ' ' |], StringSplitOptions.RemoveEmptyEntries)
-        if parts.Length > 1 then 
-            parts
-            |> Array.map (fun part -> 
-                let removedNumberPrefix = 
-                    if Char.IsDigit part.[0] then 
-                        part
-                        |> Seq.skipWhile (Char.IsLetter >> not)
-                        |> Array.ofSeq
-                        |> String
-                    else 
-                        part
-                capitalize removedNumberPrefix
-            )
-            |> String.concat ""
-        else
-            capitalize case
+            let parts = 
+                case.Split([| '/'; '.'; ','; '['; '-'; ']';'('; ')'; ' ' |], StringSplitOptions.RemoveEmptyEntries)
+            if parts.Length >= 1 then 
+                parts
+                |> Array.map (fun part -> 
+                    let removedNumberPrefix = 
+                        if Char.IsDigit part.[0] && not (Seq.forall Char.IsDigit part) then 
+                            part
+                            |> Seq.skipWhile (Char.IsLetter >> not)
+                            |> Array.ofSeq
+                            |> String
+                        elif Seq.forall Char.IsDigit part then 
+                            $"Numeric_{part}" 
+                        elif part.[0] = '+' then
+                            $"Plus{String(Array.ofSeq part.[1..])}"
+                        elif part = "<" then 
+                            "LessThan"
+                        elif part = "<=" then 
+                            "LessThanOrEqual"
+                        elif part = ">" then 
+                            "GreaterThan"
+                        elif part = ">=" then 
+                            "GreaterThanOrEqual"
+                        elif part = "==" || part = "=" then 
+                            "Equal"
+                        elif part = "!=" || part = "<>" then 
+                            "NotEqual"
+                        else 
+                            part
+                    capitalize removedNumberPrefix
+                )
+                |> String.concat ""
+            else
+                capitalize case
 
     let distinctValues = 
         values
@@ -1377,20 +1409,29 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
 
         if not parameter.Deprecated && parameter.In.HasValue then
             
-            let paramType = readParamType parameter.Schema
-            parameters.Add {
-                parameterName = sanitizeParameterName parameter.Name
-                parameterIdent = cleanParamIdent (sanitizeParameterName parameter.Name)
-                required = parameter.Required
-                parameterType = paramType
-                docs = parameter.Description
-                location = (string parameter.In.Value).ToLower()
-                properties = properties
-                style =
-                    if parameter.Style.HasValue
-                    then (string parameter.Style).ToLower()
-                    else "none"
-            }
+            if isNull parameter.Schema then 
+                ()
+            else
+                let paramType = 
+                    if isNull parameter.Schema && parameter.Content.Count = 1 then
+                        let firstKey = Seq.head parameter.Content.Keys
+                        readParamType parameter.Content.[firstKey].Schema
+                    else
+                        readParamType parameter.Schema
+
+                parameters.Add {
+                    parameterName = sanitizeParameterName parameter.Name
+                    parameterIdent = cleanParamIdent (sanitizeParameterName parameter.Name)
+                    required = parameter.Required
+                    parameterType = paramType
+                    docs = parameter.Description
+                    location = (string parameter.In.Value).ToLower()
+                    properties = properties
+                    style =
+                        if parameter.Style.HasValue
+                        then (string parameter.Style).ToLower()
+                        else "none"
+                }
 
     if not (isNull operation.RequestBody) then
         for pair in operation.RequestBody.Content do
@@ -2073,7 +2114,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.17.0"
+        printfn "0.18.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

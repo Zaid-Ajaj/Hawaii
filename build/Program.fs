@@ -105,14 +105,20 @@ let generateAndBuild(schema: ApiGuruSchema) =
         then failwith "build failed"
 
 let normalize (name: string) = 
-    name.Split ' '
-    |> Array.map (fun part -> 
-        let modified = capitalize (part.ToLower().Replace(":", "").Replace("-", "").Replace(",", "").Replace("&","").Replace("(", "").Replace(")", "").Replace(".", ""))
-        if modified.StartsWith "1" 
-        then capitalize (String.Join("", modified.Skip(1)))
-        else modified
-    )
-    |> String.concat ""
+    let modifiedName = 
+        name.Split ' '
+        |> Array.map (fun part -> 
+            let modified = capitalize (part.ToLower().Replace(":", "").Replace("-", "").Replace(",", "").Replace("&","").Replace("(", "").Replace(")", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("|", "").Replace("/", "").Replace("\\", ""))
+            if modified.StartsWith "1" 
+            then capitalize (String.Join("", modified.Skip(1)))
+            else modified
+        )
+        |> String.concat ""
+
+    if String.IsNullOrWhiteSpace modifiedName then
+        "EmptyProject"
+    else 
+        modifiedName
 
 let integration() = 
     let schemas = apiGuruList()
