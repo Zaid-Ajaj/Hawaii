@@ -20,7 +20,9 @@ Create a configuration file called `hawaii.json` with the following shape:
     "output": <output>,
     ["synchronous"]: <true | false>,
     ["asyncReturnType"]: <"async" | "task">,
-    ["resolveReferences]": <true | false>
+    ["resolveReferences]": <true | false>,
+    ["emptyDefinitions"]: <"ignore" | "free-form">,
+    ["overrideSchema"]: <JSON schema subset>
 }
 ```
 Where
@@ -30,6 +32,8 @@ Where
  - `<synchronous>` is an optional flag that determines whether hawaii should generate client methods that run http requests synchronously. This is useful when used inside console applications. (set to false by default)
  - `<asyncReturnType>` is an option to determine whether hawaii should generate client methods that return `Async<'T>` when set to "async" (default) or `Task<'T>` when set to "task" (this option is irrelevant when the `synchronous` option is set to `true`)
  - `<resolveReferences>` determines whether hawaii will attempt to resolve external references via schema pre-processing. This is set to `false` by default but sometimes an OpenApi schema is scattered into multiple schemas across a repository and this might help with the resolution.
+ - `<emptyDefintions>` determines what hawaii should do when encountering a global type definition without schema information. When set to "ignore" (default) hawaii will generate the global type. However, sometimes these global types are still referenced from other types or definitions, in which case the setting this option to "free-form" will generate a type abbreviation for the empty schema equal to a free form object (`JToken` when targetting F# or `obj` when targetting Fable)
+ - `<overrideSchema>` Allows you to override the resolved schema either to add more information (such as a missing operation ID) or _correct_ the types when you know better (see below) 
 
 ### Example
 Here is an example configuration for the pet store API:
@@ -91,6 +95,57 @@ hawaii --no-logo
 hawaii --config ./hawaii.json --no-logo
 ```
 
+### Advanced - Overriding The Schema 
+OpenAPI schemas can be very loose and not always typed. Sometimes they will be missing operation IDs on certain paths. Although Hawaii will attempt to derive valid operation IDs from the path, name collisions can sometimes happen. 
+Hawaii provides the `overrideSchema` option to allow you to "fix" the source schema or add more information when its missing.
+
+Here is an example for how you can override operation IDs for certain paths
+```json
+{
+  "overrideSchema": {
+    "paths": {
+      "/consumer/v1/services/{id}/allocations": {
+        "get": {
+          "operationId": "getAllocationsForCustomerByServiceId"
+        }
+      },
+      "/consumer/v1/services/allocations/{id}": {
+        "get": {
+            "operationId": "getAllocationIdFromCustomerServices"
+        }
+      }
+    }
+  }
+}
+```
+The `overrideSchema` property basically takes a subset of another schema and _merges_ it with the source schema. 
+
+You can a step further by overriding the return types of certain responses. The following example shows how you get a free-form JSON object from the default response of a path instead of getting a typed response:
+```json
+{
+  "overrideSchema": {
+    "paths": {
+      "/bin/querybuilder.json": {
+        "get": {
+          "responses": {
+            "default": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties":  { }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ### Limitations
 These are the very early days of Hawaii as a tool to generate F# clients and there are some known limitations and rough edges that I will be working on:
  - Fable support: coming soon
@@ -102,5 +157,8 @@ These are the very early days of Hawaii as a tool to generate F# clients and the
 ### Integration testings 
 ```bash
 cd ./build
+# run hawaii against 20 schemas
 dotnet run -- integration
+# run hawaii agains the first {n} schemas out of ~2000 and see the progress
+dotnet run -- rate {n}
 ```

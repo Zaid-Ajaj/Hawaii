@@ -8,8 +8,13 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.18.0</Version>
-    <PackageReleaseNotes>Better handling for reserved enum cases</PackageReleaseNotes>
+    <Version>0.19.0</Version>
+    <PackageReleaseNotes>
+        Derive types from loose response objects
+        allow users to override schema
+        fix more parameter identifier and enum edge cases
+        derive type abbreviations from primitive allOf references
+    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
