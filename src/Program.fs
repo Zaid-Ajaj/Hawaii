@@ -14,7 +14,6 @@ open System.Net
 open System.Collections.Generic
 open Newtonsoft.Json.Linq
 open System.Text
-open Newtonsoft.Json
 
 let logo = """
 
@@ -188,7 +187,7 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
 
 let client = new HttpClient()
 let getSchema(schema: string) (overrideSchema: JToken option) =
-    let schemContents = 
+    let schemaContents = 
         if File.Exists schema then 
             let content = File.ReadAllText schema
             JObject.Parse(content)
@@ -206,9 +205,23 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
 
     match overrideSchema with 
     | None -> ()
-    | Some miniSchema -> schemContents.Merge(miniSchema)
+    | Some miniSchema -> schemaContents.Merge(miniSchema)
 
-    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(schemContents.ToString())
+    // Pre-process NSwag schemas and add { "produces": ["application/json"] } if missing for operations 
+    // we assume Hawaii is working with schemas that produce JSON
+    if schemaContents.ContainsKey "x-generator" && schemaContents.["x-generator"].ToObject<string>().StartsWith "NSwag" then
+        if schemaContents.ContainsKey "paths" && schemaContents.["paths"].Type = JTokenType.Object then 
+            let pathsObject = unbox<JObject> schemaContents.["paths"]
+            for path in pathsObject.Properties() do 
+                if path.Value.Type = JTokenType.Object then 
+                    let operations = unbox<JObject> path.Value
+                    for operation in operations.Properties() do 
+                        if operation.Value.Type = JTokenType.Object then
+                            let operationAsObject = unbox<JObject> operation.Value
+                            if not (operationAsObject.ContainsKey "produces") then 
+                                operationAsObject.Add(JProperty("produces", [| "application/json" |]))
+
+    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(schemaContents.ToString())
     new MemoryStream(schemaBytes) :> Stream
 
 let capitalize (input: string) =
@@ -1485,11 +1498,11 @@ let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationPa
     let parameter = String(Array.ofSeq (parameter |> Seq.skipWhile (Char.IsLetter >> not)))
     let cleanedParam = 
         if parameter.Contains "-" then
-            paramReplace parameter '-'
+            cleanParamIdent (paramReplace parameter '-') parameters
         elif parameter.Contains "_" then
-            paramReplace parameter '-'
+            cleanParamIdent (paramReplace parameter '_') parameters
         elif parameter.Contains "." then 
-            paramReplace parameter '.'
+            cleanParamIdent (paramReplace parameter '.') parameters
         elif parameter.Contains "[" || parameter.Contains "]" then 
             match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with 
             | [| firstPart; secondPart |]  -> cleanParamIdent(camelCase firstPart + capitalize secondPart) parameters
@@ -1555,11 +1568,19 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     else
                         readParamType parameter.Schema
 
+                let nullable = 
+                    if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then 
+                        match parameter.Extensions.["x-nullable"] with 
+                        | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
+                        | _ -> true
+                    else 
+                        true
+
                 parameters.Add {
                     parameterName = parameter.Name
                     parameterIdent = cleanParamIdent parameter.Name parameters
-                    required = parameter.Required
-                    parameterType = paramType
+                    required = parameter.Required || not nullable
+                    parameterType =  paramType
                     docs = parameter.Description
                     location = (string parameter.In.Value).ToLower()
                     properties = properties
@@ -1571,7 +1592,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
 
     if not (isNull operation.RequestBody) then
         for pair in operation.RequestBody.Content do
-            if pair.Key = "multipart/form-data" then
+            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "object" then
                 for property in pair.Value.Schema.Properties do
                     parameters.Add {
                         parameterName = property.Key
@@ -1583,6 +1604,26 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         location = "multipartFormData"
                         style = "formfield"
                     }
+            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "file" then 
+                
+                let parameterName =
+                    if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                        match operation.RequestBody.Extensions.["x-bodyName"] with
+                        | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                        | _ -> "body"
+                    else
+                        "body"
+
+                parameters.Add {
+                    parameterName = parameterName
+                    parameterIdent = cleanParamIdent parameterName parameters
+                    required = true
+                    parameterType = SynType.ByteArray()
+                    docs = ""
+                    properties = []  
+                    location = "multipartFormData"
+                    style = "formfield"
+                }
 
             if pair.Key = "application/json" && not (isEmptySchema pair.Value.Schema) then
                 let schema = pair.Value.Schema
@@ -1846,7 +1887,14 @@ let createOpenApiClient
 
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
-                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
+                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then 
+                            // when the media type is JSON but the return type is string
+                            // read the string as is without deserialization
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                createIdent [ "content" ]
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
                                     SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
@@ -2282,7 +2330,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.19.0"
+        printfn "0.20.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

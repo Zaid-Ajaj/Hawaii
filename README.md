@@ -120,7 +120,7 @@ Here is an example for how you can override operation IDs for certain paths
 ```
 The `overrideSchema` property basically takes a subset of another schema and _merges_ it with the source schema. 
 
-You can a step further by overriding the return types of certain responses. The following example shows how you get a free-form JSON object from the default response of a path instead of getting a typed response:
+You can go a step further by overriding the return types of certain responses. The following example shows how you can get a free-form JSON object from the default response of a path instead of getting a typed response:
 ```json
 {
   "overrideSchema": {
