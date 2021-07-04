@@ -68,6 +68,13 @@ let resolveFile (path: string) =
     else
         Path.GetFullPath (Path.Combine(Environment.CurrentDirectory, path))
 
+let resolveRelativeFile current (path: string) =
+    if Path.IsPathRooted path then
+        path
+    else
+        Path.GetFullPath (Path.Combine(current, path))
+
+
 let readConfig file =
     try
         if not (File.Exists file) then
@@ -104,9 +111,10 @@ let readConfig file =
         elif isNotNull parts.["emptyDefinitions"] && parts.["emptyDefinitions"].ToObject<string>().ToLower().Trim() <> "ignore" && parts.["emptyDefinitions"].ToObject<string>().ToLower().Trim() <> "free-form" then
             Error "The 'emptyDefinitions' configuration element must either be 'ignore' or 'free-form'"
         else
+            let configParent = Path.GetDirectoryName file
             Ok {
                 schema = parts.["schema"].ToObject<string>()
-                output = resolveFile (parts.["output"].ToObject<string>())
+                output = resolveRelativeFile configParent (parts.["output"].ToObject<string>())
                 project = parts.["project"].ToString().Replace("(", "").Replace(")", "")
                 target =
                     if isNotNull parts.["target"] && parts.["target"].ToString() = "fable"
@@ -346,6 +354,10 @@ let rec cleanOperationName (operationName: string) =
         operation.Split('#', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
+    elif operation.Contains "_" then 
+        operation.Split('_', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
     elif operation.Contains "/" then 
         operation.Split('/', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
@@ -375,6 +387,33 @@ let rec deriveOperationName (operationName: string) (path: string) (operationTyp
             string operationType + cleanOperationName operationName
         else 
             deriveOperationName "" path operationType visitedTypes
+    else
+        let parts = path.Split("/")
+        let parameters =
+            parts
+            |> Array.filter (fun part -> part.Contains "{" && part.Contains "}")
+            |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
+            |> Array.map capitalize
+            |> Array.map cleanOperationName
+            |> String.concat "And"
+
+        let segments =
+            parts
+            |> Array.filter (fun part -> not (part.Contains "{" && part.Contains "}"))
+            |> Array.mapi (fun index part -> 
+                if index <> 0 
+                then cleanOperationName (capitalize part) 
+                else cleanOperationName part)
+            |> String.concat ""
+
+        if String.IsNullOrEmpty parameters then
+            cleanOperationName (string operationType + segments)
+        else
+            cleanOperationName (string operationType + segments + "By" + parameters)
+
+let deriveMemberName (operationName: string) (path: string) (operationType: OperationType) =
+    if not (String.IsNullOrWhiteSpace operationName) then 
+        cleanOperationName operationName
     else
         let parts = path.Split("/")
         let parameters =
@@ -1775,7 +1814,7 @@ let createOpenApiClient
                     for p in parameters -> (p.parameterIdent, p.docs)
                 ]
 
-                let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key visitedTypes
+                let memberName = deriveMemberName operationInfo.OperationId fullPath operation.Key
                 let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
                 let stringExpr value = SynExpr.CreateConstString value
                 let createLetAssignment leftSide rightSide continuation =
@@ -1919,7 +1958,18 @@ let createOpenApiClient
 
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
-                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then 
+                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && response.Content.["application/json"].Schema.Format = "byte" then 
+                            // when the media type is JSON but the return type is string
+                            // read the string as is without deserialization
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then 
                             // when the media type is JSON but the return type is string
                             // read the string as is without deserialization
                             SynExpr.CreatePartialApp([responseType; status], [
@@ -2362,7 +2412,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.21.0"
+        printfn "0.22.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
