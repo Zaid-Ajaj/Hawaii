@@ -1,5 +1,5 @@
 {
-  "schema": "https://api.apis.guru/v2/specs/adyen.com/TestCardService/1/openapi.json",
-  "project": "AdyenTestCardsApi",
+  "schema": "https://api.apis.guru/v2/specs/airbyte.local/config/1.0.0-oas3/openapi.json",
+  "project": "AirbyteConfigurationApi",
   "output": "./output"
 }

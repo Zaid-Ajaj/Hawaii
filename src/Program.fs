@@ -367,9 +367,14 @@ let rec cleanOperationName (operationName: string) =
     else
         operation
 
-let deriveOperationName (operationName: string) (path: string) (operationType: OperationType) =
-    if not (String.IsNullOrWhiteSpace operationName) then
-        cleanOperationName operationName
+let rec deriveOperationName (operationName: string) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) =
+    if not (String.IsNullOrWhiteSpace operationName) then 
+        if not (visitedTypes.Contains (cleanOperationName operationName)) then
+           cleanOperationName operationName
+        elif not (visitedTypes.Contains (string operationType + cleanOperationName operationName)) then 
+            string operationType + cleanOperationName operationName
+        else 
+            deriveOperationName "" path operationType visitedTypes
     else
         let parts = path.Split("/")
         let parameters =
@@ -438,6 +443,9 @@ let sanitizeTypeName (typeName: string) =
         | _ -> typeName.Replace("`", "")
     elif typeName.Contains "." then 
         typeName.Split('.', StringSplitOptions.RemoveEmptyEntries)
+        |> String.concat ""
+    elif typeName.Contains "_" then 
+        typeName.Split('_', StringSplitOptions.RemoveEmptyEntries)
         |> String.concat ""
     elif typeName.Contains "[" && typeName.Contains "]" then 
         typeName.Replace("[", "").Replace("]", "")
@@ -696,7 +704,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create (sanitizeTypeName recordName) ]
+        Id = [ Ident.Create recordName ]
         XmlDoc = xmlDocs schema.Description
         Parameters = [ ]
         Constraints = [ ]
@@ -710,7 +718,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
     let rec createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
         let isEnum = isEnumType propertyType
-        let required = propertyName = "additionalProperties" || schema.Required.Contains propertyName
+        let required = schema.Required.Contains propertyName
         let isObjectArray =
             propertyType.Type = "array"
             && propertyType.Items.Type = "object"
@@ -777,7 +785,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             Some fieldType
         else if isEnum && isNull propertyType.Reference then
             // nested enum -> not a reference to a global usable enum
-            let enumTypeName = findNextEnumTypeName propertyName recordName visitedTypes
+            let enumPropertyName = sanitizeTypeName propertyName
+            let enumTypeName = findNextEnumTypeName enumPropertyName recordName visitedTypes
             match propertyType with
             | StringEnum cases ->
                 visitedTypes.Add enumTypeName
@@ -803,8 +812,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             // referenced enum
             let typeName =
                 if invalidTitle propertyType.Title
-                then propertyType.Reference.Id
-                else propertyType.Title
+                then sanitizeTypeName propertyType.Reference.Id
+                else sanitizeTypeName propertyType.Title
             let fieldType =
                 if required
                 then SynType.Create typeName
@@ -813,12 +822,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         else if isEmptyObjectDefinition then
             // empty object definition
             let fieldType =
-                if required
-                then
+                if required then
                     if config.target = Target.FSharp
                     then SynType.JObject()
                     else SynType.Object()
-
                 else
                     if config.target = Target.FSharp
                     then SynType.Option(SynType.JObject())
@@ -851,8 +858,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                     else SynType.Object()
                 Some freeFormType
             else
-                let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
-                let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
+                let objectPropertyName = (capitalize (sanitizeTypeName propertyName))
+                let isGlobal = isGlobalRef objectPropertyName openApiDocument
+                let nestedObjectTypeName = findNextTypeName objectPropertyName recordName nestedPropertyNames visitedTypes isGlobal
                 visitedTypes.Add nestedObjectTypeName
                 let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument
                 nestedObjects.AddRange nestedObject
@@ -869,8 +877,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            let isGlobal = isGlobalRef (capitalize propertyName) openApiDocument
-            let nestedObjectTypeName = findNextTypeName propertyName recordName nestedPropertyNames visitedTypes isGlobal
+            let objectTypeName = capitalize (sanitizeTypeName propertyName)
+            let isGlobal = isGlobalRef objectTypeName openApiDocument
+            let nestedObjectTypeName = findNextTypeName objectTypeName recordName nestedPropertyNames visitedTypes isGlobal
             visitedTypes.Add nestedObjectTypeName
             let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config openApiDocument
             nestedObjects.AddRange nestedObject
@@ -967,11 +976,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                             if not (alreadyContainsProperty propertyName) then
                                 recordFields.Add { field with XmlDoc = docs }
                                 addedFields.Add((propertyName, required, fieldType))
-                elif isNotNull innerSchema.AllOf && innerSchema.AllOf.Count > 0 then
+
+                if isNotNull innerSchema.AllOf && innerSchema.AllOf.Count > 0 then
                     // handle recursive allOf references
                     handleAllOf innerSchema
-                else
-                    ()
 
     handleAllOf schema
 
@@ -1079,10 +1087,11 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         ]
 
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) (document: OpenApiDocument) =
-    
     let intermediateTypes = ResizeArray<SynModuleDecl>()
-    let operationName = deriveOperationName (capitalize operation.OperationId) path operationType
-
+    let operationName = deriveOperationName (capitalize operation.OperationId) path operationType visitedTypes
+    visitedTypes.Add operationName
+    // hack: add it to the operation and retrieve it later
+    operation.Extensions.Add("ResponseTypeName", new Microsoft.OpenApi.Any.OpenApiString(operationName))
     let rec getFieldType (schema: OpenApiSchema) (status: string) =
         match schema.Type with
         | "integer" when schema.Format = "int64" -> SynType.Int64()
@@ -1115,9 +1124,9 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
             SynType.Map(keyType, valueType)
         | "object" -> 
             let recordName = $"{operationName}_{status}"
+            visitedTypes.Add recordName
             for generatedType in createRecordFromSchema recordName schema visitedTypes config document do 
                 intermediateTypes.Add generatedType
-            visitedTypes.Add recordName
             SynType.Create recordName
         | _ ->
             SynType.String()
@@ -1194,7 +1203,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
             yield SynUnionCase.UnionCase([], Ident.Create (capitalize "DefaultResponse"), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
     ])
 
-    visitedTypes.Add operationName
+    
     let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
 
     [ 
@@ -1453,9 +1462,10 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 // skip generating more key value pair type
                 ()
             elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
-                visitedTypes.Add typeName
-                for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument do
-                    moduleTypes.Add createdType
+                if not (visitedTypes.Contains typeName) then 
+                    visitedTypes.Add typeName
+                    for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument do
+                        moduleTypes.Add createdType
             else
                 ()
 
@@ -1576,9 +1586,17 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     else 
                         true
 
+                let parameterIdentifier = cleanParamIdent parameter.Name parameters
+                let identifierAlreadyAdded = 
+                    parameters
+                    |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+
                 parameters.Add {
                     parameterName = parameter.Name
-                    parameterIdent = cleanParamIdent parameter.Name parameters
+                    parameterIdent = 
+                        if identifierAlreadyAdded 
+                        then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}" 
+                        else parameterIdentifier
                     required = parameter.Required || not nullable
                     parameterType =  paramType
                     docs = parameter.Description
@@ -1594,9 +1612,17 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         for pair in operation.RequestBody.Content do
             if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "object" then
                 for property in pair.Value.Schema.Properties do
+                    let parameterIdentifier = cleanParamIdent property.Key parameters
+                    let identifierAlreadyAdded = 
+                        parameters
+                        |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+
                     parameters.Add {
                         parameterName = property.Key
-                        parameterIdent = cleanParamIdent property.Key parameters
+                        parameterIdent = 
+                            if identifierAlreadyAdded
+                            then $"{parameterIdentifier}InFormData"
+                            else parameterIdentifier
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
@@ -1749,7 +1775,7 @@ let createOpenApiClient
                     for p in parameters -> (p.parameterIdent, p.docs)
                 ]
 
-                let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key
+                let memberName = deriveOperationName operationInfo.OperationId fullPath operation.Key visitedTypes
                 let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
                 let stringExpr value = SynExpr.CreateConstString value
                 let createLetAssignment leftSide rightSide continuation =
@@ -1883,7 +1909,13 @@ let createOpenApiClient
                     else
                         responses
 
-                let responseType = capitalize memberName
+                let responseType = 
+                    if operationInfo.Extensions.ContainsKey "ResponseTypeName" then 
+                        match operationInfo.Extensions.["ResponseTypeName"] with 
+                        | :? Microsoft.OpenApi.Any.OpenApiString as responseTypeName -> responseTypeName.Value
+                        | _ -> capitalize memberName
+                    else
+                        capitalize memberName
 
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
@@ -2330,7 +2362,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.20.0"
+        printfn "0.21.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
