@@ -46,6 +46,11 @@ type AsyncReturnType =
     | Async
     | Task
 
+[<RequireQualifiedAccess>]
+type FactoryFunction = 
+    | Create
+    | None
+
 type CodegenConfig = {
     schema: string
     output: string
@@ -438,6 +443,17 @@ let deriveMemberName (operationName: string) (path: string) (operationType: Oper
         else
             cleanOperationName (string operationType + segments + "By" + parameters)
 
+module MediaTypes = 
+    let [<Literal>] ApplicationJson = "application/json"
+    let [<Literal>] OctetStream = "application/octet-stream"
+    let [<Literal>] ApplicationPdf = "application/pdf"
+    let [<Literal>] ApplicationZip = "application/zip"
+    let [<Literal>] AppliationZipCompressed = "application/x-zip-compressed"
+    let [<Literal>] ImagePng = "image/png"
+    let [<Literal>] ImageJpg = "image/jpg"
+    let [<Literal>] ImageJpeg = "image/jpeg"
+    let [<Literal>] ImageGif = "image/gif"
+
 let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
     if isEnumType schema then
         let cases =
@@ -743,7 +759,7 @@ let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) =
 
     isGlobal
 
-let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) (openApiDocument: OpenApiDocument) : SynModuleDecl list =
+let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) (openApiDocument: OpenApiDocument) (factory: FactoryFunction) : SynModuleDecl list =
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
@@ -915,7 +931,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 let isGlobal = isGlobalRef objectPropertyName openApiDocument
                 let nestedObjectTypeName = findNextTypeName objectPropertyName recordName nestedPropertyNames visitedTypes isGlobal
                 visitedTypes.Add nestedObjectTypeName
-                let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument
+                let nestedObject = createRecordFromSchema nestedObjectTypeName propertyType visitedTypes config openApiDocument factory
                 nestedObjects.AddRange nestedObject
                 let fieldType =
                     if required
@@ -934,7 +950,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             let isGlobal = isGlobalRef objectTypeName openApiDocument
             let nestedObjectTypeName = findNextTypeName objectTypeName recordName nestedPropertyNames visitedTypes isGlobal
             visitedTypes.Add nestedObjectTypeName
-            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config openApiDocument
+            let nestedObject = createRecordFromSchema nestedObjectTypeName arrayItemsType visitedTypes config openApiDocument factory
             nestedObjects.AddRange nestedObject
             let fieldType =
                 if required
@@ -1139,7 +1155,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         // when fields have dots, they are not escaped for some reason
         // TODO: fix it later in fantomas
         // right now, we just won't generate the `Create` function
-        let eventualMembers = if anyFieldHasDots then [] else members
+        let eventualMembers = 
+            if anyFieldHasDots || factory = FactoryFunction.None 
+            then [] 
+            else members
 
         [
             yield! nestedObjects
@@ -1193,11 +1212,54 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         | "object" -> 
             let recordName = $"{operationName}_{status}"
             visitedTypes.Add recordName
-            for generatedType in createRecordFromSchema recordName schema visitedTypes config document do 
+            let factory = FactoryFunction.None
+            for generatedType in createRecordFromSchema recordName schema visitedTypes config document factory do 
                 intermediateTypes.Add generatedType
             SynType.Create recordName
         | _ ->
             SynType.String()
+
+    let hasLoosePayloadRequestBody = 
+        isNotNull operation.RequestBody
+        && operation.RequestBody.Content.ContainsKey MediaTypes.ApplicationJson
+        && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
+        && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Type = "object"
+        && isNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Reference
+        && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Properties
+        && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Properties.Count > 0
+
+    if hasLoosePayloadRequestBody then 
+        let schema = operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
+        let payloadTypeName = $"{operationName}Payload"
+        visitedTypes.Add payloadTypeName
+        let factory = FactoryFunction.Create
+        for generatedType in createRecordFromSchema payloadTypeName schema visitedTypes config document factory do 
+            intermediateTypes.Add generatedType
+        operation.Extensions.Add("RequestTypePayload", new Microsoft.OpenApi.Any.OpenApiString(payloadTypeName))
+
+    let hasArrayOfLooseObjectsInRequestPayload = 
+        isNotNull operation.RequestBody
+        && operation.RequestBody.Content.ContainsKey MediaTypes.ApplicationJson
+        && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
+        && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Type = "array"
+        && isNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Reference
+        && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items
+        && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items.Type = "object"
+        && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items.Properties
+        && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items.Properties.Count > 0
+
+    if hasArrayOfLooseObjectsInRequestPayload then 
+        let payloadTypeName = $"{operationName}Payload"
+        let elementTypeName = $"{payloadTypeName}ArrayItem"
+        let schema = operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items
+        visitedTypes.Add payloadTypeName
+        visitedTypes.Add elementTypeName
+        let factory = FactoryFunction.Create
+        for generatedType in createRecordFromSchema elementTypeName schema visitedTypes config document factory do 
+            intermediateTypes.Add generatedType
+        intermediateTypes.Add(createTypeAbbreviation payloadTypeName (SynType.List(SynType.Create elementTypeName)))
+        operation.Extensions.Add("RequestTypePayload", new Microsoft.OpenApi.Any.OpenApiString(payloadTypeName))
+
 
     let info : SynComponentInfoRcd = {
         Access = None
@@ -1482,6 +1544,14 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     // create type abbreviation
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
                     visitedTypes.Add typeName
+                elif elementType.Type = "object" && isNotNull elementType then 
+                    let elementTypeName = $"{typeName}ArrayItem"
+                    visitedTypes.Add typeName
+                    let factory = FactoryFunction.Create
+                    for createdType in createRecordFromSchema elementTypeName elementType visitedTypes config openApiDocument factory do
+                        moduleTypes.Add createdType
+                    let abbreviatedType = SynType.List(SynType.Create elementTypeName)
+                    moduleTypes.Add (createTypeAbbreviation typeName abbreviatedType)
             else
                 ()
 
@@ -1532,7 +1602,8 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
                 if not (visitedTypes.Contains typeName) then 
                     visitedTypes.Add typeName
-                    for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument do
+                    let factory = FactoryFunction.Create
+                    for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument factory do
                         moduleTypes.Add createdType
             else
                 ()
@@ -1608,12 +1679,9 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         | "string" when schema.Format = "uuid" -> SynType.Guid()
         | "string" when schema.Format = "guid" -> SynType.Guid()
         | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
+        | "string" -> SynType.String()
         | "file" ->
             SynType.ByteArray()
-        | "array" ->
-            let elementSchema = schema.Items
-            let elementType = readParamType elementSchema
-            SynType.List elementType
         | _ when not (isNull schema.Reference) ->
             // working with a reference type
             let typeName =
@@ -1621,6 +1689,14 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                 then sanitizeTypeName schema.Reference.Id
                 else sanitizeTypeName schema.Title
             SynType.Create typeName
+        | "array" ->
+            let elementSchema = schema.Items
+            let elementType = readParamType elementSchema
+            SynType.List elementType
+        | "object" -> 
+            if config.target = Target.FSharp 
+            then SynType.JObject()
+            else SynType.Object()
         | _ ->
             SynType.String()
 
@@ -1644,9 +1720,12 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     ()
                 else
                     let paramType = 
-                        if isNull parameter.Schema && parameter.Content.Count = 1 then
+                        if parameter.Content.Count = 1 then
                             let firstKey = Seq.head parameter.Content.Keys
                             readParamType parameter.Content.[firstKey].Schema
+                        elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then 
+                            // edge case for a weird schema
+                            SynType.String()
                         else
                             readParamType parameter.Schema
 
@@ -1657,6 +1736,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                             | _ -> true
                         else 
                             true
+
 
                     let parameterIdentifier = cleanParamIdent parameter.Name parameters
                     let identifierAlreadyAdded = 
@@ -1734,11 +1814,21 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     else
                         camelCase (normalizeFullCaps typeName)
 
+                let requestTypePayload = 
+                    if operation.Extensions.ContainsKey "RequestTypePayload" then 
+                        match operation.Extensions.["RequestTypePayload"] with 
+                        | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload -> 
+                            SynType.Create requestTypePayload.Value
+                        | _ -> 
+                            readParamType pair.Value.Schema
+                    else
+                        readParamType pair.Value.Schema
+
                 parameters.Add {
                     parameterName = parameterName
                     parameterIdent = cleanParamIdent parameterName parameters
                     required = true
-                    parameterType = readParamType schema
+                    parameterType = requestTypePayload
                     docs = schema.Description
                     location = "jsonContent"
                     style = "none"
@@ -1810,16 +1900,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         else 1
     )
 
-module MediaTypes = 
-    let [<Literal>] ApplicationJson = "application/json"
-    let [<Literal>] OctetStream = "application/octet-stream"
-    let [<Literal>] ApplicationPdf = "application/pdf"
-    let [<Literal>] ApplicationZip = "application/zip"
-    let [<Literal>] AppliationZipCompressed = "application/x-zip-compressed"
-    let [<Literal>] ImagePng = "image/png"
-    let [<Literal>] ImageJpg = "image/jpg"
-    let [<Literal>] ImageJpeg = "image/jpeg"
-    let [<Literal>] ImageGif = "image/gif"
+
 
 let responseContainsBinaryOutput (response: OpenApiResponse) = 
     if response.Content.ContainsKey MediaTypes.ApplicationJson then 
@@ -2572,7 +2653,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.24.0"
+        printfn "0.25.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

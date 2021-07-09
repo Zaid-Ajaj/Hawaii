@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.24.0</Version>
-    <PackageReleaseNotes>Handle missing schema parts for arrays and objects</PackageReleaseNotes>
+    <Version>0.25.0</Version>
+    <PackageReleaseNotes>Handle request payloads without global references and generate types for them</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
