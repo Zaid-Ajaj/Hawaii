@@ -496,10 +496,14 @@ let invalidTitle (title: string) =
     || (title.Contains "Mediatype identifier" && title.Contains "application/")
     || (title.Split(' ').Length >= 1)
 
-let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) =
+let rec createFieldType recordName required (propertyName: string) (propertySchema: OpenApiSchema) (config: CodegenConfig) =
     if not required then
-        let optionalType : SynType = createFieldType recordName true propertyName propertySchema
+        let optionalType : SynType = createFieldType recordName true propertyName propertySchema config
         SynType.Option(optionalType)
+    elif isNull propertySchema then 
+        if config.target = Target.FSharp 
+        then SynType.JToken()
+        else SynType.Object()
     else
         match propertySchema.Type with
         | "integer" when propertySchema.Format = "int64" -> SynType.Int64()
@@ -514,7 +518,7 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
             // base64 encoded characters
             SynType.ByteArray()
         | "array" ->
-            let arrayItemsType = createFieldType recordName required propertyName propertySchema.Items
+            let arrayItemsType = createFieldType recordName required propertyName propertySchema.Items config
             SynType.List(arrayItemsType)
         | _ when not (isNull propertySchema.Reference) ->
             // working with a reference type
@@ -756,12 +760,17 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let addedFields = ResizeArray<string * bool * SynType>()
 
     let rec createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
+        if isNull propertyType then 
+            None
+        else
         let isEnum = isEnumType propertyType
         let required = schema.Required.Contains propertyName
         let isObjectArray =
             propertyType.Type = "array"
+            && isNotNull propertyType.Items
             && propertyType.Items.Type = "object"
             && isNull propertyType.Items.Reference
+            && isNotNull propertyType.Items.Properties
             && propertyType.Items.Properties.Count > 0
 
         let isAdditionalProperties =
@@ -769,7 +778,10 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             && not (isNull propertyType.AdditionalProperties)
             && not (isNull propertyType.AdditionalProperties.Type && propertyType.AdditionalProperties.Properties.Count > 0)
 
-        let isEnumArray = propertyType.Type = "array" && isEnumType propertyType.Items
+        let isEnumArray = 
+            propertyType.Type = "array" 
+            && isNotNull propertyType.Items 
+            && isEnumType propertyType.Items
 
         let isEmptyObjectDefinition =
             propertyType.Type = "object"
@@ -786,6 +798,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
         let isArrayOfKeyValuePairObject =
             propertyType.Type = "array"
+            && isNotNull propertyType.Items
             && propertyType.Items.Type = "object"
             && propertyType.Items.Title = "KeyValuePair`2"
             && propertyType.Items.Properties.Count = 2
@@ -794,6 +807,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
         let isArrayOfEmptyObject =
             propertyType.Type = "array"
+            && isNotNull propertyType.Items
             && propertyType.Items.Type = "object"
             && propertyType.Items.Properties.Count = 0
             && isNull propertyType.Items.Reference
@@ -815,12 +829,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             // skip deprecated propertie
             None
         elif isAdditionalProperties then
-            let fieldType = createFieldType recordName true propertyName propertyType.AdditionalProperties
+            let fieldType = createFieldType recordName true propertyName propertyType.AdditionalProperties config
             if required
             then Some (SynType.Map(SynType.String(), fieldType))
             else Some (SynType.Option(SynType.Map(SynType.String(), fieldType)))
         elif isPrimitve then
-            let fieldType = createFieldType recordName required propertyName propertyType
+            let fieldType = createFieldType recordName required propertyName propertyType config
             Some fieldType
         else if isEnum && isNull propertyType.Reference then
             // nested enum -> not a reference to a global usable enum
@@ -1062,8 +1076,15 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 else additionalType
             let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
+    elif recordFields.Count = 0 then 
+        // couldn't add any fields
+        let valueType =
+            if config.target = Target.FSharp
+            then SynType.JToken()
+            else SynType.Object()
+        let dictionaryType = SynType.Map(SynType.String(), valueType)
+        [ createTypeAbbreviation recordName dictionaryType ]
     else
-        
         let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
         let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
 
@@ -1146,10 +1167,18 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
             SynType.ByteArray()
         | "file" ->
             SynType.ByteArray()
-        | "array" ->
+        | "array" when isNotNull schema.Items ->
             let elementSchema = schema.Items 
             let elementType = getFieldType elementSchema status
             SynType.List elementType
+        | "array" -> 
+            // element type schema is null
+            let elementType = 
+                if config.target = Target.FSharp
+                then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray"
+                else SynType.ResizeArray(SynType.Create "obj")
+
+            elementType
         | _ when not (isNull schema.Reference) ->
             // working with a reference type
             let typeName =
@@ -1544,25 +1573,28 @@ let paramReplace (parameter: string) (sep: char) =
     |> camelCase
 
 let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) = 
-    let parameter = String(Array.ofSeq (parameter |> Seq.skipWhile (Char.IsLetter >> not)))
-    let cleanedParam = 
-        if parameter.Contains "-" then
-            cleanParamIdent (paramReplace parameter '-') parameters
-        elif parameter.Contains "_" then
-            cleanParamIdent (paramReplace parameter '_') parameters
-        elif parameter.Contains "." then 
-            cleanParamIdent (paramReplace parameter '.') parameters
-        elif parameter.Contains "[" || parameter.Contains "]" then 
-            match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with 
-            | [| firstPart; secondPart |]  -> cleanParamIdent(camelCase firstPart + capitalize secondPart) parameters
-            | _ -> cleanParamIdent(parameter.Replace("[", "").Replace("]", "")) parameters
-        else
-            camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
-    
-    if String.IsNullOrWhiteSpace cleanedParam then 
+    if String.IsNullOrWhiteSpace parameter then 
         $"p{parameters.Count + 1}"
-    else 
-        cleanedParam
+    else
+        let parameter = String(Array.ofSeq (parameter |> Seq.skipWhile (Char.IsLetter >> not)))
+        let cleanedParam = 
+            if parameter.Contains "-" then
+                cleanParamIdent (paramReplace parameter '-') parameters
+            elif parameter.Contains "_" then
+                cleanParamIdent (paramReplace parameter '_') parameters
+            elif parameter.Contains "." then 
+                cleanParamIdent (paramReplace parameter '.') parameters
+            elif parameter.Contains "[" || parameter.Contains "]" then 
+                match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with 
+                | [| firstPart; secondPart |]  -> cleanParamIdent(camelCase firstPart + capitalize secondPart) parameters
+                | _ -> cleanParamIdent(parameter.Replace("[", "").Replace("]", "")) parameters
+            else
+                camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
+    
+        if String.IsNullOrWhiteSpace cleanedParam then 
+            $"p{parameters.Count + 1}"
+        else 
+            cleanedParam
 
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) =
     let parameters = ResizeArray<OperationParameter>()
@@ -1593,59 +1625,60 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             SynType.String()
 
     for parameter in operation.Parameters do
-        let shouldSpreadProperties = 
-            parameter.Style.HasValue 
-            && parameter.Style.Value = ParameterStyle.DeepObject 
-            && parameter.Explode
-            && isNotNull parameter.Schema
-            && parameter.Schema.Type = "object"
+        if isNotNull parameter then 
+            let shouldSpreadProperties = 
+                parameter.Style.HasValue 
+                && parameter.Style.Value = ParameterStyle.DeepObject 
+                && parameter.Explode
+                && isNotNull parameter.Schema
+                && parameter.Schema.Type = "object"
 
-        let properties = 
-            if shouldSpreadProperties 
-            then List.ofSeq parameter.Schema.Properties.Keys
-            else []
+            let properties = 
+                if shouldSpreadProperties 
+                then List.ofSeq parameter.Schema.Properties.Keys
+                else []
 
-        if not parameter.Deprecated && parameter.In.HasValue then
-            
-            if isNull parameter.Schema then 
-                ()
-            else
-                let paramType = 
-                    if isNull parameter.Schema && parameter.Content.Count = 1 then
-                        let firstKey = Seq.head parameter.Content.Keys
-                        readParamType parameter.Content.[firstKey].Schema
-                    else
-                        readParamType parameter.Schema
+            if not parameter.Deprecated && parameter.In.HasValue then
+                
+                if isNull parameter.Schema then 
+                    ()
+                else
+                    let paramType = 
+                        if isNull parameter.Schema && parameter.Content.Count = 1 then
+                            let firstKey = Seq.head parameter.Content.Keys
+                            readParamType parameter.Content.[firstKey].Schema
+                        else
+                            readParamType parameter.Schema
 
-                let nullable = 
-                    if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then 
-                        match parameter.Extensions.["x-nullable"] with 
-                        | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
-                        | _ -> true
-                    else 
-                        true
+                    let nullable = 
+                        if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then 
+                            match parameter.Extensions.["x-nullable"] with 
+                            | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
+                            | _ -> true
+                        else 
+                            true
 
-                let parameterIdentifier = cleanParamIdent parameter.Name parameters
-                let identifierAlreadyAdded = 
-                    parameters
-                    |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+                    let parameterIdentifier = cleanParamIdent parameter.Name parameters
+                    let identifierAlreadyAdded = 
+                        parameters
+                        |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
-                parameters.Add {
-                    parameterName = parameter.Name
-                    parameterIdent = 
-                        if identifierAlreadyAdded 
-                        then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}" 
-                        else parameterIdentifier
-                    required = parameter.Required || not nullable
-                    parameterType =  paramType
-                    docs = parameter.Description
-                    location = (string parameter.In.Value).ToLower()
-                    properties = properties
-                    style =
-                        if parameter.Style.HasValue
-                        then (string parameter.Style).ToLower()
-                        else "none"
-                }
+                    parameters.Add {
+                        parameterName = parameter.Name
+                        parameterIdent = 
+                            if identifierAlreadyAdded 
+                            then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}" 
+                            else parameterIdentifier
+                        required = parameter.Required || not nullable
+                        parameterType =  paramType
+                        docs = parameter.Description
+                        location = (string parameter.In.Value).ToLower()
+                        properties = properties
+                        style =
+                            if parameter.Style.HasValue
+                            then (string parameter.Style).ToLower()
+                            else "none"
+                    }
 
     if not (isNull operation.RequestBody) then
         for pair in operation.RequestBody.Content do
@@ -1727,11 +1760,14 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     parameterName = parameterName
                     parameterIdent = cleanParamIdent parameterName parameters
                     required = true
-                    parameterType = 
+                    parameterType =
                         if config.target = Target.FSharp
                         then SynType.JToken()
                         else SynType.Object()
-                    docs = schema.Description
+                    docs = 
+                        if isNotNull schema 
+                        then schema.Description
+                        else ""
                     location = "jsonContent"
                     style = "none"
                     properties = []
@@ -2536,7 +2572,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.23.0"
+        printfn "0.24.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

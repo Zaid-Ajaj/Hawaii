@@ -1,5 +1,5 @@
 {
-  "schema": "./schemas/nswag-with-files.json",
-  "project": "NSwag",
+  "schema": "https://api.apis.guru/v2/specs/adyen.com/TestCardService/1/openapi.json",
+  "project": "AdyenTestCardsApi",
   "output": "./output"
 }
