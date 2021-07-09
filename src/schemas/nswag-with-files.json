@@ -1,0 +1,456 @@
+{
+  "x-generator": "NSwag v13.11.1.0 (NJsonSchema v10.4.3.0 (Newtonsoft.Json v12.0.0.0))",
+  "swagger": "2.0",
+  "info": {
+    "title": "NSwag with Files",
+    "description": "REST endpoints of NSwag",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5000",
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/api/Brandings/upload": {
+      "post": {
+        "tags": [
+          "Brandings"
+        ],
+        "summary": "Uploads an image property of a branding.",
+        "operationId": "uploadBrandingImage",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "brandingId",
+            "in": "query",
+            "description": "The ID of the branding to upload an image for",
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "property",
+            "in": "query",
+            "description": "Specifies which image property to upload to. Can be either \"logo\", \"favicon\" or \"feature_image\"",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "authorization",
+            "in": "header",
+            "description": "An authorization header with a bearer token of a SuperAdmin user.",
+            "x-nullable": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "file"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "OK, the image was uploaded successfully",
+            "schema": {}
+          },
+          "400": {
+            "x-nullable": false,
+            "description": "Bad request. Missing authorization header or invalid property parameter or the uploaded file is not a valid image",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "401": {
+            "x-nullable": false,
+            "description": "Unauthorized. Only Super admins are allowed to upload branding images",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/Datahub/datasources": {
+      "get": {
+        "tags": [
+          "Datahub"
+        ],
+        "summary": "Retrieves the data sources for a supplier (data measuring company) for the specified period.",
+        "operationId": "getDataSources",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "supplier",
+            "in": "query",
+            "description": "The name of the supplier (measuring company)",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "period",
+            "in": "query",
+            "description": "The period for which to retrieve the data",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "authorization",
+            "in": "header",
+            "description": "An authorization header in the format Basic {base64(username:password)}\nwhere username and password are the credentials of an admin user. For example\nif your username = 'admin' and password = 'admin' then the authorization header should be \"Basic YWRtaW46YWRtaW4=\"",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DataHubDataSource"
+              }
+            }
+          },
+          "401": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/Datahub/import": {
+      "post": {
+        "tags": [
+          "Datahub"
+        ],
+        "summary": "Expects the request body to be JSON formatted as follows:\n            \n             [\n  {\n     \"ic\": {import code},\n     \"values\": [\n         { \"v\": {value}, \"t\": {unix timestamp} }\n     ]\n   }\n             ]\n            \n             ",
+        "operationId": "importData",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "timeshift",
+            "in": "query",
+            "description": "Whether or not the values should be timeshifted",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "authorization",
+            "in": "header",
+            "description": "An authorization header in the format Basic {base64(username:password)}\nwhere username and password are the credentials of an admin user. For example\nif your username = 'admin' and password = 'admin' then the authorization header should be \"Basic YWRtaW46YWRtaW4=\"",
+            "x-nullable": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "additionalProperties": {}
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "The import output: for which meters data was imported and which meters failed",
+            "schema": {
+              "$ref": "#/definitions/ImportOutput"
+            }
+          },
+          "401": {
+            "x-nullable": false,
+            "description": "Authorization error",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/Documents/upload": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "uploadFile",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "nodeId",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "path",
+            "in": "query",
+            "default": "",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/UploadOutput"
+            }
+          },
+          "400": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/DocumentsError"
+            }
+          },
+          "401": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/DocumentsError"
+            }
+          }
+        }
+      }
+    },
+    "/api/Documents/download": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "downloadFile",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "nodeId",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "path",
+            "in": "query",
+            "default": "",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "byte"
+            }
+          },
+          "400": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/DocumentsError"
+            }
+          },
+          "401": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/DocumentsError"
+            }
+          }
+        }
+      }
+    },
+    "/api/Health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "Health_Get",
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "file"
+            }
+          }
+        }
+      }
+    },
+    "/api/standardProjects/upload": {
+      "post": {
+        "tags": [
+          "StandardProjects"
+        ],
+        "operationId": "StandardProjects_UploadFile",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "projectId",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "file"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        }
+      }
+    },
+    "DataHubDataSource": {
+      "type": "object",
+      "properties": {
+        "credentials": {
+          "type": "string"
+        },
+        "meters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DataHubMeter"
+          }
+        }
+      }
+    },
+    "DataHubMeter": {
+      "type": "object",
+      "required": [
+        "meterId",
+        "readFrequency",
+        "cumulative",
+        "fromDate",
+        "toDate"
+      ],
+      "properties": {
+        "meterId": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "importCode": {
+          "type": "string"
+        },
+        "readFrequency": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "cumulative": {
+          "type": "boolean"
+        },
+        "fromDate": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "toDate": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "fromDateFormatted": {
+          "type": "string"
+        },
+        "toDateFormatted": {
+          "type": "string"
+        }
+      }
+    },
+    "ImportOutput": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ImportSuccessMeter"
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ImportFailedMeter"
+          }
+        }
+      }
+    },
+    "ImportSuccessMeter": {
+      "type": "object",
+      "required": [
+        "records"
+      ],
+      "properties": {
+        "importCode": {
+          "type": "string"
+        },
+        "records": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "ImportFailedMeter": {
+      "type": "object",
+      "properties": {
+        "importCode": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "UploadOutput": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UploadFileResult"
+          }
+        }
+      }
+    },
+    "UploadFileResult": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "DocumentsError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

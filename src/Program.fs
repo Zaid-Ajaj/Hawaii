@@ -1774,6 +1774,48 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         else 1
     )
 
+module MediaTypes = 
+    let [<Literal>] ApplicationJson = "application/json"
+    let [<Literal>] OctetStream = "application/octet-stream"
+    let [<Literal>] ApplicationPdf = "application/pdf"
+    let [<Literal>] ApplicationZip = "application/zip"
+    let [<Literal>] AppliationZipCompressed = "application/x-zip-compressed"
+    let [<Literal>] ImagePng = "image/png"
+    let [<Literal>] ImageJpg = "image/jpg"
+    let [<Literal>] ImageJpeg = "image/jpeg"
+    let [<Literal>] ImageGif = "image/gif"
+
+let responseContainsBinaryOutput (response: OpenApiResponse) = 
+    if response.Content.ContainsKey MediaTypes.ApplicationJson then 
+        let jsonResponse = response.Content.[MediaTypes.ApplicationJson]
+        let hasStringByteOutput = 
+            isNotNull jsonResponse.Schema 
+            && jsonResponse.Schema.Type = "string" 
+            && jsonResponse.Schema.Format = "byte"
+
+        let hasFileOutput = 
+            isNotNull jsonResponse.Schema 
+            && jsonResponse.Schema.Type = "file"
+
+        let hasBinaryOutput = hasStringByteOutput || hasFileOutput
+        hasBinaryOutput
+    else
+        let hasBinaryOutput = 
+            response.Content.ContainsKey MediaTypes.OctetStream 
+            || response.Content.ContainsKey MediaTypes.ApplicationPdf
+            || response.Content.ContainsKey MediaTypes.ApplicationZip
+            || response.Content.ContainsKey MediaTypes.AppliationZipCompressed
+            || response.Content.ContainsKey MediaTypes.ImagePng
+            || response.Content.ContainsKey MediaTypes.ImageJpg
+            || response.Content.ContainsKey MediaTypes.ImageJpeg
+            || response.Content.ContainsKey MediaTypes.ImageGif
+            || response.Content.ContainsKey MediaTypes.ImagePng
+        hasBinaryOutput
+
+let containsBinaryResponse (operation: OpenApiOperation) = 
+    operation.Responses
+    |> Seq.exists (fun pair -> responseContainsBinaryOutput pair.Value)
+
 let createOpenApiClient
     (openApiDocument: OpenApiDocument)
     (visitedTypes: ResizeArray<string>)
@@ -1814,6 +1856,7 @@ let createOpenApiClient
                     for p in parameters -> (p.parameterIdent, p.docs)
                 ]
 
+                let hasBinaryResponse = containsBinaryResponse operation.Value
                 let memberName = deriveMemberName operationInfo.OperationId fullPath operation.Key
                 let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
                 let stringExpr value = SynExpr.CreateConstString value
@@ -1823,11 +1866,16 @@ let createOpenApiClient
                     let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
                     SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
+                let contentIdent = 
+                    if hasBinaryResponse 
+                    then "contentBinary"
+                    else "content"
+
                 // for async calls
                 // creates let! (status, content) = {body} in {continuation}
                 let deconstructAsyncResponse body continuation =
                     let status = SynPat.Named(SynPat.Wild range0, Ident.Create "status", false, None, range0)
-                    let content = SynPat.Named(SynPat.Wild range0, Ident.Create "content", false, None, range0)
+                    let content = SynPat.Named(SynPat.Wild range0, Ident.Create contentIdent, false, None, range0)
                     let headPat = SynPat.Paren(SynPat.Tuple(false, [ status; content ], range0), range0)
                     SynExpr.LetOrUseBang(DebugPointForBinding.DebugPointAtBinding range0, false, false, headPat, body, [], continuation, range0)
 
@@ -1836,7 +1884,7 @@ let createOpenApiClient
                 let deconstructResponse body continuation =
                     let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
                     let status = SynPat.Named(SynPat.Wild range0, Ident.Create "status", false, None, range0)
-                    let content = SynPat.Named(SynPat.Wild range0, Ident.Create "content", false, None, range0)
+                    let content = SynPat.Named(SynPat.Wild range0, Ident.Create contentIdent, false, None, range0)
                     let headPat = SynPat.Paren(SynPat.Tuple(false, [ status; content ], range0), range0)
                     let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, body, range0, DebugPointForBinding.DebugPointAtBinding range0 )
                     SynExpr.LetOrUse(false, false, [binding], continuation, range0)
@@ -1892,7 +1940,12 @@ let createOpenApiClient
                 ]
 
                 let httpFunction = operation.Key.ToString().ToLower()
-                let httpFunctionAsync = $"{httpFunction}Async"
+                
+                let httpFunctionAsync = 
+                    if hasBinaryResponse 
+                    then $"{httpFunction}BinaryAsync"
+                    else $"{httpFunction}Async"
+
                 let requestParts = Ident.Create "requestParts"
                 let httpCall httpFunc =
                     SynExpr.CreatePartialApp(["OpenApiHttp"; httpFunc], [
@@ -1959,71 +2012,141 @@ let createOpenApiClient
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
                         if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && response.Content.["application/json"].Schema.Format = "byte" then 
-                            // when the media type is JSON but the return type is string
-                            // read the string as is without deserialization
+                            // Assume we have a binary response
                             SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
-                                        createIdent [ "content" ]
-                                    ])
-                                )
+                                createIdent [ contentIdent ]
                             ])
-                            |> wrappedReturn 
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "file" then 
+                            // Assume we have a binary response
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                createIdent [ contentIdent ]
+                            ])
+                            |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then 
-                            // when the media type is JSON but the return type is string
-                            // read the string as is without deserialization
-                            SynExpr.CreatePartialApp([responseType; status], [
-                                createIdent [ "content" ]
-                            ])
-                            |> wrappedReturn
+                            if hasBinaryResponse then 
+                                let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+                                
+                                createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        createIdent [ "content" ]
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            else
+                                // when the media type is JSON but the return type is string
+                                // read the string as is without deserialization
+                                SynExpr.CreatePartialApp([responseType; status], [
+                                    createIdent [ "content" ]
+                                ])
+                                |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
-                            SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
-                                        createIdent [ "content" ]
+                            if hasBinaryResponse then 
+                                let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+                                
+                                createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
                                     ])
+                                    |> wrappedReturn
                                 )
-                            ])
-                            |> wrappedReturn
+                            else
+                                SynExpr.CreatePartialApp([responseType; status], [
+                                    SynExpr.CreateParen(
+                                        SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                            createIdent [ "content" ]
+                                        ])
+                                    )
+                                ])
+                                |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && isNotNull response.Content.["application/json"].Schema.AdditionalProperties then 
-                            SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
-                                        createIdent [ "content" ]
+                            if hasBinaryResponse then 
+                                let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+    
+                                createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
                                     ])
+                                    |> wrappedReturn
                                 )
-                            ])
-                            |> wrappedReturn
+                            else
+                                SynExpr.CreatePartialApp([responseType; status], [
+                                    SynExpr.CreateParen(
+                                        SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                            createIdent [ "content" ]
+                                        ])
+                                    )
+                                ])
+                                |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
-                            SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                            if hasBinaryResponse then 
+                                let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+    
+                                createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            else
+                                SynExpr.CreatePartialApp([responseType; status], [
+                                    SynExpr.CreateParen(
+                                        SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                            createIdent [ "content" ]
+                                        ])
+                                    )
+                                ])
+                                |> wrappedReturn
+                        elif response.Content.ContainsKey "text/plain" then
+                            if hasBinaryResponse then 
+                                let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+    
+                                createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
                                         createIdent [ "content" ]
                                     ])
+                                    |> wrappedReturn
                                 )
-                            ])
-                            |> wrappedReturn
-                        elif response.Content.ContainsKey "text/plain" then
-                            SynExpr.CreatePartialApp([responseType; status], [
-                                createIdent [ "content" ]
-                            ])
-                            |> wrappedReturn
+                            else
+                                SynExpr.CreatePartialApp([responseType; status], [
+                                    createIdent [ "content" ]
+                                ])
+                                |> wrappedReturn
                         elif response.Content.ContainsKey "application/octet-stream" || response.Content.ContainsKey "application/pdf" then
                             SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
-                                        createIdent [ "content" ]
-                                    ])
-                                )
+                                createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
                         elif response.Content.ContainsKey "image/png" && response.Content.["image/png"].Schema.Format = "binary" then
                             SynExpr.CreatePartialApp([responseType; status], [
-                                SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["System"; "Text"; "Encoding"; "UTF8"; "GetBytes"], [
-                                        createIdent [ "content" ]
-                                    ])
-                                )
+                                createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
                         else
@@ -2180,6 +2303,7 @@ let createOpenApiClient
     let moduleContents = [
         yield SynModuleDecl.CreateOpen "System.Net"
         yield SynModuleDecl.CreateOpen "System.Net.Http"
+        yield SynModuleDecl.CreateOpen "System.Text"
         yield SynModuleDecl.CreateOpen $"{config.project}.Types"
         yield SynModuleDecl.CreateOpen $"{config.project}.Http"
         if config.asyncReturnType = AsyncReturnType.Task then
@@ -2412,7 +2536,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.22.0"
+        printfn "0.23.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

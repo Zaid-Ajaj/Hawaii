@@ -2,7 +2,7 @@
 
 ![](logo.png)
 
-A dotnet CLI tool to generate type-safe F# clients from OpenAPI documents.
+A dotnet CLI tool to generate type-safe F# clients from OpenAPI/Swagger services.
 
 ### Install
 
@@ -120,7 +120,7 @@ Here is an example for how you can override operation IDs for certain paths
 ```
 The `overrideSchema` property basically takes a subset of another schema and _merges_ it with the source schema. 
 
-You can go a step further by overriding the return types of certain responses. The following example shows how you can get a free-form JSON object from the default response of a path instead of getting a typed response:
+You can go a step further by overriding the return types of certain responses. The following example shows how you can get the raw text output from the default response of a path instead of getting a typed response:
 ```json
 {
   "overrideSchema": {
@@ -132,8 +132,7 @@ You can go a step further by overriding the return types of certain responses. T
               "content": {
                 "application/json": {
                   "schema": {
-                    "type": "object",
-                    "additionalProperties":  { }
+                    "type": "string"
                   }
                 }
               }

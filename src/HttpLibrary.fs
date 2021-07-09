@@ -272,11 +272,37 @@ module OpenApiHttp =
             return (response.StatusCode, content)
         }
 
+    let sendBinaryAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) =
+        let modifiedPath = applyPathParts path parts
+        let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
+        let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
+        use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
+        let populatedRequest =
+            request
+            |> applyJsonContent parts
+            |> applyBinaryContent parts
+            |> applyUrlEncodedFormData parts
+            |> applyMultiPartFormData parts
+            |> applyHeaders parts
+
+        async {
+            let! response = {getResponse}
+            let! content = {getBinaryContent}
+            return (response.StatusCode, content)
+        }
+
     let getAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Get path parts
 
     let get (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         getAsync httpClient path parts
+        {convertSync}
+
+    let getBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient HttpMethod.Get path parts
+
+    let getBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        getBinaryAsync httpClient path parts
         {convertSync}
 
     let postAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
@@ -286,11 +312,25 @@ module OpenApiHttp =
         postAsync httpClient path parts
         {convertSync}
 
+    let postBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient HttpMethod.Post path parts
+
+    let postBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) = 
+        postBinaryAsync httpClient path parts
+        {convertSync}
+
     let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient HttpMethod.Delete path parts
 
     let delete (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         deleteAsync httpClient path parts
+        {convertSync}
+
+    let deleteBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient HttpMethod.Delete path parts
+
+    let deleteBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        deleteBinaryAsync httpClient path parts
         {convertSync}
 
     let putAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
@@ -300,6 +340,13 @@ module OpenApiHttp =
         putAsync httpClient path parts
         {convertSync}
 
+    let putBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient HttpMethod.Put path parts
+
+    let putBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        putBinaryAsync httpClient path parts
+        {convertSync}
+
     let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient (HttpMethod "PATCH") path parts
 
@@ -307,11 +354,25 @@ module OpenApiHttp =
         patchAsync httpClient path parts
         {convertSync}
 
+    let patchBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient (HttpMethod "PATCH") path parts
+
+    let patchBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        patchBinaryAsync httpClient path parts
+        {convertSync}
+    
     let headAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         sendAsync httpClient (HttpMethod "HEAD") path parts
 
     let head (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
         headAsync httpClient path parts
+        {convertSync}
+
+    let headBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        sendBinaryAsync httpClient (HttpMethod "HEAD") path parts
+
+    let headBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
+        headBinaryAsync httpClient path parts
         {convertSync}
 """
 
@@ -331,6 +392,11 @@ let library isTask projectName =
         then "response.Content.ReadAsStringAsync()"
         else "Async.AwaitTask(response.Content.ReadAsStringAsync())"
 
+    let getBinaryContent = 
+        if isTask
+        then "response.Content.ReadAsByteArrayAsync()"
+        else "Async.AwaitTask(response.Content.ReadAsByteArrayAsync())"
+
     content
         .Replace("{projectName}", projectName)
         .Replace("{taskLibrary}", if isTask then "open FSharp.Control.Tasks" else "")
@@ -338,3 +404,4 @@ let library isTask projectName =
         .Replace("{convertSync}", convertSync)
         .Replace("{getResponse}", getResponse)
         .Replace("{getContent}", getContent)
+        .Replace("{getBinaryContent}", getBinaryContent)
