@@ -153,7 +153,7 @@ These are the very early days of Hawaii as a tool to generate F# clients and the
 
 > You can watch the live coding sessions as a playlist published on [YouTube here](https://www.youtube.com/watch?v=8dgjD6vG7yw&list=PLBzGkJMamtz0KCkK7OFnuXyXP7yUtnt9o)
 
-### Integration testings 
+### Running integration tests
 ```bash
 cd ./build
 # run hawaii against 20 schemas

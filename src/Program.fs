@@ -1293,12 +1293,11 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                         if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
                             let fieldType = getFieldType responsePayloadType.Schema caseName
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                        elif not (isNull responsePayloadType.Schema) && isEmptySchema responsePayloadType.Schema then 
-                            if responsePayloadType.Schema.AdditionalPropertiesAllowed && not (isNull responsePayloadType.Schema.AdditionalProperties) then
-                                let fieldType = 
-                                    if config.target = Target.FSharp
-                                    then SynType.JToken()
-                                    else SynType.Object()
+                        elif isNotNull responsePayloadType.Schema && isEmptySchema responsePayloadType.Schema then 
+                            if responsePayloadType.Schema.AdditionalPropertiesAllowed && isNotNull responsePayloadType.Schema.AdditionalProperties then
+                                let valueType = getFieldType responsePayloadType.Schema.AdditionalProperties caseName
+                                let keyType = SynType.String()
+                                let fieldType =  SynType.Map(keyType, valueType)
                                 [SynFieldRcd.Create("payload", fieldType).FromRcd]
                             else 
                                 []
@@ -2653,7 +2652,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.25.0"
+        printfn "0.26.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
