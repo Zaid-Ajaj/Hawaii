@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.26.0</Version>
-    <PackageReleaseNotes>Fix additional types handling when creating output payloads</PackageReleaseNotes>
+    <Version>0.27.0</Version>
+    <PackageReleaseNotes>Let binding instead of use binding in the HTTP runtime</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

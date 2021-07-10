@@ -257,7 +257,7 @@ module OpenApiHttp =
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
-        use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
+        let request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
         let populatedRequest =
             request
             |> applyJsonContent parts
@@ -276,7 +276,7 @@ module OpenApiHttp =
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
-        use request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
+        let request = new HttpRequestMessage(RequestUri=requestUri, Method=method)
         let populatedRequest =
             request
             |> applyJsonContent parts
