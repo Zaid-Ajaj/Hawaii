@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.27.0</Version>
-    <PackageReleaseNotes>Let binding instead of use binding in the HTTP runtime</PackageReleaseNotes>
+    <Version>0.28.0</Version>
+    <PackageReleaseNotes>Fix asyncBuilder usage in sendBinaryAsync with tasks</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

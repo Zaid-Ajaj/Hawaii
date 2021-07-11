@@ -30,7 +30,7 @@ let logo = """
 """
 
 [<RequireQualifiedAccess>]
-type EmptyDefinitionResolution = 
+type EmptyDefinitionResolution =
     | Ignore
     | GenerateFreeForm
 
@@ -47,7 +47,7 @@ type AsyncReturnType =
     | Task
 
 [<RequireQualifiedAccess>]
-type FactoryFunction = 
+type FactoryFunction =
     | Create
     | None
 
@@ -137,11 +137,11 @@ let readConfig file =
                     if isNotNull parts.["resolveReferences"]
                     then parts.["resolveReferences"].ToObject<bool>()
                     else false
-                emptyDefinitions = 
+                emptyDefinitions =
                     if isNotNull parts.["emptyDefinitions"] && parts.["emptyDefinitions"].ToString() = "free-form"
                     then EmptyDefinitionResolution.GenerateFreeForm
                     else EmptyDefinitionResolution.Ignore
-                overrideSchema = 
+                overrideSchema =
                     if isNotNull parts.["overrideSchema"]
                     then Some parts.["overrideSchema"]
                     else None
@@ -149,7 +149,7 @@ let readConfig file =
     with
     | error ->
         Error $"Error ocurred while reading the configuration file: {error.Message}"
-        
+
 let escapeDocs (value: string) = value.Replace(">", "&gt;").Replace("<", "&lt;").Replace("&", "&amp;")
 
 let xmlDocs (description: string) =
@@ -200,8 +200,8 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
 
 let client = new HttpClient()
 let getSchema(schema: string) (overrideSchema: JToken option) =
-    let schemaContents = 
-        if File.Exists schema then 
+    let schemaContents =
+        if File.Exists schema then
             let content = File.ReadAllText schema
             JObject.Parse(content)
         elif schema.StartsWith "http" then
@@ -216,22 +216,22 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
             // this is useful for unit tests
             JObject.Parse(schema)
 
-    match overrideSchema with 
+    match overrideSchema with
     | None -> ()
     | Some miniSchema -> schemaContents.Merge(miniSchema)
 
-    // Pre-process NSwag schemas and add { "produces": ["application/json"] } if missing for operations 
+    // Pre-process NSwag schemas and add { "produces": ["application/json"] } if missing for operations
     // we assume Hawaii is working with schemas that produce JSON
     if schemaContents.ContainsKey "x-generator" && schemaContents.["x-generator"].ToObject<string>().StartsWith "NSwag" then
-        if schemaContents.ContainsKey "paths" && schemaContents.["paths"].Type = JTokenType.Object then 
+        if schemaContents.ContainsKey "paths" && schemaContents.["paths"].Type = JTokenType.Object then
             let pathsObject = unbox<JObject> schemaContents.["paths"]
-            for path in pathsObject.Properties() do 
-                if path.Value.Type = JTokenType.Object then 
+            for path in pathsObject.Properties() do
+                if path.Value.Type = JTokenType.Object then
                     let operations = unbox<JObject> path.Value
-                    for operation in operations.Properties() do 
+                    for operation in operations.Properties() do
                         if operation.Value.Type = JTokenType.Object then
                             let operationAsObject = unbox<JObject> operation.Value
-                            if not (operationAsObject.ContainsKey "produces") then 
+                            if not (operationAsObject.ContainsKey "produces") then
                                 operationAsObject.Add(JProperty("produces", [| "application/json" |]))
 
     let schemaBytes = System.Text.Encoding.UTF8.GetBytes(schemaContents.ToString())
@@ -291,16 +291,16 @@ let findNextTypeName fieldName objectName (selections: string list) (visitedType
         nextTick (capitalize fieldName + "From" + objectName) visitedTypes
 
 let findNextEnumTypeName (fieldName: string) objectName (visitedTypes: ResizeArray<string>) =
-    let fieldName = 
+    let fieldName =
         if fieldName.Contains "." then
             fieldName.Split('.')
             |> Array.map capitalize
             |> String.concat ""
-        elif fieldName.Contains " " then 
+        elif fieldName.Contains " " then
             fieldName.Split(' ')
             |> Array.map capitalize
             |> String.concat ""
-        else 
+        else
             fieldName
 
     if not (visitedTypes.Contains (capitalize fieldName)) then
@@ -326,16 +326,16 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
                 | :? Microsoft.OpenApi.Any.OpenApiString as primitiveValue -> Some primitiveValue.Value
                 | _ -> None)
 
-        let containsDigitsOnly (case: string) = 
+        let containsDigitsOnly (case: string) =
             Seq.forall Char.IsDigit case
 
-        let allDigitCases = 
+        let allDigitCases =
             Seq.forall containsDigitsOnly cases
 
-        let containsQoutes = 
+        let containsQoutes =
             cases |> Seq.exists (fun case -> case.Contains "\"")
 
-        let containsTimeZone = 
+        let containsTimeZone =
             cases |> Seq.exists (fun case -> case.Contains "00Z")
 
         if not (Seq.isEmpty cases) && not allDigitCases && not containsQoutes && not containsTimeZone then
@@ -345,39 +345,39 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
     else
         None
 
-let rec cleanOperationName (operationName: string) = 
+let rec cleanOperationName (operationName: string) =
     let operation = operationName.Replace("{", "").Replace("}", "")
     if operation.Contains "-" then
         operation.Split('-', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
-    elif operation.Contains "." then 
+    elif operation.Contains "." then
         operation.Split('.', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
-    elif operation.Contains "#" then 
+    elif operation.Contains "#" then
         operation.Split('#', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
-    elif operation.Contains "_" then 
+    elif operation.Contains "_" then
         operation.Split('_', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
-    elif operation.Contains "/" then 
+    elif operation.Contains "/" then
         operation.Split('/', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
     elif operation.Contains "?" then
-        match operation.Split '?' with 
-        | [| path; parameters |] -> 
-            let queryParams = 
+        match operation.Split '?' with
+        | [| path; parameters |] ->
+            let queryParams =
                 parameters.Split([|'&'; '=' |], StringSplitOptions.RemoveEmptyEntries)
                 |> Array.map (fun part -> part.Replace("{", "").Replace("}", ""))
                 |> Array.distinctBy id
                 |> Array.map capitalize
                 |> String.concat "And"
             cleanOperationName (path + "By" + queryParams)
-        | _ -> 
+        | _ ->
             operation.Split([| '?'; '='; '&' |], StringSplitOptions.RemoveEmptyEntries)
             |> Array.map capitalize
             |> String.concat ""
@@ -385,12 +385,12 @@ let rec cleanOperationName (operationName: string) =
         operation
 
 let rec deriveOperationName (operationName: string) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) =
-    if not (String.IsNullOrWhiteSpace operationName) then 
+    if not (String.IsNullOrWhiteSpace operationName) then
         if not (visitedTypes.Contains (cleanOperationName operationName)) then
            cleanOperationName operationName
-        elif not (visitedTypes.Contains (string operationType + cleanOperationName operationName)) then 
+        elif not (visitedTypes.Contains (string operationType + cleanOperationName operationName)) then
             string operationType + cleanOperationName operationName
-        else 
+        else
             deriveOperationName "" path operationType visitedTypes
     else
         let parts = path.Split("/")
@@ -405,9 +405,9 @@ let rec deriveOperationName (operationName: string) (path: string) (operationTyp
         let segments =
             parts
             |> Array.filter (fun part -> not (part.Contains "{" && part.Contains "}"))
-            |> Array.mapi (fun index part -> 
-                if index <> 0 
-                then cleanOperationName (capitalize part) 
+            |> Array.mapi (fun index part ->
+                if index <> 0
+                then cleanOperationName (capitalize part)
                 else cleanOperationName part)
             |> String.concat ""
 
@@ -417,7 +417,7 @@ let rec deriveOperationName (operationName: string) (path: string) (operationTyp
             cleanOperationName (string operationType + segments + "By" + parameters)
 
 let deriveMemberName (operationName: string) (path: string) (operationType: OperationType) =
-    if not (String.IsNullOrWhiteSpace operationName) then 
+    if not (String.IsNullOrWhiteSpace operationName) then
         cleanOperationName operationName
     else
         let parts = path.Split("/")
@@ -432,9 +432,9 @@ let deriveMemberName (operationName: string) (path: string) (operationType: Oper
         let segments =
             parts
             |> Array.filter (fun part -> not (part.Contains "{" && part.Contains "}"))
-            |> Array.mapi (fun index part -> 
-                if index <> 0 
-                then cleanOperationName (capitalize part) 
+            |> Array.mapi (fun index part ->
+                if index <> 0
+                then cleanOperationName (capitalize part)
                 else cleanOperationName part)
             |> String.concat ""
 
@@ -443,7 +443,7 @@ let deriveMemberName (operationName: string) (path: string) (operationType: Oper
         else
             cleanOperationName (string operationType + segments + "By" + parameters)
 
-module MediaTypes = 
+module MediaTypes =
     let [<Literal>] ApplicationJson = "application/json"
     let [<Literal>] OctetStream = "application/octet-stream"
     let [<Literal>] ApplicationPdf = "application/pdf"
@@ -490,25 +490,25 @@ let (|IntEnum|_|) (typeName: string) (schema: OpenApiSchema) =
         None
 
 let sanitizeTypeName (typeName: string) =
-    if String.IsNullOrWhiteSpace typeName then 
+    if String.IsNullOrWhiteSpace typeName then
         typeName
     elif typeName.Contains "`" then
         match typeName.Split '`' with
         | [| name; typeArgArity |] -> name
         | _ -> typeName.Replace("`", "")
-    elif typeName.Contains "." then 
+    elif typeName.Contains "." then
         typeName.Split('.', StringSplitOptions.RemoveEmptyEntries)
         |> String.concat ""
-    elif typeName.Contains "_" then 
+    elif typeName.Contains "_" then
         typeName.Split('_', StringSplitOptions.RemoveEmptyEntries)
         |> String.concat ""
-    elif typeName.Contains "[" && typeName.Contains "]" then 
+    elif typeName.Contains "[" && typeName.Contains "]" then
         typeName.Replace("[", "").Replace("]", "")
     else
         typeName
 
-let invalidTitle (title: string) = 
-    String.IsNullOrWhiteSpace title 
+let invalidTitle (title: string) =
+    String.IsNullOrWhiteSpace title
     || (title.Contains "Mediatype identifier" && title.Contains "application/")
     || (title.Split(' ').Length >= 1)
 
@@ -516,8 +516,8 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
     if not required then
         let optionalType : SynType = createFieldType recordName true propertyName propertySchema config
         SynType.Option(optionalType)
-    elif isNull propertySchema then 
-        if config.target = Target.FSharp 
+    elif isNull propertySchema then
+        if config.target = Target.FSharp
         then SynType.JToken()
         else SynType.Object()
     else
@@ -558,8 +558,8 @@ let createEnumType (enumName: string) (values: seq<string>) (docs: string option
             ]
         ]
         Id = [ Ident.Create enumName ]
-        XmlDoc = 
-            match docs with 
+        XmlDoc =
+            match docs with
             | None -> PreXmlDoc.Empty
             | Some value -> xmlDocs value
         Parameters = [ ]
@@ -568,38 +568,38 @@ let createEnumType (enumName: string) (values: seq<string>) (docs: string option
         Range = range0
     }
 
-    let cleanEnumValue (case: string) = 
-        if String.IsNullOrWhiteSpace case then 
+    let cleanEnumValue (case: string) =
+        if String.IsNullOrWhiteSpace case then
             "EmptyString"
         else
-            let parts = 
+            let parts =
                 case.Split([| '/'; '.'; ','; '['; '-'; ']';'('; ')'; ' ' |], StringSplitOptions.RemoveEmptyEntries)
-            if parts.Length >= 1 then 
+            if parts.Length >= 1 then
                 parts
-                |> Array.map (fun part -> 
-                    let removedNumberPrefix = 
-                        if Char.IsDigit part.[0] && not (Seq.forall Char.IsDigit part) then 
+                |> Array.map (fun part ->
+                    let removedNumberPrefix =
+                        if Char.IsDigit part.[0] && not (Seq.forall Char.IsDigit part) then
                             part
                             |> Seq.skipWhile (Char.IsLetter >> not)
                             |> Array.ofSeq
                             |> String
-                        elif Seq.forall Char.IsDigit part then 
-                            $"Numeric_{part}" 
+                        elif Seq.forall Char.IsDigit part then
+                            $"Numeric_{part}"
                         elif part.[0] = '+' then
                             $"Plus{String(Array.ofSeq part.[1..])}"
-                        elif part = "<" then 
+                        elif part = "<" then
                             "LessThan"
-                        elif part = "<=" then 
+                        elif part = "<=" then
                             "LessThanOrEqual"
-                        elif part = ">" then 
+                        elif part = ">" then
                             "GreaterThan"
-                        elif part = ">=" then 
+                        elif part = ">=" then
                             "GreaterThanOrEqual"
-                        elif part = "==" || part = "=" then 
+                        elif part = "==" || part = "=" then
                             "Equal"
-                        elif part = "!=" || part = "<>" then 
+                        elif part = "!=" || part = "<>" then
                             "NotEqual"
-                        else 
+                        else
                             part
                     capitalize removedNumberPrefix
                 )
@@ -607,7 +607,7 @@ let createEnumType (enumName: string) (values: seq<string>) (docs: string option
             else
                 capitalize case
 
-    let distinctValues = 
+    let distinctValues =
         values
         |> Seq.distinctBy (fun value -> cleanEnumValue value)
 
@@ -661,11 +661,11 @@ let statusCode = function
     | "default" -> Some "DefaultResponse"
     | _ -> None
 
-let isEmptySchema (schema: OpenApiSchema) = 
+let isEmptySchema (schema: OpenApiSchema) =
     isNull schema
     || (
         (isNull schema.Type || schema.Type = "object")
-        && schema.Properties.Count = 0 
+        && schema.Properties.Count = 0
         && schema.AllOf.Count = 0
         && schema.AnyOf.Count = 0
     )
@@ -739,20 +739,20 @@ let createTypeAbbreviationWithDocs (abbreviation: string) (aliasedType: SynType)
     let typeInfo = SynTypeDefn.TypeDefn(info.FromRcd, typeRepr, [], range0)
     SynModuleDecl.Types ([ typeInfo ], range0)
 
-let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) = 
+let isGlobalRef (name: string) (openApiDocument: OpenApiDocument) =
     let typeName = sanitizeTypeName name
-    let schemas = 
+    let schemas =
         if isNotNull openApiDocument.Components
         then List.ofSeq (openApiDocument.Components.Schemas)
         else []
 
-    let isGlobal = 
+    let isGlobal =
         schemas
-        |> List.exists (fun pair -> 
+        |> List.exists (fun pair ->
             let pairName = sanitizeTypeName pair.Key
             let isRef = isNotNull pair.Value.Reference
             isRef && (
-                typeName = pairName 
+                typeName = pairName
                 || typeName = sanitizeTypeName pair.Value.Reference.Id
             )
         )
@@ -776,7 +776,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
     let addedFields = ResizeArray<string * bool * SynType>()
 
     let rec createPropertyType (propertyName: string) (propertyType: OpenApiSchema) =
-        if isNull propertyType then 
+        if isNull propertyType then
             None
         else
         let isEnum = isEnumType propertyType
@@ -794,9 +794,9 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             && not (isNull propertyType.AdditionalProperties)
             && not (isNull propertyType.AdditionalProperties.Type && propertyType.AdditionalProperties.Properties.Count > 0)
 
-        let isEnumArray = 
-            propertyType.Type = "array" 
-            && isNotNull propertyType.Items 
+        let isEnumArray =
+            propertyType.Type = "array"
+            && isNotNull propertyType.Items
             && isEnumType propertyType.Items
 
         let isEmptyObjectDefinition =
@@ -920,8 +920,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 |> Seq.map (fun pair -> pair.Key)
                 |> Seq.toList
 
-            if isEmptySchema propertyType then 
-                let freeFormType = 
+            if isEmptySchema propertyType then
+                let freeFormType =
                     if config.target = Target.FSharp
                     then SynType.JToken()
                     else SynType.Object()
@@ -1025,7 +1025,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         else
             None
 
-    let alreadyContainsProperty (name: string) = 
+    let alreadyContainsProperty (name: string) =
         addedFields
         |> Seq.exists (fun (fieldName, _, _) -> fieldName = name)
 
@@ -1092,7 +1092,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 else additionalType
             let dictionaryType = SynType.Map(SynType.String(), valueType)
             [ createTypeAbbreviation recordName dictionaryType ]
-    elif recordFields.Count = 0 then 
+    elif recordFields.Count = 0 then
         // couldn't add any fields
         let valueType =
             if config.target = Target.FSharp
@@ -1148,16 +1148,16 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 }
         ]
 
-        let anyFieldHasDots = 
+        let anyFieldHasDots =
             addedFields
             |> Seq.exists (fun (fieldName, _, _) -> fieldName.Contains "." || fieldName.Contains "/")
 
         // when fields have dots, they are not escaped for some reason
         // TODO: fix it later in fantomas
         // right now, we just won't generate the `Create` function
-        let eventualMembers = 
-            if anyFieldHasDots || factory = FactoryFunction.None 
-            then [] 
+        let eventualMembers =
+            if anyFieldHasDots || factory = FactoryFunction.None
+            then []
             else members
 
         [
@@ -1187,12 +1187,12 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         | "file" ->
             SynType.ByteArray()
         | "array" when isNotNull schema.Items ->
-            let elementSchema = schema.Items 
+            let elementSchema = schema.Items
             let elementType = getFieldType elementSchema status
             SynType.List elementType
-        | "array" -> 
+        | "array" ->
             // element type schema is null
-            let elementType = 
+            let elementType =
                 if config.target = Target.FSharp
                 then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray"
                 else SynType.ResizeArray(SynType.Create "obj")
@@ -1209,17 +1209,17 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
             let valueType = getFieldType schema.AdditionalProperties status
             let keyType = SynType.String()
             SynType.Map(keyType, valueType)
-        | "object" -> 
+        | "object" ->
             let recordName = $"{operationName}_{status}"
             visitedTypes.Add recordName
             let factory = FactoryFunction.None
-            for generatedType in createRecordFromSchema recordName schema visitedTypes config document factory do 
+            for generatedType in createRecordFromSchema recordName schema visitedTypes config document factory do
                 intermediateTypes.Add generatedType
             SynType.Create recordName
         | _ ->
             SynType.String()
 
-    let hasLoosePayloadRequestBody = 
+    let hasLoosePayloadRequestBody =
         isNotNull operation.RequestBody
         && operation.RequestBody.Content.ContainsKey MediaTypes.ApplicationJson
         && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
@@ -1228,16 +1228,16 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Properties
         && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Properties.Count > 0
 
-    if hasLoosePayloadRequestBody then 
+    if hasLoosePayloadRequestBody then
         let schema = operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
         let payloadTypeName = $"{operationName}Payload"
         visitedTypes.Add payloadTypeName
         let factory = FactoryFunction.Create
-        for generatedType in createRecordFromSchema payloadTypeName schema visitedTypes config document factory do 
+        for generatedType in createRecordFromSchema payloadTypeName schema visitedTypes config document factory do
             intermediateTypes.Add generatedType
         operation.Extensions.Add("RequestTypePayload", new Microsoft.OpenApi.Any.OpenApiString(payloadTypeName))
 
-    let hasArrayOfLooseObjectsInRequestPayload = 
+    let hasArrayOfLooseObjectsInRequestPayload =
         isNotNull operation.RequestBody
         && operation.RequestBody.Content.ContainsKey MediaTypes.ApplicationJson
         && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema
@@ -1248,14 +1248,14 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         && isNotNull operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items.Properties
         && operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items.Properties.Count > 0
 
-    if hasArrayOfLooseObjectsInRequestPayload then 
+    if hasArrayOfLooseObjectsInRequestPayload then
         let payloadTypeName = $"{operationName}Payload"
         let elementTypeName = $"{payloadTypeName}ArrayItem"
         let schema = operation.RequestBody.Content.[MediaTypes.ApplicationJson].Schema.Items
         visitedTypes.Add payloadTypeName
         visitedTypes.Add elementTypeName
         let factory = FactoryFunction.Create
-        for generatedType in createRecordFromSchema elementTypeName schema visitedTypes config document factory do 
+        for generatedType in createRecordFromSchema elementTypeName schema visitedTypes config document factory do
             intermediateTypes.Add generatedType
         intermediateTypes.Add(createTypeAbbreviation payloadTypeName (SynType.List(SynType.Create elementTypeName)))
         operation.Extensions.Add("RequestTypePayload", new Microsoft.OpenApi.Any.OpenApiString(payloadTypeName))
@@ -1293,13 +1293,13 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                         if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
                             let fieldType = getFieldType responsePayloadType.Schema caseName
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                        elif isNotNull responsePayloadType.Schema && isEmptySchema responsePayloadType.Schema then 
+                        elif isNotNull responsePayloadType.Schema && isEmptySchema responsePayloadType.Schema then
                             if responsePayloadType.Schema.AdditionalPropertiesAllowed && isNotNull responsePayloadType.Schema.AdditionalProperties then
                                 let valueType = getFieldType responsePayloadType.Schema.AdditionalProperties caseName
                                 let keyType = SynType.String()
                                 let fieldType =  SynType.Map(keyType, valueType)
                                 [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                            else 
+                            else
                                 []
                         else
                             []
@@ -1332,12 +1332,12 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
             yield SynUnionCase.UnionCase([], Ident.Create (capitalize "DefaultResponse"), SynUnionCaseType.UnionCaseFields [], docs, None, range0)
     ])
 
-    
+
     let simpleType = SynTypeDefnSimpleReprRcd.Union(enumRepresentation)
 
-    [ 
+    [
         yield! intermediateTypes
-        yield SynModuleDecl.CreateSimpleType(info, simpleType, []) 
+        yield SynModuleDecl.CreateSimpleType(info, simpleType, [])
     ]
 
 // type KeyValuePair<'TKey, 'TValue> = { Key: 'TKey, Value: 'TValue }
@@ -1368,43 +1368,43 @@ let createKeyValuePair() =
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
 
-let rec isPrimitiveAllOf (schema: OpenApiSchema) = 
-    if isNotNull schema.AllOf && schema.AllOf.Count > 0 then 
+let rec isPrimitiveAllOf (schema: OpenApiSchema) =
+    if isNotNull schema.AllOf && schema.AllOf.Count > 0 then
         schema.AllOf
-        |> Seq.forall(fun innerSchema -> 
-            let isPrimitive = 
+        |> Seq.forall(fun innerSchema ->
+            let isPrimitive =
                 innerSchema.Type = "string"
                 || innerSchema.Type = "boolean"
                 || innerSchema.Type = "integer"
                 || innerSchema.Type = "number"
 
-            if isNotNull innerSchema.AllOf && innerSchema.AllOf.Count > 0 then 
+            if isNotNull innerSchema.AllOf && innerSchema.AllOf.Count > 0 then
                 isPrimitive && isPrimitiveAllOf innerSchema
-            else 
+            else
                 isPrimitive
         )
     else
         false
 
-let rec collectPrimitiveAllOf (schema: OpenApiSchema) = 
-    if isNotNull schema.AllOf then 
+let rec collectPrimitiveAllOf (schema: OpenApiSchema) =
+    if isNotNull schema.AllOf then
         [
-            for innerSchema in schema.AllOf do 
+            for innerSchema in schema.AllOf do
                 yield innerSchema.Type
 
-                if isNotNull innerSchema.AllOf then 
-                    for nestedSchema in innerSchema.AllOf do 
+                if isNotNull innerSchema.AllOf then
+                    for nestedSchema in innerSchema.AllOf do
                         yield! collectPrimitiveAllOf nestedSchema
         ]
-    else 
+    else
         [
-            
+
         ]
 
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
-    if isNotNull openApiDocument.Components then 
+    if isNotNull openApiDocument.Components then
 
         // first add all global enum types
         for topLevelObject in openApiDocument.Components.Schemas do
@@ -1456,29 +1456,29 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 // create type abbreviation
                 moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
                 visitedTypes.Add typeName
-            elif isPrimitiveAllOf topLevelObject.Value then 
+            elif isPrimitiveAllOf topLevelObject.Value then
                 let collectedTypes = collectPrimitiveAllOf topLevelObject.Value
-                let primitiveType = 
+                let primitiveType =
                     collectedTypes
-                    |> List.groupBy id 
+                    |> List.groupBy id
                     |> List.sortByDescending (fun (key, types) -> List.length types)
-                    |> List.tryHead 
+                    |> List.tryHead
                     |> Option.map (fun (key, types) -> key)
 
-                match primitiveType with 
-                | Some "string" ->  
+                match primitiveType with
+                | Some "string" ->
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.String()))
                     visitedTypes.Add typeName
-                | Some "boolean" -> 
+                | Some "boolean" ->
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.Bool()))
                     visitedTypes.Add typeName
-                | Some "integer" -> 
+                | Some "integer" ->
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.Int()))
                     visitedTypes.Add typeName
-                | Some "number" -> 
+                | Some "number" ->
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.Double()))
                     visitedTypes.Add typeName
-                | _ -> 
+                | _ ->
                     ()
             elif topLevelObject.Value.Type = "array" then
                 let elementType = topLevelObject.Value.Items
@@ -1543,7 +1543,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     // create type abbreviation
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
                     visitedTypes.Add typeName
-                elif elementType.Type = "object" && isNotNull elementType then 
+                elif elementType.Type = "object" && isNotNull elementType then
                     let elementTypeName = $"{typeName}ArrayItem"
                     visitedTypes.Add typeName
                     let factory = FactoryFunction.Create
@@ -1556,7 +1556,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
         // then handle the global objects
         for topLevelObject in openApiDocument.Components.Schemas do
-            let canUseTitle = 
+            let canUseTitle =
                 not (invalidTitle topLevelObject.Value.Title)
                 && not (isGlobalRef topLevelObject.Value.Title openApiDocument)
 
@@ -1578,18 +1578,18 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 && topLevelObject.Value.Properties.ContainsKey "Value"
 
             if isEmptySchema topLevelObject.Value then
-                match config.emptyDefinitions with 
+                match config.emptyDefinitions with
                 | EmptyDefinitionResolution.Ignore -> ()
-                | EmptyDefinitionResolution.GenerateFreeForm -> 
-                    let freeFormType = 
-                        if config.target = Target.FSharp 
+                | EmptyDefinitionResolution.GenerateFreeForm ->
+                    let freeFormType =
+                        if config.target = Target.FSharp
                         then SynType.JToken()
                         else SynType.Object()
                     moduleTypes.Add (createTypeAbbreviationWithDocs typeName freeFormType topLevelObject.Value.Description)
                     visitedTypes.Add typeName
-            elif isPrimitiveAllOf topLevelObject.Value then 
+            elif isPrimitiveAllOf topLevelObject.Value then
                 // handled in primitive types case
-                () 
+                ()
             elif isKeyValuePairObject && not (visitedTypes.Contains "KeyValuePair") then
                 // create specialized key value pair when encountering auto generated type
                 // from .NET backend services that encode System.Collections.Generic.KeyValuePair
@@ -1599,7 +1599,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 // skip generating more key value pair type
                 ()
             elif topLevelObject.Value.Type = "object" || isAllOf || (isNull topLevelObject.Value.Type && topLevelObject.Value.Properties.Count > 0) then
-                if not (visitedTypes.Contains typeName) then 
+                if not (visitedTypes.Contains typeName) then
                     visitedTypes.Add typeName
                     let factory = FactoryFunction.Create
                     for createdType in createRecordFromSchema typeName topLevelObject.Value visitedTypes config openApiDocument factory do
@@ -1627,7 +1627,7 @@ type OperationParameter = {
     properties: string list
 }
 
-let paramReplace (parameter: string) (sep: char) = 
+let paramReplace (parameter: string) (sep: char) =
     let parts = parameter.Split(sep)
     let firstPart = parts.[0]
     let otherParts = parts.[1..]
@@ -1642,28 +1642,28 @@ let paramReplace (parameter: string) (sep: char) =
     |> String.concat ""
     |> camelCase
 
-let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) = 
-    if String.IsNullOrWhiteSpace parameter then 
+let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) =
+    if String.IsNullOrWhiteSpace parameter then
         $"p{parameters.Count + 1}"
     else
         let parameter = String(Array.ofSeq (parameter |> Seq.skipWhile (Char.IsLetter >> not)))
-        let cleanedParam = 
+        let cleanedParam =
             if parameter.Contains "-" then
                 cleanParamIdent (paramReplace parameter '-') parameters
             elif parameter.Contains "_" then
                 cleanParamIdent (paramReplace parameter '_') parameters
-            elif parameter.Contains "." then 
+            elif parameter.Contains "." then
                 cleanParamIdent (paramReplace parameter '.') parameters
-            elif parameter.Contains "[" || parameter.Contains "]" then 
-                match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with 
+            elif parameter.Contains "[" || parameter.Contains "]" then
+                match parameter.Split([| "["; "]" |], StringSplitOptions.RemoveEmptyEntries) with
                 | [| firstPart; secondPart |]  -> cleanParamIdent(camelCase firstPart + capitalize secondPart) parameters
                 | _ -> cleanParamIdent(parameter.Replace("[", "").Replace("]", "")) parameters
             else
                 camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
-    
-        if String.IsNullOrWhiteSpace cleanedParam then 
+
+        if String.IsNullOrWhiteSpace cleanedParam then
             $"p{parameters.Count + 1}"
-        else 
+        else
             cleanedParam
 
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) =
@@ -1692,61 +1692,61 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             let elementSchema = schema.Items
             let elementType = readParamType elementSchema
             SynType.List elementType
-        | "object" -> 
-            if config.target = Target.FSharp 
+        | "object" ->
+            if config.target = Target.FSharp
             then SynType.JObject()
             else SynType.Object()
         | _ ->
             SynType.String()
 
     for parameter in operation.Parameters do
-        if isNotNull parameter then 
-            let shouldSpreadProperties = 
-                parameter.Style.HasValue 
-                && parameter.Style.Value = ParameterStyle.DeepObject 
+        if isNotNull parameter then
+            let shouldSpreadProperties =
+                parameter.Style.HasValue
+                && parameter.Style.Value = ParameterStyle.DeepObject
                 && parameter.Explode
                 && isNotNull parameter.Schema
                 && parameter.Schema.Type = "object"
 
-            let properties = 
-                if shouldSpreadProperties 
+            let properties =
+                if shouldSpreadProperties
                 then List.ofSeq parameter.Schema.Properties.Keys
                 else []
 
             if not parameter.Deprecated && parameter.In.HasValue then
-                
-                if isNull parameter.Schema then 
+
+                if isNull parameter.Schema then
                     ()
                 else
-                    let paramType = 
+                    let paramType =
                         if parameter.Content.Count = 1 then
                             let firstKey = Seq.head parameter.Content.Keys
                             readParamType parameter.Content.[firstKey].Schema
-                        elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then 
+                        elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
                             // edge case for a weird schema
                             SynType.String()
                         else
                             readParamType parameter.Schema
 
-                    let nullable = 
-                        if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then 
-                            match parameter.Extensions.["x-nullable"] with 
+                    let nullable =
+                        if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
+                            match parameter.Extensions.["x-nullable"] with
                             | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
                             | _ -> true
-                        else 
+                        else
                             true
 
 
                     let parameterIdentifier = cleanParamIdent parameter.Name parameters
-                    let identifierAlreadyAdded = 
+                    let identifierAlreadyAdded =
                         parameters
                         |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
                     parameters.Add {
                         parameterName = parameter.Name
-                        parameterIdent = 
-                            if identifierAlreadyAdded 
-                            then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}" 
+                        parameterIdent =
+                            if identifierAlreadyAdded
+                            then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}"
                             else parameterIdentifier
                         required = parameter.Required || not nullable
                         parameterType =  paramType
@@ -1764,25 +1764,25 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
             if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "object" then
                 for property in pair.Value.Schema.Properties do
                     let parameterIdentifier = cleanParamIdent property.Key parameters
-                    let identifierAlreadyAdded = 
+                    let identifierAlreadyAdded =
                         parameters
                         |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
                     parameters.Add {
                         parameterName = property.Key
-                        parameterIdent = 
+                        parameterIdent =
                             if identifierAlreadyAdded
                             then $"{parameterIdentifier}InFormData"
                             else parameterIdentifier
                         required = pair.Value.Schema.Required.Contains property.Key
                         parameterType = readParamType property.Value
                         docs = property.Value.Description
-                        properties = []  
+                        properties = []
                         location = "multipartFormData"
                         style = "formfield"
                     }
-            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "file" then 
-                
+            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "file" then
+
                 let parameterName =
                     if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
                         match operation.RequestBody.Extensions.["x-bodyName"] with
@@ -1797,7 +1797,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     required = true
                     parameterType = SynType.ByteArray()
                     docs = ""
-                    properties = []  
+                    properties = []
                     location = "multipartFormData"
                     style = "formfield"
                 }
@@ -1813,12 +1813,12 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     else
                         camelCase (normalizeFullCaps typeName)
 
-                let requestTypePayload = 
-                    if operation.Extensions.ContainsKey "RequestTypePayload" then 
-                        match operation.Extensions.["RequestTypePayload"] with 
-                        | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload -> 
+                let requestTypePayload =
+                    if operation.Extensions.ContainsKey "RequestTypePayload" then
+                        match operation.Extensions.["RequestTypePayload"] with
+                        | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload ->
                             SynType.Create requestTypePayload.Value
-                        | _ -> 
+                        | _ ->
                             readParamType pair.Value.Schema
                     else
                         readParamType pair.Value.Schema
@@ -1834,7 +1834,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     properties = []
                 }
 
-            if pair.Key = "application/json" && isEmptySchema pair.Value.Schema && config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
+            if pair.Key = "application/json" && isEmptySchema pair.Value.Schema && config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
                 let schema = pair.Value.Schema
                 let typeName = "body"
                 let parameterName =
@@ -1853,8 +1853,8 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                         if config.target = Target.FSharp
                         then SynType.JToken()
                         else SynType.Object()
-                    docs = 
-                        if isNotNull schema 
+                    docs =
+                        if isNotNull schema
                         then schema.Description
                         else ""
                     location = "jsonContent"
@@ -1901,23 +1901,23 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
 
 
 
-let responseContainsBinaryOutput (response: OpenApiResponse) = 
-    if response.Content.ContainsKey MediaTypes.ApplicationJson then 
+let responseContainsBinaryOutput (response: OpenApiResponse) =
+    if response.Content.ContainsKey MediaTypes.ApplicationJson then
         let jsonResponse = response.Content.[MediaTypes.ApplicationJson]
-        let hasStringByteOutput = 
-            isNotNull jsonResponse.Schema 
-            && jsonResponse.Schema.Type = "string" 
+        let hasStringByteOutput =
+            isNotNull jsonResponse.Schema
+            && jsonResponse.Schema.Type = "string"
             && jsonResponse.Schema.Format = "byte"
 
-        let hasFileOutput = 
-            isNotNull jsonResponse.Schema 
+        let hasFileOutput =
+            isNotNull jsonResponse.Schema
             && jsonResponse.Schema.Type = "file"
 
         let hasBinaryOutput = hasStringByteOutput || hasFileOutput
         hasBinaryOutput
     else
-        let hasBinaryOutput = 
-            response.Content.ContainsKey MediaTypes.OctetStream 
+        let hasBinaryOutput =
+            response.Content.ContainsKey MediaTypes.OctetStream
             || response.Content.ContainsKey MediaTypes.ApplicationPdf
             || response.Content.ContainsKey MediaTypes.ApplicationZip
             || response.Content.ContainsKey MediaTypes.AppliationZipCompressed
@@ -1928,7 +1928,7 @@ let responseContainsBinaryOutput (response: OpenApiResponse) =
             || response.Content.ContainsKey MediaTypes.ImagePng
         hasBinaryOutput
 
-let containsBinaryResponse (operation: OpenApiOperation) = 
+let containsBinaryResponse (operation: OpenApiOperation) =
     operation.Responses
     |> Seq.exists (fun pair -> responseContainsBinaryOutput pair.Value)
 
@@ -1982,8 +1982,8 @@ let createOpenApiClient
                     let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
                     SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
-                let contentIdent = 
-                    if hasBinaryResponse 
+                let contentIdent =
+                    if hasBinaryResponse
                     then "contentBinary"
                     else "content"
 
@@ -2019,7 +2019,7 @@ let createOpenApiClient
                                         createIdent [ parameter.parameterIdent ]
                                 ])
                             else
-                                for property in parameter.properties do 
+                                for property in parameter.properties do
                                 yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
                                     SynExpr.CreateParen(SynExpr.CreateTuple [
                                         stringExpr ($"{parameter.parameterName}[{property}]")
@@ -2039,7 +2039,7 @@ let createOpenApiClient
                                         else
                                             createIdent [ parameter.parameterIdent; "Value" ]
                                     ])
-                                else 
+                                else
                                     let parametersToYield = [
                                         for property in parameter.properties do
                                             SynExpr.CreatePartialApp([ "RequestPart"; parameter.location ], [
@@ -2056,9 +2056,9 @@ let createOpenApiClient
                 ]
 
                 let httpFunction = operation.Key.ToString().ToLower()
-                
-                let httpFunctionAsync = 
-                    if hasBinaryResponse 
+
+                let httpFunctionAsync =
+                    if hasBinaryResponse
                     then $"{httpFunction}BinaryAsync"
                     else $"{httpFunction}Async"
 
@@ -2117,9 +2117,9 @@ let createOpenApiClient
                     else
                         responses
 
-                let responseType = 
-                    if operationInfo.Extensions.ContainsKey "ResponseTypeName" then 
-                        match operationInfo.Extensions.["ResponseTypeName"] with 
+                let responseType =
+                    if operationInfo.Extensions.ContainsKey "ResponseTypeName" then
+                        match operationInfo.Extensions.["ResponseTypeName"] with
                         | :? Microsoft.OpenApi.Any.OpenApiString as responseTypeName -> responseTypeName.Value
                         | _ -> capitalize memberName
                     else
@@ -2127,24 +2127,24 @@ let createOpenApiClient
 
                 let returnExpr =
                     let createOutput (status: string,response: OpenApiResponse) =
-                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && response.Content.["application/json"].Schema.Format = "byte" then 
+                        if response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && response.Content.["application/json"].Schema.Format = "byte" then
                             // Assume we have a binary response
                             SynExpr.CreatePartialApp([responseType; status], [
                                 createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "file" then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "file" then
                             // Assume we have a binary response
                             SynExpr.CreatePartialApp([responseType; status], [
                                 createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then 
-                            if hasBinaryResponse then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then
+                            if hasBinaryResponse then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
-                                
+
                                 createLetAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
@@ -2160,11 +2160,11 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
-                            if hasBinaryResponse then 
+                            if hasBinaryResponse then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
-                                
+
                                 createLetAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
@@ -2185,12 +2185,12 @@ let createOpenApiClient
                                     )
                                 ])
                                 |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && isNotNull response.Content.["application/json"].Schema.AdditionalProperties then 
-                            if hasBinaryResponse then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && isNotNull response.Content.["application/json"].Schema.AdditionalProperties then
+                            if hasBinaryResponse then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
-    
+
                                 createLetAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
@@ -2212,11 +2212,11 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
-                            if hasBinaryResponse then 
+                            if hasBinaryResponse then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
-    
+
                                 createLetAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
@@ -2238,11 +2238,11 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "text/plain" then
-                            if hasBinaryResponse then 
+                            if hasBinaryResponse then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
-    
+
                                 createLetAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
@@ -2578,7 +2578,7 @@ let runConfig filePath =
                 let schemaJson = JObject.Parse(schemaContent)
                 let processedSchema = preprocessRelativeExternalReferences schemaJson config.schema
                 getSchema (processedSchema.ToString()) config.overrideSchema
-            
+
             elif config.schema.StartsWith "http"
             then getSchema config.schema config.overrideSchema
             else getSchema (resolveFile config.schema) config.overrideSchema
@@ -2652,12 +2652,12 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.27.0"
+        printfn "0.28.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
         runConfig "./hawaii.json"
-    | [| "--no-logo" |] -> 
+    | [| "--no-logo" |] ->
         runConfig "./hawaii.json"
     | [|"--config"; file|] ->
         Console.WriteLine(logo)
