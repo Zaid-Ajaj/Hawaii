@@ -285,7 +285,7 @@ module OpenApiHttp =
             |> applyMultiPartFormData parts
             |> applyHeaders parts
 
-        async {
+        {asyncBuilder} {
             let! response = {getResponse}
             let! content = {getBinaryContent}
             return (response.StatusCode, content)
