@@ -1953,8 +1953,12 @@ let createOpenApiClient
     let clientMembers = ResizeArray<SynMemberDefn>()
 
     let httpClient = SynSimplePat.CreateTyped(Ident.Create "httpClient", SynType.Create "HttpClient")
+    let urlContructorParam = SynSimplePat.CreateTyped(Ident.Create "url", SynType.String())
 
-    clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
+    if config.target = Target.FSharp then 
+        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
+    else 
+        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ urlContructorParam ])
 
     for path in openApiDocument.Paths do
         let fullPath = path.Key
@@ -2065,15 +2069,21 @@ let createOpenApiClient
                 let requestParts = Ident.Create "requestParts"
                 let httpCall httpFunc =
                     SynExpr.CreatePartialApp(["OpenApiHttp"; httpFunc], [
-                        SynExpr.CreateIdent (Ident.Create "httpClient")
+                        if config.target = Target.FSharp then
+                            // only use the HttpClient on F#/dotnet clients
+                            SynExpr.CreateIdent (Ident.Create "httpClient")
+                        else 
+                            // apply the base path to the generated functions
+                            SynExpr.CreateIdent (Ident.Create "url")
+                        
                         SynExpr.CreateConstString fullPath
                         SynExpr.Ident requestParts
                     ])
 
                 let wrappedReturn expr =
-                    if config.synchronous
-                    then expr
-                    else SynExpr.CreateReturn expr
+                    match config.target with 
+                    | Target.FSharp when config.synchronous -> expr
+                    | _ -> SynExpr.CreateReturn expr
 
                 let equal left right =
                     let innerApp = SynExpr.App(ExprAtomicFlag.NonAtomic, true, (createIdent ["op_Equality"]), left, range0)
@@ -2270,7 +2280,30 @@ let createOpenApiClient
                             |> wrappedReturn
 
                     let statusIsEqual status =
-                        equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; status ])
+                        let statusCode = 
+                            match status with 
+                            | nameof HttpStatusCode.OK -> 200
+                            | nameof HttpStatusCode.Created -> 201
+                            | nameof HttpStatusCode.Accepted -> 202
+                            | nameof HttpStatusCode.NoContent -> 204
+                            | nameof HttpStatusCode.BadRequest -> 400
+                            | nameof HttpStatusCode.Unauthorized -> 401
+                            | nameof HttpStatusCode.Forbidden -> 403
+                            | nameof HttpStatusCode.NotFound -> 404
+                            | nameof HttpStatusCode.MethodNotAllowed -> 405
+                            | nameof HttpStatusCode.InternalServerError -> 500
+                            | nameof HttpStatusCode.BadGateway -> 502
+                            | nameof HttpStatusCode.Found -> 302
+                            | nameof HttpStatusCode.GatewayTimeout -> 504
+                            | nameof HttpStatusCode.Moved -> 301
+                            | nameof HttpStatusCode.NotImplemented -> 501
+                            | nameof HttpStatusCode.PaymentRequired -> 402
+                            | _ -> 0
+
+                        if config.target = Target.FSharp then 
+                            equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; status ])
+                        else 
+                            equal (createIdent [ "status" ]) (SynExpr.CreateConst(SynConst.Int32 statusCode))
 
                     if responses.Length = 1 then
                         createOutput responses.[0]
@@ -2362,17 +2395,20 @@ let createOpenApiClient
                         )
 
                 let asyncBuilder expr =
-                    if config.synchronous then
-                        expr
+                    if config.target = Target.Fable then 
+                        SynExpr.CreateAsync expr
                     else
-                        match config.asyncReturnType with
-                        | AsyncReturnType.Async -> SynExpr.CreateAsync expr
-                        | AsyncReturnType.Task -> SynExpr.CreateTask expr
+                        if config.synchronous then
+                            expr
+                        else
+                            match config.asyncReturnType with
+                            | AsyncReturnType.Async -> SynExpr.CreateAsync expr
+                            | AsyncReturnType.Task -> SynExpr.CreateTask expr
 
                 let destructExpr httpFunc =
-                    if config.synchronous
-                    then deconstructResponse (httpCall httpFunc) returnExpr
-                    else deconstructAsyncResponse (httpCall httpFunc) returnExpr
+                    match config.target with 
+                    | Target.FSharp when config.synchronous -> deconstructResponse (httpCall httpFunc) returnExpr
+                    | _ -> deconstructAsyncResponse (httpCall httpFunc) returnExpr
 
                 let clientOperation httpFunc name = SynMemberDefn.CreateMember {
                     SynBindingRcd.Null with
@@ -2409,17 +2445,19 @@ let createOpenApiClient
                             ])
                 }
 
-                if config.synchronous then
+                match config.target with 
+                | Target.FSharp when config.synchronous -> 
                     clientMembers.Add (clientOperation httpFunction memberName)
-                else
+                | _ -> 
                     clientMembers.Add (clientOperation httpFunctionAsync memberName)
 
     let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
 
     let moduleContents = [
-        yield SynModuleDecl.CreateOpen "System.Net"
-        yield SynModuleDecl.CreateOpen "System.Net.Http"
-        yield SynModuleDecl.CreateOpen "System.Text"
+        if config.target = Target.FSharp then 
+            yield SynModuleDecl.CreateOpen "System.Net"
+            yield SynModuleDecl.CreateOpen "System.Net.Http"
+            yield SynModuleDecl.CreateOpen "System.Text"
         yield SynModuleDecl.CreateOpen $"{config.project}.Types"
         yield SynModuleDecl.CreateOpen $"{config.project}.Http"
         if config.asyncReturnType = AsyncReturnType.Task then
@@ -2627,7 +2665,8 @@ let runConfig filePath =
                 let files = [
                     if config.target = Target.FSharp then
                         XElement.Compile "StringEnum.fs"
-                        XElement.Compile "OpenApiHttp.fs"
+                    
+                    XElement.Compile "OpenApiHttp.fs"
                     XElement.Compile "Types.fs"
                     XElement.Compile "Client.fs"
                 ]
@@ -2641,6 +2680,9 @@ let runConfig filePath =
                 let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.project
                 write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
                 write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
+            else
+                let httpLibrary = HttpLibrary.fableLibrary config.project
+                write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
 
             write (projectFile.ToString()) [ outputDir; $"{config.project}.fsproj" ]
             printfn "Succesfully generated project %s" (path [outputDir; $"{config.project}.fsproj" ])
