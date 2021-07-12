@@ -2615,7 +2615,7 @@ let runConfig filePath =
             let projectFile =
                 let packages = [
                     if config.target = Target.FSharp then
-                        XElement.PackageReference("Fable.Remoting.Json", "2.17.0")
+                        XElement.PackageReference("Fable.Remoting.Json", "2.18.0")
                         XElement.PackageReference("Newtonsoft.Json", "13.0.1")
                         if config.asyncReturnType = AsyncReturnType.Task
                         then XElement.PackageReference("Ply", "0.3.1")
@@ -2652,7 +2652,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.28.0"
+        printfn "0.29.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
