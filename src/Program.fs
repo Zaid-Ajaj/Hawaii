@@ -1680,7 +1680,10 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
         | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
         | "string" -> SynType.String()
         | "file" ->
-            SynType.ByteArray()
+            if config.target = Target.FSharp
+            then SynType.ByteArray()
+            else SynType.Create "File" // from Browser.Types
+
         | _ when not (isNull schema.Reference) ->
             // working with a reference type
             let typeName =
@@ -2458,6 +2461,9 @@ let createOpenApiClient
             yield SynModuleDecl.CreateOpen "System.Net"
             yield SynModuleDecl.CreateOpen "System.Net.Http"
             yield SynModuleDecl.CreateOpen "System.Text"
+        else
+            yield SynModuleDecl.CreateOpen "Browser.Types"
+
         yield SynModuleDecl.CreateOpen $"{config.project}.Types"
         yield SynModuleDecl.CreateOpen $"{config.project}.Http"
         if config.asyncReturnType = AsyncReturnType.Task then
@@ -2694,7 +2700,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.29.0"
+        printfn "0.30.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

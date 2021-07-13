@@ -412,6 +412,8 @@ open System
 open System.Collections.Generic
 open Fable.SimpleJson
 open Fable.SimpleHttp
+open Fable.Core
+open Browser.Types
 
 module Serializer =
     let inline serialize<'t> (value: 't) = Json.serialize value
@@ -429,7 +431,7 @@ type OpenApiValue =
 
 type MultiPartFormData =
     | Primitive of OpenApiValue
-    | File of byte[]
+    | File of File
 
 type RequestPart =
     | Query of string * OpenApiValue
@@ -519,7 +521,7 @@ type RequestPart =
         MultiPartFormData(key, Primitive(OpenApiValue.String (value.ToString())))
     static member multipartFormData(key: string, value: DateTimeOffset) =
         MultiPartFormData(key, Primitive(OpenApiValue.String (value.ToString("O"))))
-    static member multipartFormData(key: string, value: byte[]) =
+    static member multipartFormData(key: string, value: File) =
         MultiPartFormData(key, File value)
     static member multipartFormData(key: string, values: string list) = MultiPartFormData(key, Primitive(OpenApiValue.List [ for value in values -> OpenApiValue.String value ]))
     static member multipartFormData(key: string, values: Guid list) = MultiPartFormData(key, Primitive(OpenApiValue.List [ for value in values -> OpenApiValue.String (value.ToString()) ]))
@@ -539,7 +541,7 @@ type RequestPart =
     static member header(key: string, value: float32) = Header(key, OpenApiValue.Float value)
     static member header(key: string, value: Guid) = Header(key, OpenApiValue.String (value.ToString()))
     static member header(key: string, value: DateTimeOffset) = Header(key, OpenApiValue.String (value.ToString("O")))
-    static member jsonContent<'t>(content: 't) = JsonContent(Serializer.serialize content)
+    static member inline jsonContent<'t>(content: 't) = JsonContent(Serializer.serialize content)
     static member binaryContent(content: byte[]) = BinaryContent(content)
 
 module OpenApiHttp =
@@ -563,6 +565,9 @@ module OpenApiHttp =
 
         parts |> List.fold applyPart path
 
+    [<Emit "encodeURIComponent($0)">]
+    let encodeURIComponent(queryValue: string) = jsNative
+
     let applyQueryStringParameters (currentPath: string) (parts: RequestPart list) =
         let cleanedPath = currentPath.TrimEnd '/'
         let queryParams =
@@ -576,13 +581,86 @@ module OpenApiHttp =
         else
             let combinedParamters =
                 queryParams
-                |> List.map (fun (key, value) -> $"{key}={serializeValue value}")
+                |> List.map (fun (key, value) -> $"{key}={encodeURIComponent(serializeValue value)}")
                 |> String.concat "&"
 
             cleanedPath + "?" + combinedParamters
 
-    let sendAsync (method: HttpMethod) (basePath: string) (path: string) (parts: RequestPart list) : Async<int * string> = 
-        failwith "Not implemented yet"
+    let combineBasePath (basePath: string) (path: string) : string =
+        basePath.TrimEnd '/' + "/" + path.TrimStart '/'
+
+    let applyJsonRequestBody (parts: RequestPart list) (httpRequest: HttpRequest) =
+        let bodyJson =
+            parts
+            |> List.choose(function
+                | JsonContent content -> Some content
+                | _ -> None)
+            |> List.tryHead
+
+        match bodyJson with
+        | None -> httpRequest
+        | Some json ->
+            httpRequest
+            |> Http.header (Headers.contentType "application/json")
+            |> Http.content (BodyContent.Text json)
+
+    let applyMultipartFormData (parts: RequestPart list) (httpRequest: HttpRequest) =
+        let formParts =
+            parts
+            |> List.choose(function
+                | MultiPartFormData(key, value) -> Some(key, value)
+                | _ -> None
+            )
+
+        if formParts.Length = 0 then
+            httpRequest
+        else
+            let formData = FormData.create()
+            for (key, value) in formParts do
+                match value with
+                | Primitive primitive -> formData.append(key, serializeValue primitive)
+                | File file -> formData.append(key, file)
+
+            httpRequest
+            |> Http.content (BodyContent.Form formData)
+
+    let applyUrlEncodedFormData (parts: RequestPart list) (httpRequest: HttpRequest) =
+        let formParts =
+            parts
+            |> List.choose(function
+                | UrlEncodedFormData(key, value) -> Some(key, value)
+                | _ -> None
+            )
+
+        if formParts.Length = 0 then
+            httpRequest
+        else
+            let encodedData =
+                formParts
+                |> List.map (fun (key, value) -> $"{key}={encodeURIComponent(serializeValue value)}")
+                |> String.concat "&"
+
+            httpRequest
+            |> Http.header (Headers.contentType "application/x-www-form-urlencoded")
+            |> Http.content (BodyContent.Text encodedData)
+
+    let sendAsync (method: HttpMethod) (basePath: string) (path: string) (parts: RequestPart list) : Async<int * string> =
+        async {
+            let requestPath = applyPathParts path parts
+            let requestPathWithQuery = applyQueryStringParameters requestPath parts
+            let fullPath = combineBasePath basePath requestPathWithQuery
+            let! response =
+                Http.request fullPath
+                |> Http.method method
+                |> applyJsonRequestBody parts
+                |> applyMultipartFormData parts
+                |> applyUrlEncodedFormData parts
+                |> Http.send
+
+            let status = response.statusCode
+            let content = response.responseText
+            return status, content
+        }
 
     let getAsync (basePath: string) (path: string) (parts: RequestPart list) =
         sendAsync GET basePath path parts
