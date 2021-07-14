@@ -644,7 +644,7 @@ module OpenApiHttp =
             |> Http.header (Headers.contentType "application/x-www-form-urlencoded")
             |> Http.content (BodyContent.Text encodedData)
 
-    let sendAsync (method: HttpMethod) (basePath: string) (path: string) (parts: RequestPart list) : Async<int * string> =
+    let sendAsync (method: HttpMethod) (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) : Async<int * string> =
         async {
             let requestPath = applyPathParts path parts
             let requestPathWithQuery = applyQueryStringParameters requestPath parts
@@ -655,6 +655,7 @@ module OpenApiHttp =
                 |> applyJsonRequestBody parts
                 |> applyMultipartFormData parts
                 |> applyUrlEncodedFormData parts
+                |> Http.headers extraHeaders
                 |> Http.send
 
             let status = response.statusCode
@@ -662,23 +663,24 @@ module OpenApiHttp =
             return status, content
         }
 
-    let getAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync GET basePath path parts
+    let getAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync GET basePath path extraHeaders parts
 
-    let postAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync POST basePath  path parts
+    let postAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync POST basePath path extraHeaders parts
 
-    let deleteAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync DELETE basePath  path parts
+    let deleteAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync DELETE basePath path extraHeaders parts
 
-    let putAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync PUT basePath path parts
+    let putAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync PUT basePath path extraHeaders parts
 
-    let patchAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync PATCH basePath path parts
+    let patchAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync PATCH basePath path extraHeaders parts
 
-    let headAsync (basePath: string) (path: string) (parts: RequestPart list) =
-        sendAsync HEAD basePath path parts
+    let headAsync (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) =
+        sendAsync HEAD basePath path extraHeaders parts
+
 """
 
 let fableLibrary (projectName: string) = fableContent.Replace("{projectName}", projectName)

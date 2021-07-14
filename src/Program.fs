@@ -1935,17 +1935,25 @@ let containsBinaryResponse (operation: OpenApiOperation) =
     operation.Responses
     |> Seq.exists (fun pair -> responseContainsBinaryOutput pair.Value)
 
+let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
+let stringExpr value = SynExpr.CreateConstString value
+let createLetAssignment leftSide rightSide continuation =
+    let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
+    let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
+    let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
+    SynExpr.LetOrUse(false, false, [binding], continuation, range0)
+
 let createOpenApiClient
     (openApiDocument: OpenApiDocument)
     (visitedTypes: ResizeArray<string>)
     (config: CodegenConfig) =
 
     let extraTypes = ResizeArray<SynModuleDecl>()
-
+    let clientTypeName = $"{config.project}Client"
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
-        Id = [ Ident.Create $"{config.project}Client" ]
+        Id = [ Ident.Create clientTypeName ]
         XmlDoc = xmlDocs openApiDocument.Info.Description
         Parameters = [ ]
         Constraints = [ ]
@@ -1957,11 +1965,43 @@ let createOpenApiClient
 
     let httpClient = SynSimplePat.CreateTyped(Ident.Create "httpClient", SynType.Create "HttpClient")
     let urlContructorParam = SynSimplePat.CreateTyped(Ident.Create "url", SynType.String())
+    let headersConstructorParam = SynSimplePat.CreateTyped(Ident.Create "headers", SynType.List(SynType.Create "Header"))
 
     if config.target = Target.FSharp then 
         clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
     else 
-        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ urlContructorParam ])
+        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ 
+            urlContructorParam
+            headersConstructorParam
+        ])
+
+        let emptyHeadersList = SynExpr.CreateList [ ]
+        let synValDataAsConstructor = 
+            match SynBindingRcd.Null.ValData with 
+            | SynValData(Some memberFlags, synValInfo, ident) -> 
+                let modifiedFlags = { memberFlags with MemberKind = MemberKind.Constructor }
+                SynValData(Some modifiedFlags, synValInfo, ident)
+            | _ -> 
+                SynBindingRcd.Null.ValData
+ 
+        // generates new(url: string) = Client(url, [])
+        // to initialize the client without extra headers
+        let implicitConstructor = SynMemberDefn.CreateMember {
+            SynBindingRcd.Null with
+                XmlDoc = PreXmlDoc.Empty
+                ValData = synValDataAsConstructor
+                Expr = SynExpr.CreatePartialApp([ clientTypeName ], [ SynExpr.CreateParenedTuple [ createIdent ["url"]; emptyHeadersList ] ])
+                Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString "new", [
+                    SynPatRcd.CreateParen(
+                        SynPatRcd.Typed {
+                            Range = range0
+                            Type = SynType.String()
+                            Pattern = SynPatRcd.CreateLongIdent(LongIdentWithDots.CreateString("url"), [])
+                        })
+                ])
+        }
+
+        clientMembers.Add(implicitConstructor)
 
     for path in openApiDocument.Paths do
         let fullPath = path.Key
@@ -1981,13 +2021,6 @@ let createOpenApiClient
 
                 let hasBinaryResponse = containsBinaryResponse operation.Value
                 let memberName = deriveMemberName operationInfo.OperationId fullPath operation.Key
-                let createIdent xs = SynExpr.CreateLongIdent(LongIdentWithDots.Create xs)
-                let stringExpr value = SynExpr.CreateConstString value
-                let createLetAssignment leftSide rightSide continuation =
-                    let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
-                    let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
-                    let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
-                    SynExpr.LetOrUse(false, false, [binding], continuation, range0)
 
                 let contentIdent =
                     if hasBinaryResponse
@@ -2070,18 +2103,21 @@ let createOpenApiClient
                     else $"{httpFunction}Async"
 
                 let requestParts = Ident.Create "requestParts"
-                let httpCall httpFunc =
-                    SynExpr.CreatePartialApp(["OpenApiHttp"; httpFunc], [
-                        if config.target = Target.FSharp then
-                            // only use the HttpClient on F#/dotnet clients
-                            SynExpr.CreateIdent (Ident.Create "httpClient")
-                        else 
-                            // apply the base path to the generated functions
-                            SynExpr.CreateIdent (Ident.Create "url")
-                        
+                let httpCall httpFunc = SynExpr.CreatePartialApp(["OpenApiHttp"; httpFunc], [
+                    if config.target = Target.FSharp then
+                        // only use the HttpClient on F#/dotnet clients
+                        SynExpr.CreateIdent (Ident.Create "httpClient")
                         SynExpr.CreateConstString fullPath
                         SynExpr.Ident requestParts
-                    ])
+                    else 
+                        // apply the base path to the generated functions
+                        SynExpr.CreateIdent (Ident.Create "url")
+                        // the path the of the end point
+                        SynExpr.CreateConstString fullPath
+                        // the extra headers provided from the constructor
+                        SynExpr.CreateIdent (Ident.Create "headers")
+                        SynExpr.Ident requestParts
+                ])
 
                 let wrappedReturn expr =
                     match config.target with 
@@ -2463,9 +2499,11 @@ let createOpenApiClient
             yield SynModuleDecl.CreateOpen "System.Text"
         else
             yield SynModuleDecl.CreateOpen "Browser.Types"
+            yield SynModuleDecl.CreateOpen "Fable.SimpleHttp"
 
         yield SynModuleDecl.CreateOpen $"{config.project}.Types"
         yield SynModuleDecl.CreateOpen $"{config.project}.Http"
+
         if config.asyncReturnType = AsyncReturnType.Task then
             // from the Ply package
             yield SynModuleDecl.CreateOpen "FSharp.Control.Tasks"
@@ -2700,7 +2738,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.30.0"
+        printfn "0.31.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
