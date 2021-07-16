@@ -38,11 +38,21 @@ let apiGuruList() =
     for property in guruJson.Properties() do 
         let schemaJson = unbox<JObject> property.Value
         let versions = unbox<JObject> schemaJson.["versions"]
-        let lastVersion = unbox<JObject> (versions.Properties().Last().Value)
-        schemas.Add {
-            schemaUrl = string lastVersion.["swaggerUrl"]
-            title = string lastVersion.["info"].["title"]
-        }
+        let compatibleVersion = 
+            versions.Properties()
+            |> Seq.filter (fun versionInfo ->
+                let openApiVer = string versionInfo.Value.["openapiVer"]
+                not (openApiVer.StartsWith "3.1"))
+            |> Seq.tryLast
+            |> Option.map (fun property -> unbox<JObject> property.Value)
+
+        match compatibleVersion with 
+        | Some lastVersion -> 
+            schemas.Add {
+                schemaUrl = string lastVersion.["swaggerUrl"]
+                title = string lastVersion.["info"].["title"]
+            }
+        | None -> ()
 
     schemas
 
@@ -123,14 +133,13 @@ let normalize (name: string) =
 let integration() = 
     let schemas = apiGuruList()
     printfn $"Found {schemas.Count} OpenAPI schemas from API Guru list"
-    let n = 20; 
+    let n = 10; 
     printfn $"Generating and building the first {n} OpenAPI schemas from that list"
 
     schemas
     |> List.ofSeq
     |> List.truncate n
     |> List.map (fun schema -> { schema with title = normalize schema.title })
-    |> List.filter (fun schema -> schema.title <> "AdyenForPlatformsNotifications") // OpenApi 3.1 not supported
     |> List.iter generateAndBuild
 
 let successRate(n: int) = 

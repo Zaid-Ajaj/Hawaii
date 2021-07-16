@@ -1,7 +1,5 @@
 {
-  "schema": "https://petstore3.swagger.io/api/v3/openapi.json",
-  "output": "./output",
-  "project": "PetStore",
-  "synchronous":  true,
-  "target":  "fable"
+  "schema": "https://api.apis.guru/v2/specs/adyen.com/PaymentService/64/openapi.json",
+  "project": "AdyenPaymentApi",
+  "output": "./output"
 }

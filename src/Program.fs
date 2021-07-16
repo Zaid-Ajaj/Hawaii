@@ -1798,7 +1798,10 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     parameterName = parameterName
                     parameterIdent = cleanParamIdent parameterName parameters
                     required = true
-                    parameterType = SynType.ByteArray()
+                    parameterType = 
+                        if config.target = Target.FSharp
+                        then SynType.ByteArray()
+                        else SynType.Create "File" // from Browser.Types
                     docs = ""
                     properties = []
                     location = "multipartFormData"
@@ -1942,6 +1945,11 @@ let createLetAssignment leftSide rightSide continuation =
     let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
     let binding = SynBinding.Binding(None, SynBindingKind.NormalBinding, false, false, [], PreXmlDoc.Empty, emptySynValData, headPat, None, rightSide, range0, DebugPointForBinding.DebugPointAtBinding range0 )
     SynExpr.LetOrUse(false, false, [binding], continuation, range0)
+
+let createLetBangAssignment leftSide body continuation =
+    let emptySynValData = SynValData.SynValData(None, SynValInfo.Empty, None)
+    let headPat = SynPat.Named(SynPat.Wild range0, leftSide, false, None, range0)
+    SynExpr.LetOrUseBang(DebugPointForBinding.DebugPointAtBinding range0, false, false, headPat, body, [], continuation, range0)
 
 let createOpenApiClient
     (openApiDocument: OpenApiDocument)
@@ -2189,12 +2197,24 @@ let createOpenApiClient
                             ])
                             |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" then
-                            if hasBinaryResponse then
+                            if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
 
                                 createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        createIdent [ "content" ]
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            elif hasBinaryResponse && config.target = Target.Fable then 
+                                let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+
+                                createLetBangAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         createIdent [ "content" ]
@@ -2209,12 +2229,28 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
-                            if hasBinaryResponse then
+                            if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
 
                                 createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            elif hasBinaryResponse && config.target = Target.Fable then 
+                                let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+
+                                createLetBangAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         SynExpr.CreateParen(
@@ -2235,12 +2271,28 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && isNotNull response.Content.["application/json"].Schema.AdditionalProperties then
-                            if hasBinaryResponse then
+                            if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
 
                                 createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            elif hasBinaryResponse && config.target = Target.Fable then 
+                                let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+
+                                createLetBangAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         SynExpr.CreateParen(
@@ -2261,12 +2313,28 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
-                            if hasBinaryResponse then
+                            if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
 
                                 createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            elif hasBinaryResponse && config.target = Target.Fable then
+                                let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+
+                                createLetBangAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         SynExpr.CreateParen(
@@ -2287,12 +2355,24 @@ let createOpenApiClient
                                 ])
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "text/plain" then
-                            if hasBinaryResponse then
+                            if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
                                 ])
 
                                 createLetAssignment (Ident.Create "content") body (
+                                    // continuation
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        createIdent [ "content" ]
+                                    ])
+                                    |> wrappedReturn
+                                )
+                            elif hasBinaryResponse && config.target = Target.Fable then
+                                let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                    createIdent [ "contentBinary" ]
+                                ])
+
+                                createLetBangAssignment (Ident.Create "content") body (
                                     // continuation
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         createIdent [ "content" ]
@@ -2738,7 +2818,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.31.0"
+        printfn "0.32.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

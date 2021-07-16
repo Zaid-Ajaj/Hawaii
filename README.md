@@ -4,6 +4,14 @@
 
 A dotnet CLI tool to generate type-safe F# and Fable clients from OpenAPI/Swagger services.
 
+### Features
+ - Supports local and external schemas, comaptible with those schemas that can be read by [OpenAPI.NET](https://github.com/microsoft/OpenAPI.NET)
+ - Generates clients for F# on dotnet or for Fable in the browser
+ - Automatically handles JSON deserialization into schema types
+ - Automatically handles mixed responses from end points that return binary _or_ typed JSON responses
+ - Generates discriminated union types to describe the possible responses of each endpoint
+ - Generates full F# projects, including their required dependencies and targeting `netstandard2.0`
+
 ### Install
 
 ```
@@ -161,7 +169,6 @@ You can go a step further by overriding the return types of certain responses. T
 
 ### Limitations
 These are the very early days of Hawaii as a tool to generate F# clients and there are some known limitations and rough edges that I will be working on:
- - Fable: handling mixed binary responses
  - `anyOf`/`oneOf` not supported
 
 
@@ -170,7 +177,7 @@ These are the very early days of Hawaii as a tool to generate F# clients and the
 ### Running integration tests
 ```bash
 cd ./build
-# run hawaii against 20 schemas
+# run hawaii against 10 schemas
 dotnet run -- integration
 # run hawaii agains the first {n} schemas out of ~2000 and see the progress
 dotnet run -- rate {n}
