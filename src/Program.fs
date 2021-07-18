@@ -2786,6 +2786,8 @@ let runConfig filePath =
                     |> Async.RunSynchronously
                 let schemaBytes = Encoding.UTF8.GetBytes(schemaContent)
                 new MemoryStream(schemaBytes) :> Stream
+            elif config.schema.StartsWith "http" then 
+                getSchema config.schema config.overrideSchema
             else 
                 getSchema (resolveFile config.schema) config.overrideSchema
         let settings = OpenApiReaderSettings()
@@ -2862,7 +2864,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.34.0"
+        printfn "0.35.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
