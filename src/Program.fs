@@ -2138,12 +2138,12 @@ let createOpenApiClient
                             yield SynExpr.CreateIfThen(condition, value)
                 ]
 
-                let httpFunction = operation.Key.ToString().ToLower()
-
-                let httpFunctionAsync =
+                let httpFunction =
                     if hasBinaryResponse
-                    then $"{httpFunction}BinaryAsync"
-                    else $"{httpFunction}Async"
+                    then $"{operation.Key.ToString().ToLower()}Binary"
+                    else operation.Key.ToString().ToLower()
+
+                let httpFunctionAsync = $"{httpFunction}Async"
 
                 let requestParts = Ident.Create "requestParts"
                 let httpCall httpFunc = SynExpr.CreatePartialApp(["OpenApiHttp"; httpFunc], [
@@ -2864,7 +2864,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.35.0"
+        printfn "0.36.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

@@ -24,7 +24,13 @@ let [<Literal>] TargetFramework = "net5.0"
 
 let httpClient = new HttpClient()
 
-type ApiGuruSchema = { schemaUrl: string; title: string }
+type ApiGuruSchema = { 
+    schemaUrl: string; 
+    title: string;
+    synchronous: bool; 
+    asyncReturnType: string
+    target:string
+}
 
 let apiGuruList() = 
     let guruJson = 
@@ -51,6 +57,9 @@ let apiGuruList() =
             schemas.Add {
                 schemaUrl = string lastVersion.["swaggerUrl"]
                 title = string lastVersion.["info"].["title"]
+                synchronous = false
+                asyncReturnType = "async"
+                target = "fsharp"
             }
         | None -> ()
 
@@ -106,6 +115,10 @@ let generateAndBuild(schema: ApiGuruSchema) =
     content.Add(JProperty("schema", schema.schemaUrl))
     content.Add(JProperty("project", schema.title))
     content.Add(JProperty("output", "./output"))
+    content.Add(JProperty("asyncReturnType", schema.asyncReturnType))
+    content.Add(JProperty("target", schema.target))
+    content.Add(JProperty("synchronous", schema.synchronous))
+
     File.WriteAllText(integrationSchema, content.ToString(Formatting.Indented))
     printfn $"Attempting to generate project {schema.title} from {schema.schemaUrl}"
     if Shell.Exec(Tools.dotnet, "run -- --no-logo", src) <> 0 then
@@ -141,6 +154,165 @@ let integration() =
     |> List.truncate n
     |> List.map (fun schema -> { schema with title = normalize schema.title })
     |> List.iter generateAndBuild
+
+let integrationKnownSchemas() = 
+    let defaultPetStore = {
+        schemaUrl = "https://petstore3.swagger.io/api/v3/openapi.json"
+        title = "DefaultPetStore"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let synchronousPetStore = {
+        schemaUrl = "https://petstore3.swagger.io/api/v3/openapi.json"
+        title = "SyncPetStore"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskPetStore = {
+        schemaUrl = "https://petstore3.swagger.io/api/v3/openapi.json"
+        title = "TaskPetStore"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let fablePetStore = {
+        schemaUrl = "https://petstore3.swagger.io/api/v3/openapi.json"
+        title = "FablePetStore"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
+    let yamlPetStore = {
+        schemaUrl = "https://petstore3.swagger.io/api/v3/openapi.yaml"
+        title = "YamlPetStore"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let defaultTripPin = {
+        schemaUrl = "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata"
+        title = "TripPinService"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskTripPin = {
+        schemaUrl = "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata"
+        title = "TaskTripPinService"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let syncTripPin = {
+        schemaUrl = "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata"
+        title = "TaskTripPinService"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let fableTripPin = {
+        schemaUrl = "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata"
+        title = "TaskTripPinService"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
+    let defaultGhibli = {
+        schemaUrl = "./schemas/ghibli.json"
+        title = "Ghibli"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let syncGhibli = {
+        schemaUrl = "./schemas/ghibli.json"
+        title = "SyncGhibli"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskGhibli = {
+        schemaUrl = "./schemas/ghibli.json"
+        title = "TaskGhibli"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let fableGhibli = {
+        schemaUrl = "./schemas/ghibli.json"
+        title = "FableGhibli"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
+    let defaultNSwag = {
+        schemaUrl = "./schemas/nswag-with-files.json"
+        title = "NSwagWithFiles"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let syncNSwag = {
+        schemaUrl = "./schemas/nswag-with-files.json"
+        title = "SyncNSwag"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskNSwag = {
+        schemaUrl = "./schemas/nswag-with-files.json"
+        title = "TaskNSwag"
+        synchronous = true
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let fableNSwag = {
+        schemaUrl = "./schemas/nswag-with-files.json"
+        title = "FableNSwag"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
+    let schemas = [
+        defaultPetStore
+        synchronousPetStore
+        taskPetStore
+        fablePetStore
+        yamlPetStore
+        defaultTripPin
+        taskTripPin
+        syncTripPin
+        fableTripPin
+        defaultGhibli
+        syncGhibli
+        taskGhibli
+        fableGhibli
+        defaultNSwag
+        syncNSwag
+        taskNSwag
+        fableNSwag
+    ]
+
+    for schema in schemas do generateAndBuild(schema)
 
 let successRate(n: int) = 
     let schemas = apiGuruList()
@@ -198,6 +370,7 @@ let main (args: string[]) =
         | [| "pack"    |] -> pack()
         | [| "publish" |] -> publish()
         | [| "integration" |] -> integration()
+        | [| "generate-and-build" |] -> integrationKnownSchemas()
         | [| "rate"; Int n |] -> successRate n
         | [| "rate" |] -> successRate 100
         | _ -> printfn "Unknown args %A" args

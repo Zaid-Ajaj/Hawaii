@@ -1,5 +1,8 @@
 {
-  "schema": "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata",
-  "project": "PetStore",
-  "output": "./output"
+  "schema": "./schemas/nswag-with-files.json",
+  "project": "FableNSwag",
+  "output": "./output",
+  "asyncReturnType": "async",
+  "target": "fable",
+  "synchronous": false
 }
