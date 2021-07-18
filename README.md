@@ -2,10 +2,11 @@
 
 ![](logo.png)
 
-A dotnet CLI tool to generate type-safe F# and Fable clients from OpenAPI/Swagger services.
+A dotnet CLI tool to generate type-safe F# and Fable clients from OpenAPI/Swagger/OData services.
 
 ### Features
- - Supports local and external schemas, comaptible with those schemas that can be read by [OpenAPI.NET](https://github.com/microsoft/OpenAPI.NET)
+ - Supports any OpenApi/Swagger schema in form of JSON or Yaml, comaptible with those that can be read by [OpenAPI.NET](https://github.com/microsoft/OpenAPI.NET)
+ - Supports [OData](https://www.odata.org) services (see example below), made possible by [OpenAPI.NET.OData](https://github.com/Microsoft/OpenAPI.NET.OData) which translates the OData model into an OpenApi document
  - Generates clients for F# on dotnet or for Fable in the browser
  - Automatically handles JSON deserialization into schema types
  - Automatically handles mixed responses from end points that return binary _or_ typed JSON responses
@@ -35,7 +36,7 @@ Create a configuration file called `hawaii.json` with the following shape:
 }
 ```
 Where
- - `<schema>` is a URL to the OpenApi/Swagger location, whether that is an external URL or a relative file path
+ - `<schema>` is a URL to the OpenApi/Swagger/OData location, whether that is an external URL or a relative file path. In case of OData services, the external URL has to end with `$metadata` which points to the Edm model of that service (see TripPinService example below) or it can be a local `.xml` file that contains the schema
  - `<project>` is the name of the project that will get generated
  - `<output>` is a relative path to the output directory where the project will be generated. (Note: this directory is deleted and re-generated when you run `hawaii`)
  - `<synchronous>` is an optional flag that determines whether hawaii should generate client methods that run http requests synchronously. This is useful when used inside console applications. (set to false by default)
@@ -45,7 +46,7 @@ Where
  - `<emptyDefintions>` determines what hawaii should do when encountering a global type definition without schema information. When set to "ignore" (default) hawaii will generate the global type. However, sometimes these global types are still referenced from other types or definitions, in which case the setting this option to "free-form" will generate a type abbreviation for the empty schema equal to a free form object (`JToken` when targetting F# or `obj` when targetting Fable)
  - `<overrideSchema>` Allows you to override the resolved schema either to add more information (such as a missing operation ID) or _correct_ the types when you know better (see below)
 
-### Example
+### Example ([PetStore](https://petstore3.swagger.io) Schema)
 Here is an example configuration for the pet store API:
 ```json
 {
@@ -98,6 +99,15 @@ for (status, quantity) in Map.toList inventory do
     printfn $"There are {quantity} pet(s) {status}"
 ```
 Notice that you have to provide your own `HttpClient` to the `PetStoreClient` and setting the `BaseAddress` to the base path of the service.
+
+### Example with OData ([TripPinService](https://services.odata.org/v4/TripPinServiceRW) schema)
+```json
+{
+  "schema": "https://services.odata.org/V4/(S(s3lb035ptje4a1j0bvkmqqa0))/TripPinServiceRW/$metadata",
+  "project": "TripPinService",
+  "output": "./output"
+}
+```
 
 ### Sample Applications
 

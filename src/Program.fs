@@ -14,6 +14,9 @@ open System.Net
 open System.Collections.Generic
 open Newtonsoft.Json.Linq
 open System.Text
+open Microsoft.OpenApi.OData
+open Microsoft.OData.Edm.Csdl
+open Microsoft.OpenApi.Writers
 
 let logo = """
 
@@ -199,11 +202,43 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
             ]
 
 let client = new HttpClient()
+
+let readExternalODataSchema (schemaUrl: string) =
+    let content = 
+        schemaUrl
+        |> client.GetStringAsync
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+    
+    let odataModel = CsdlReader.Parse(XElement.Parse(content).CreateReader())
+    let openApiModel = odataModel.ConvertToOpenApi();
+    use stringTextWriter = new StringWriter()
+    let writer = OpenApiJsonWriter(stringTextWriter)
+    openApiModel.SerializeAsV3(writer);
+    stringTextWriter.ToString()
+
+let readLocalODataSchema (schemaUrl: string) =
+    let content = File.ReadAllText schemaUrl
+    let odataModel = CsdlReader.Parse(XElement.Parse(content).CreateReader())
+    let openApiModel = odataModel.ConvertToOpenApi();
+    use stringTextWriter = new StringWriter()
+    let writer = OpenApiJsonWriter(stringTextWriter)
+    openApiModel.SerializeAsV3(writer);
+    stringTextWriter.ToString()
+
 let getSchema(schema: string) (overrideSchema: JToken option) =
     let schemaContents =
-        if File.Exists schema then
+        if File.Exists schema && schema.EndsWith ".json" then
             let content = File.ReadAllText schema
             JObject.Parse(content)
+        elif File.Exists schema && schema.EndsWith ".xml" then 
+            Console.WriteLine "Detected local OData schema"
+            let openApiJson = readLocalODataSchema schema
+            JObject.Parse openApiJson
+        elif schema.StartsWith "http" && schema.EndsWith "$metadata" then 
+            Console.WriteLine "Detected external OData schema"
+            let openApiJson = readExternalODataSchema schema
+            JObject.Parse openApiJson
         elif schema.StartsWith "http" then
             let content =
                 client.GetStringAsync(schema)
@@ -2741,9 +2776,18 @@ let runConfig filePath =
                 let processedSchema = preprocessRelativeExternalReferences schemaJson config.schema
                 getSchema (processedSchema.ToString()) config.overrideSchema
 
-            elif config.schema.StartsWith "http"
-            then getSchema config.schema config.overrideSchema
-            else getSchema (resolveFile config.schema) config.overrideSchema
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".json" then
+                getSchema config.schema config.overrideSchema
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then 
+                let schemaContent =
+                    config.schema
+                    |> client.GetStringAsync
+                    |> Async.AwaitTask
+                    |> Async.RunSynchronously
+                let schemaBytes = Encoding.UTF8.GetBytes(schemaContent)
+                new MemoryStream(schemaBytes) :> Stream
+            else 
+                getSchema (resolveFile config.schema) config.overrideSchema
         let settings = OpenApiReaderSettings()
         settings.ReferenceResolution <- ReferenceResolutionSetting.ResolveAllReferences
         if config.schema.StartsWith "http" then
@@ -2818,7 +2862,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.32.0"
+        printfn "0.34.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
