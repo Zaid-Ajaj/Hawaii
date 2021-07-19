@@ -2864,7 +2864,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.36.0"
+        printfn "0.37.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
@@ -2876,6 +2876,26 @@ let main argv =
         runConfig file
     | [|"--config"; file; "--no-logo" |] ->
         runConfig file
+    | [| "--from-odata-schema"; schema; "--output"; output |] -> 
+        printfn "Generated OpenAPI specs from OData schema at %s" schema
+        if schema.StartsWith "http" then 
+            let schemaWithMetadata = 
+                if schema.EndsWith "$metadata" 
+                then schema 
+                else $"{schema.TrimEnd '/'}/$metadata"
+            let openApiSchema = readExternalODataSchema schemaWithMetadata
+            File.WriteAllText(resolveFile output, openApiSchema)
+            printfn "Generated OpenAPI specs saved as %s" output
+            0
+        elif schema.EndsWith ".xml" && File.Exists (resolveFile schema) then 
+            let openApiSchema = readLocalODataSchema schema
+            File.WriteAllText(resolveFile output, openApiSchema)
+            printfn "Generated OpenAPI specs saved as %s" output
+            0
+        else 
+            printfn "Invalid OData schema"
+            printfn "Schema %s" schema
+            1
     | arguments ->
         printfn "Unknown arguments [%s]" (String.concat ", " arguments)
         1
