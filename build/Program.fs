@@ -292,6 +292,70 @@ let integrationKnownSchemas() =
         target = "fable"
     }
 
+    let defaultSwashbuckle = {
+        schemaUrl = "./schemas/SwashbuckleTime.json"
+        title = "Swashbuckle"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let syncSwashbuckle = {
+        schemaUrl = "./schemas/SwashbuckleTime.json"
+        title = "SyncSwashbuckle"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskSwashbuckle = {
+        schemaUrl = "./schemas/SwashbuckleTime.json"
+        title = "TaskSwashbuckle"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let fableSwashbuckle = {
+        schemaUrl = "./schemas/SwashbuckleTime.json"
+        title = "Fablewashbuckle"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
+    let defaultPodiosuite = {
+        schemaUrl = "./schemas/Podiosuite.json"
+        title = "Podiosuite"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let taskPodiosuite = {
+        schemaUrl = "./schemas/Podiosuite.json"
+        title = "TaskPodiosuite"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+    }
+
+    let syncPodiosuite = {
+        schemaUrl = "./schemas/Podiosuite.json"
+        title = "SyncPodiosuite"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+    }
+
+    let fablePodiosuite = {
+        schemaUrl = "./schemas/Podiosuite.json"
+        title = "FablePodiosuite"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+    }
+
     let schemas = [
         defaultPetStore
         synchronousPetStore
@@ -310,6 +374,14 @@ let integrationKnownSchemas() =
         syncNSwag
         taskNSwag
         fableNSwag
+        defaultSwashbuckle
+        syncSwashbuckle
+        taskSwashbuckle
+        fableSwashbuckle
+        defaultPodiosuite
+        taskPodiosuite
+        syncPodiosuite
+        fablePodiosuite
     ]
 
     for schema in schemas do generateAndBuild(schema)

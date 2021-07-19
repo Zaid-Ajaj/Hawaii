@@ -41,6 +41,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="schemas\petstore-v3.json" />
+    <Content Include="schemas\Podiosuite.json" />
+    <Content Include="schemas\SwashbuckleTime.json" />
     <Compile Include="./FsAst/AstRcd.fs" />
     <Compile Include="./FsAst/AstCreate.fs" />
     <Compile Include="HttpLibrary.fs" />

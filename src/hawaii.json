@@ -1,6 +1,6 @@
 {
-  "schema": "./schemas/nswag-with-files.json",
-  "project": "FableNSwag",
+  "schema": "./schemas/Podiosuite.json",
+  "project": "FablePodiosuite",
   "output": "./output",
   "asyncReturnType": "async",
   "target": "fable",
