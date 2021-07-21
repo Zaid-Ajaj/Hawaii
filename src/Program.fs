@@ -1200,7 +1200,26 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             SynModuleDecl.CreateSimpleType(info, simpleRecordType, eventualMembers)
         ]
 
+/// <summary>
+/// Rewrites application/vnd.api+json into application/json to simplify the rest of the codegen pipeline
+/// </summary>
+/// <param name="operation">The operation to rewrite</param>
+let rewriteOperationVendorJson  (operation: OpenApiOperation) = 
+    for response in operation.Responses do 
+        if response.Value.Content.ContainsKey "application/vnd.api+json" && not (response.Value.Content.ContainsKey "application/json") then 
+            let mediaType = response.Value.Content.["application/vnd.api+json"]
+            response.Value.Content.Remove "application/vnd.api+json" |> ignore
+            response.Value.Content.Add("application/json", mediaType)
+
+    if isNotNull operation.RequestBody && isNotNull operation.RequestBody.Content then 
+        if operation.RequestBody.Content.ContainsKey "application/vnd.api+json" && not (operation.RequestBody.Content.ContainsKey "application/json") then 
+            let mediaType = operation.RequestBody.Content.["application/vnd.api+json"]
+            operation.RequestBody.Content.Remove "application/vnd.api+json" |> ignore
+            operation.RequestBody.Content.Add("application/json", mediaType)
+
 let createResponseType (operation: OpenApiOperation) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) (document: OpenApiDocument) =
+    // rewrite application/vnd.api+json into application/json
+    rewriteOperationVendorJson operation
     let intermediateTypes = ResizeArray<SynModuleDecl>()
     let operationName = deriveOperationName (capitalize operation.OperationId) path operationType visitedTypes
     visitedTypes.Add operationName
@@ -1334,6 +1353,13 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                                 let keyType = SynType.String()
                                 let fieldType =  SynType.Map(keyType, valueType)
                                 [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                            elif isNotNull responsePayloadType.Schema.Reference then 
+                                // reference to an empty schema
+                                if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
+                                    let fieldType = getFieldType responsePayloadType.Schema caseName
+                                    [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                                else 
+                                    []
                             else
                                 []
                         else
@@ -1345,10 +1371,9 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
-                    elif response.Value.Content.ContainsKey "text/plain" then
+                    elif response.Value.Content.ContainsKey "text/plain" && isNotNull response.Value.Content.["text/plain"].Schema then
                         let fieldType = SynType.String()
                         [SynFieldRcd.Create("text", fieldType).FromRcd]
-
                     elif response.Value.Content.ContainsKey "application/octet-stream" || response.Value.Content.ContainsKey "application/pdf" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
@@ -2347,6 +2372,54 @@ let createOpenApiClient
                                     )
                                 ])
                                 |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema then
+                            // reference to an empty schema
+                            if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
+                                if hasBinaryResponse && config.target = Target.FSharp then
+                                    let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
+                                        createIdent [ "contentBinary" ]
+                                    ])
+
+                                    createLetAssignment (Ident.Create "content") body (
+                                        // continuation
+                                        SynExpr.CreatePartialApp([responseType; status], [
+                                            SynExpr.CreateParen(
+                                                SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                    createIdent [ "content" ]
+                                                ])
+                                            )
+                                        ])
+                                        |> wrappedReturn
+                                    )
+                                elif hasBinaryResponse && config.target = Target.Fable then 
+                                    let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
+                                        createIdent [ "contentBinary" ]
+                                    ])
+
+                                    createLetBangAssignment (Ident.Create "content") body (
+                                        // continuation
+                                        SynExpr.CreatePartialApp([responseType; status], [
+                                            SynExpr.CreateParen(
+                                                SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                    createIdent [ "content" ]
+                                                ])
+                                            )
+                                        ])
+                                        |> wrappedReturn
+                                    )
+                                else
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                            else 
+                                // ignore
+                                createIdent [ responseType; status ]
+                                |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
                             if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
@@ -2389,7 +2462,7 @@ let createOpenApiClient
                                     )
                                 ])
                                 |> wrappedReturn
-                        elif response.Content.ContainsKey "text/plain" then
+                        elif response.Content.ContainsKey "text/plain" && isNotNull response.Content.["text/plain"].Schema then
                             if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
@@ -2864,7 +2937,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.37.0"
+        printfn "0.38.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
@@ -2877,7 +2950,7 @@ let main argv =
     | [|"--config"; file; "--no-logo" |] ->
         runConfig file
     | [| "--from-odata-schema"; schema; "--output"; output |] -> 
-        printfn "Generated OpenAPI specs from OData schema at %s" schema
+        printfn "Generating OpenAPI specs from OData schema at %s" schema
         if schema.StartsWith "http" then 
             let schemaWithMetadata = 
                 if schema.EndsWith "$metadata" 

@@ -1,8 +1,8 @@
 {
-  "schema": "./schemas/Podiosuite.json",
-  "project": "FablePodiosuite",
+  "schema": "https://api.apis.guru/v2/specs/synq.fm/1.9.1/swagger.json",
+  "project": "Synq",
   "output": "./output",
   "asyncReturnType": "async",
-  "target": "fable",
+  "target": "fsharp",
   "synchronous": false
 }

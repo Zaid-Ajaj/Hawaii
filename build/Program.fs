@@ -30,6 +30,7 @@ type ApiGuruSchema = {
     synchronous: bool; 
     asyncReturnType: string
     target:string
+    emptyDefinitions: string
 }
 
 let apiGuruList() = 
@@ -60,6 +61,7 @@ let apiGuruList() =
                 synchronous = false
                 asyncReturnType = "async"
                 target = "fsharp"
+                emptyDefinitions = "ignore"
             }
         | None -> ()
 
@@ -162,6 +164,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let synchronousPetStore = {
@@ -170,6 +173,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskPetStore = {
@@ -178,6 +182,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fablePetStore = {
@@ -186,6 +191,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let yamlPetStore = {
@@ -194,6 +200,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let defaultTripPin = {
@@ -202,6 +209,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskTripPin = {
@@ -210,6 +218,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let syncTripPin = {
@@ -218,6 +227,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fableTripPin = {
@@ -226,6 +236,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let defaultGhibli = {
@@ -234,6 +245,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let syncGhibli = {
@@ -242,6 +254,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskGhibli = {
@@ -250,6 +263,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fableGhibli = {
@@ -258,6 +272,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let defaultNSwag = {
@@ -266,6 +281,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let syncNSwag = {
@@ -274,6 +290,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskNSwag = {
@@ -282,6 +299,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fableNSwag = {
@@ -290,6 +308,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let defaultSwashbuckle = {
@@ -298,6 +317,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let syncSwashbuckle = {
@@ -306,6 +326,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskSwashbuckle = {
@@ -314,6 +335,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fableSwashbuckle = {
@@ -322,6 +344,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let defaultPodiosuite = {
@@ -330,6 +353,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let taskPodiosuite = {
@@ -338,6 +362,7 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "task"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let syncPodiosuite = {
@@ -346,6 +371,7 @@ let integrationKnownSchemas() =
         synchronous = true
         asyncReturnType = "async"
         target = "fsharp"
+        emptyDefinitions = "ignore"
     }
 
     let fablePodiosuite = {
@@ -354,6 +380,61 @@ let integrationKnownSchemas() =
         synchronous = false
         asyncReturnType = "async"
         target = "fable"
+        emptyDefinitions = "ignore"
+    }
+
+    let defaultWatchful = {
+        schemaUrl = "./schemas/watchful.json"
+        title = "Watchful"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let freeFormWatchful = {
+        schemaUrl = "./schemas/watchful.json"
+        title = "FreeFormWatchful"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "free-form"
+    }
+
+    let SyncWatchful = {
+        schemaUrl = "./schemas/watchful.json"
+        title = "SyncWatchful"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "free-form"
+    }
+
+    let FableWatchful = {
+        schemaUrl = "./schemas/watchful.json"
+        title = "FableWatchful"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fable"
+        emptyDefinitions = "free-form"
+    }
+
+    let defaultTwinehealth = {
+        schemaUrl = "./schemas/twinehealth.json"
+        title = "Twinehealth"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let FableTwinehealth = {
+        schemaUrl = "./schemas/twinehealth.json"
+        title = "FableTwinehealth"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+        emptyDefinitions = "ignore"
     }
 
     let schemas = [
@@ -382,6 +463,12 @@ let integrationKnownSchemas() =
         taskPodiosuite
         syncPodiosuite
         fablePodiosuite
+        defaultWatchful
+        freeFormWatchful
+        SyncWatchful
+        FableWatchful
+        defaultTwinehealth
+        FableTwinehealth
     ]
 
     for schema in schemas do generateAndBuild(schema)
@@ -397,7 +484,6 @@ let successRate(n: int) =
     let results = 
         schemas
         |> List.ofSeq
-        |> List.rev
         |> List.truncate n
         |> List.map (fun schema -> { schema with title = normalize schema.title })
         |> List.mapi (fun index schema -> 
