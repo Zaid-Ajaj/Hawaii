@@ -1374,10 +1374,13 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     elif response.Value.Content.ContainsKey "text/plain" && isNotNull response.Value.Content.["text/plain"].Schema then
                         let fieldType = SynType.String()
                         [SynFieldRcd.Create("text", fieldType).FromRcd]
-                    elif response.Value.Content.ContainsKey "application/octet-stream" || response.Value.Content.ContainsKey "application/pdf" then
+                    elif response.Value.Content.ContainsKey "application/octet-stream" || response.Value.Content.ContainsKey "application/pdf" || response.Value.Content.ContainsKey "application/zip" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                    elif response.Value.Content.ContainsKey "image/png" && response.Value.Content.["image/png"].Schema.Format = "binary" then
+                    elif response.Value.Content.ContainsKey "image/png" && isNotNull response.Value.Content.["image/png"].Schema && response.Value.Content.["image/png"].Schema.Format = "binary" then
+                        let fieldType = SynType.ByteArray()
+                        [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                    elif response.Value.Content.ContainsKey "image/png" then 
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
                     else
@@ -1823,139 +1826,141 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     }
 
     if not (isNull operation.RequestBody) then
-        for pair in operation.RequestBody.Content do
-            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "object" then
-                for property in pair.Value.Schema.Properties do
-                    let parameterIdentifier = cleanParamIdent property.Key parameters
-                    let identifierAlreadyAdded =
-                        parameters
-                        |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+        let mutable alreadyHasRequestBody = false
+        let content = operation.RequestBody.Content
 
-                    parameters.Add {
-                        parameterName = property.Key
-                        parameterIdent =
-                            if identifierAlreadyAdded
-                            then $"{parameterIdentifier}InFormData"
-                            else parameterIdentifier
-                        required = pair.Value.Schema.Required.Contains property.Key
-                        parameterType = readParamType property.Value
-                        docs = property.Value.Description
-                        properties = []
-                        location = "multipartFormData"
-                        style = "formfield"
-                    }
-            if pair.Key = "multipart/form-data" && pair.Value.Schema.Type = "file" then
+        if content.ContainsKey "application/json" && not (isEmptySchema content.["application/json"].Schema) then
+            let schema = content.["application/json"].Schema
+            let typeName = "body"
+            let parameterName =
+                if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                    match operation.RequestBody.Extensions.["x-bodyName"] with
+                    | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                    | _ -> camelCase (normalizeFullCaps typeName)
+                else
+                    camelCase (normalizeFullCaps typeName)
 
-                let parameterName =
-                    if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
-                        match operation.RequestBody.Extensions.["x-bodyName"] with
-                        | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
-                        | _ -> "body"
-                    else
-                        "body"
+            let requestTypePayload =
+                if operation.Extensions.ContainsKey "RequestTypePayload" then
+                    match operation.Extensions.["RequestTypePayload"] with
+                    | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload ->
+                        SynType.Create requestTypePayload.Value
+                    | _ ->
+                        readParamType schema
+                else
+                    readParamType schema
+
+            parameters.Add {
+                parameterName = parameterName
+                parameterIdent = cleanParamIdent parameterName parameters
+                required = true
+                parameterType = requestTypePayload
+                docs = schema.Description
+                location = "jsonContent"
+                style = "none"
+                properties = []
+            }
+
+        elif content.ContainsKey "application/json" && isEmptySchema content.["application/json"].Schema && config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
+            let schema = content.["application/json"].Schema
+            let typeName = "body"
+            let parameterName =
+                if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                    match operation.RequestBody.Extensions.["x-bodyName"] with
+                    | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                    | _ -> camelCase (normalizeFullCaps typeName)
+                else
+                    camelCase (normalizeFullCaps typeName)
+
+            parameters.Add {
+                parameterName = parameterName
+                parameterIdent = cleanParamIdent parameterName parameters
+                required = true
+                parameterType =
+                    if config.target = Target.FSharp
+                    then SynType.JToken()
+                    else SynType.Object()
+                docs =
+                    if isNotNull schema
+                    then schema.Description
+                    else ""
+                location = "jsonContent"
+                style = "none"
+                properties = []
+            }
+
+        elif content.ContainsKey "multipart/form-data" && isNotNull content.["multipart/form-data"].Schema && content.["multipart/form-data"].Schema.Type = "object" then
+            for property in content.["multipart/form-data"].Schema.Properties do
+                let parameterIdentifier = cleanParamIdent property.Key parameters
+                let identifierAlreadyAdded =
+                    parameters
+                    |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
                 parameters.Add {
-                    parameterName = parameterName
-                    parameterIdent = cleanParamIdent parameterName parameters
-                    required = true
-                    parameterType = 
-                        if config.target = Target.FSharp
-                        then SynType.ByteArray()
-                        else SynType.Create "File" // from Browser.Types
-                    docs = ""
+                    parameterName = property.Key
+                    parameterIdent =
+                        if identifierAlreadyAdded
+                        then $"{parameterIdentifier}InFormData"
+                        else parameterIdentifier
+                    required = content.["multipart/form-data"].Schema.Required.Contains property.Key
+                    parameterType = readParamType property.Value
+                    docs = property.Value.Description
                     properties = []
                     location = "multipartFormData"
                     style = "formfield"
                 }
+        
+        elif content.ContainsKey "multipart/form-data" && isNotNull content.["multipart/form-data"].Schema && content.["multipart/form-data"].Schema.Type = "file" then
+            let parameterName =
+                if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
+                    match operation.RequestBody.Extensions.["x-bodyName"] with
+                    | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
+                    | _ -> "body"
+                else
+                    "body"
 
-            if pair.Key = "application/json" && not (isEmptySchema pair.Value.Schema) then
-                let schema = pair.Value.Schema
-                let typeName = "body"
-                let parameterName =
-                    if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
-                        match operation.RequestBody.Extensions.["x-bodyName"] with
-                        | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
-                        | _ -> camelCase (normalizeFullCaps typeName)
-                    else
-                        camelCase (normalizeFullCaps typeName)
+            parameters.Add {
+                parameterName = parameterName
+                parameterIdent = cleanParamIdent parameterName parameters
+                required = true
+                parameterType = 
+                    if config.target = Target.FSharp
+                    then SynType.ByteArray()
+                    else SynType.Create "File" // from Browser.Types
+                docs = ""
+                properties = []
+                location = "multipartFormData"
+                style = "formfield"
+            }
 
-                let requestTypePayload =
-                    if operation.Extensions.ContainsKey "RequestTypePayload" then
-                        match operation.Extensions.["RequestTypePayload"] with
-                        | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload ->
-                            SynType.Create requestTypePayload.Value
-                        | _ ->
-                            readParamType pair.Value.Schema
-                    else
-                        readParamType pair.Value.Schema
+        elif content.ContainsKey "application/x-www-form-urlencoded" then
+            let schema = content.["application/x-www-form-urlencoded"].Schema
+            if isNotNull schema && schema.Type <> "object" then
+                for property in schema.Properties do
+                    parameters.Add {
+                        parameterName = property.Key
+                        parameterIdent = cleanParamIdent property.Key parameters
+                        required = schema.Required.Contains property.Key
+                        parameterType = readParamType property.Value
+                        docs = property.Value.Description
+                        properties = []
+                        location = "urlEncodedFormData"
+                        style = "formfield"
+                    }
 
-                parameters.Add {
-                    parameterName = parameterName
-                    parameterIdent = cleanParamIdent parameterName parameters
-                    required = true
-                    parameterType = requestTypePayload
-                    docs = schema.Description
-                    location = "jsonContent"
-                    style = "none"
-                    properties = []
-                }
-
-            if pair.Key = "application/json" && isEmptySchema pair.Value.Schema && config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
-                let schema = pair.Value.Schema
-                let typeName = "body"
-                let parameterName =
-                    if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
-                        match operation.RequestBody.Extensions.["x-bodyName"] with
-                        | :? Microsoft.OpenApi.Any.OpenApiString as name -> name.Value
-                        | _ -> camelCase (normalizeFullCaps typeName)
-                    else
-                        camelCase (normalizeFullCaps typeName)
-
-                parameters.Add {
-                    parameterName = parameterName
-                    parameterIdent = cleanParamIdent parameterName parameters
-                    required = true
-                    parameterType =
-                        if config.target = Target.FSharp
-                        then SynType.JToken()
-                        else SynType.Object()
-                    docs =
-                        if isNotNull schema
-                        then schema.Description
-                        else ""
-                    location = "jsonContent"
-                    style = "none"
-                    properties = []
-                }
-
-            let hasJsonContent = operation.RequestBody.Content.ContainsKey "application/json"
-
-            if pair.Key = "application/x-www-form-urlencoded" then
-                // make sure the form schema isn't the same as the JSON schema
-                // use one or the other
-                if hasJsonContent && pair.Value.Schema <> operation.RequestBody.Content.["application/json"].Schema && pair.Value.Schema.Type <> "object" then
-                    for property in pair.Value.Schema.Properties do
-                        parameters.Add {
-                            parameterName = property.Key
-                            parameterIdent = cleanParamIdent property.Key parameters
-                            required = pair.Value.Schema.Required.Contains property.Key
-                            parameterType = readParamType property.Value
-                            docs = property.Value.Description
-                            properties = []
-                            location = "urlEncodedFormData"
-                            style = "formfield"
-                        }
-            if pair.Key = "application/octet-stream" then
-                parameters.Add {
-                    parameterName = "requestBody"
-                    parameterIdent = "requestBody"
-                    required = false
-                    parameterType = SynType.ByteArray()
-                    docs = ""
-                    location = "binaryContent"
-                    style = "formfield"
-                    properties = []
-                }
+        elif content.ContainsKey "application/octet-stream" then
+            parameters.Add {
+                parameterName = "requestBody"
+                parameterIdent = "requestBody"
+                required = false
+                parameterType = SynType.ByteArray()
+                docs = ""
+                location = "binaryContent"
+                style = "formfield"
+                properties = []
+            }
+        else
+            ()
 
     parameters
     |> Seq.sortBy (fun param ->
@@ -2420,6 +2425,10 @@ let createOpenApiClient
                                 // ignore
                                 createIdent [ responseType; status ]
                                 |> wrappedReturn
+
+                        elif response.Content.ContainsKey "application/json" && isNull response.Content.["application/json"].Schema then 
+                            createIdent [ responseType; status ]
+                            |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
                             if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
@@ -2492,12 +2501,17 @@ let createOpenApiClient
                                     createIdent [ "content" ]
                                 ])
                                 |> wrappedReturn
-                        elif response.Content.ContainsKey "application/octet-stream" || response.Content.ContainsKey "application/pdf" then
+                        elif response.Content.ContainsKey "application/octet-stream" || response.Content.ContainsKey "application/pdf" || response.Content.ContainsKey "application/zip" then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "image/png" && response.Content.["image/png"].Schema.Format = "binary" then
+                        elif response.Content.ContainsKey "image/png" && isNotNull response.Content.["image/png"].Schema && response.Content.["image/png"].Schema.Format = "binary" then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                createIdent [ contentIdent ]
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "image/png" then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 createIdent [ contentIdent ]
                             ])
@@ -2937,7 +2951,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.38.0"
+        printfn "0.39.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

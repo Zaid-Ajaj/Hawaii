@@ -122,8 +122,10 @@ let generateAndBuild(schema: ApiGuruSchema) =
     content.Add(JProperty("synchronous", schema.synchronous))
 
     File.WriteAllText(integrationSchema, content.ToString(Formatting.Indented))
+    let hawaii = path [ src; "bin"; "Release"; "net5.0"; "Hawaii.dll" ]
+    let configPath = path [ src; "hawaii.json" ]
     printfn $"Attempting to generate project {schema.title} from {schema.schemaUrl}"
-    if Shell.Exec(Tools.dotnet, "run -- --no-logo", src) <> 0 then
+    if Shell.Exec(Tools.dotnet, $"{hawaii} --config {configPath} --no-logo", src) <> 0 then
         failwith $"Failed to generate project {schema.title}"
     else
         if Shell.Exec(Tools.dotnet, "build --configuration Release", path [ src; "output" ]) <> 0
@@ -437,6 +439,33 @@ let integrationKnownSchemas() =
         emptyDefinitions = "ignore"
     }
 
+    let defaultSlicebox = {
+        schemaUrl = "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json"
+        title = "Slicebox"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let taskSlicebox = {
+        schemaUrl = "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json"
+        title = "TaskSlicebox"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let fableSlicebox = {
+        schemaUrl = "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json"
+        title = "FableSlicebox"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+        emptyDefinitions = "ignore"
+    }
+
     let schemas = [
         defaultPetStore
         synchronousPetStore
@@ -469,9 +498,14 @@ let integrationKnownSchemas() =
         FableWatchful
         defaultTwinehealth
         FableTwinehealth
+        defaultSlicebox
+        taskSlicebox
+        fableSlicebox
     ]
 
-    for schema in schemas do generateAndBuild(schema)
+    for (index, schema) in List.indexed schemas do 
+        printfn $"Generating {schema.title} ({index + 1}/{schemas.Length})"
+        generateAndBuild(schema)
 
 let successRate(n: int) = 
     let schemas = apiGuruList()
@@ -527,10 +561,14 @@ let main (args: string[]) =
         | [| "build"   |] -> build()
         | [| "pack"    |] -> pack()
         | [| "publish" |] -> publish()
-        | [| "integration" |] -> integration()
-        | [| "generate-and-build" |] -> integrationKnownSchemas()
-        | [| "rate"; Int n |] -> successRate n
-        | [| "rate" |] -> successRate 100
+        | [| "integration" |] -> build(); integration()
+        | [| "generate-and-build" |] -> build(); integrationKnownSchemas()
+        | [| "rate"; Int n |] -> 
+            build() 
+            successRate n
+        | [| "rate" |] ->
+            build()
+            successRate 100
         | _ -> printfn "Unknown args %A" args
         0
     with ex ->

@@ -1,8 +1,8 @@
 {
-  "schema": "https://api.apis.guru/v2/specs/synq.fm/1.9.1/swagger.json",
-  "project": "Synq",
+  "schema": "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json",
+  "project": "FableSlicebox",
   "output": "./output",
   "asyncReturnType": "async",
-  "target": "fsharp",
+  "target": "fable",
   "synchronous": false
 }
