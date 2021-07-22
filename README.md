@@ -5,7 +5,7 @@
 A dotnet CLI tool to generate type-safe F# and Fable clients from OpenAPI/Swagger/OData services.
 
 ### Features
- - Supports any OpenApi/Swagger schema in form of JSON or Yaml, comaptible with those that can be read by [OpenAPI.NET](https://github.com/microsoft/OpenAPI.NET)
+ - Supports any OpenApi/Swagger schema in form of JSON or Yaml, compatible with those that can be read by [OpenAPI.NET](https://github.com/microsoft/OpenAPI.NET)
  - Supports [OData](https://www.odata.org) services (see example below), made possible by [OpenAPI.NET.OData](https://github.com/Microsoft/OpenAPI.NET.OData) which translates the OData model into an OpenApi document
  - Generates clients for F# on dotnet or for Fable in the browser
  - Automatically handles JSON deserialization into schema types
@@ -30,7 +30,7 @@ Create a configuration file called `hawaii.json` with the following shape:
     ["target"]: <"fsharp" | "fable">
     ["synchronous"]: <true | false>,
     ["asyncReturnType"]: <"async" | "task">,
-    ["resolveReferences]": <true | false>,
+    ["resolveReferences"]: <true | false>,
     ["emptyDefinitions"]: <"ignore" | "free-form">,
     ["overrideSchema"]: <JSON schema subset>
 }
