@@ -4,7 +4,7 @@ open System.Net.Http
 open FsAst
 open Fantomas
 open FSharp.Compiler.SyntaxTree
-open FSharp.Compiler.Range
+open FSharp.Compiler.Text
 open FSharp.Compiler.XmlDoc
 open Microsoft.OpenApi.Models
 open System.Linq
@@ -17,6 +17,8 @@ open System.Text
 open Microsoft.OpenApi.OData
 open Microsoft.OData.Edm.Csdl
 open Microsoft.OpenApi.Writers
+
+
 
 let logo = """
 
@@ -64,6 +66,7 @@ type CodegenConfig = {
     resolveReferences: bool
     emptyDefinitions: EmptyDefinitionResolution
     overrideSchema: JToken option
+    filterTags: string list
 }
 
 let inline isNotNull (x: 't) = not (isNull x)
@@ -148,6 +151,13 @@ let readConfig file =
                     if isNotNull parts.["overrideSchema"]
                     then Some parts.["overrideSchema"]
                     else None
+                filterTags = 
+                    if isNotNull parts.["filterTags"] && parts.["filterTags"].Type = JTokenType.Array
+                    then [ 
+                            for tag in unbox<JArray> parts.["filterTags"] do 
+                            if tag.Type = JTokenType.String then 
+                                tag.ToObject<string>() ]
+                    else [ ]
             }
     with
     | error ->
@@ -1464,6 +1474,18 @@ let rec collectPrimitiveAllOf (schema: OpenApiSchema) =
 
         ]
 
+let includeOperation (operation: OpenApiOperation) (config: CodegenConfig) : bool = 
+    if config.filterTags.IsEmpty then 
+        true
+    elif operation.Tags.Count = 0 && config.filterTags.Length > 0 then 
+        false
+    else
+        operation.Tags
+        |> Seq.exists (fun tag -> 
+            config.filterTags
+            |> List.exists (fun configTag -> tag.Name.StartsWith configTag)
+        )
+
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
@@ -1672,8 +1694,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
     for path in openApiDocument.Paths do
         for operation in path.Value.Operations do
-            let responseTypes = createResponseType operation.Value path.Key operation.Key visitedTypes config openApiDocument
-            moduleTypes.AddRange responseTypes
+            if includeOperation operation.Value config then 
+                let responseTypes = createResponseType operation.Value path.Key operation.Key visitedTypes config openApiDocument
+                moduleTypes.AddRange responseTypes
 
     let globalTypesModule = CodeGen.createNamespace [ config.project; "Types" ] (Seq.toList moduleTypes)
 
@@ -1801,7 +1824,6 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                             | _ -> true
                         else
                             true
-
 
                     let parameterIdentifier = cleanParamIdent parameter.Name parameters
                     let identifierAlreadyAdded =
@@ -2081,7 +2103,7 @@ let createOpenApiClient
         let pathInfo = path.Value
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
-            if not operationInfo.Deprecated then
+            if not operationInfo.Deprecated && includeOperation operationInfo config then
                 let parameters = operationParameters operationInfo visitedTypes config
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
@@ -2945,6 +2967,74 @@ let runConfig filePath =
             printfn "Succesfully generated project %s" (path [outputDir; $"{config.project}.fsproj" ])
             0
 
+let showTags filePath = 
+    let config = resolveFile filePath
+    match readConfig config with
+    | Error errorMsg ->
+        Console.WriteLine errorMsg
+        1
+    | Ok config ->
+        let schema =
+            if config.schema.StartsWith "http" && config.resolveReferences then
+                let schemaContent =
+                    config.schema
+                    |> client.GetStringAsync
+                    |> Async.AwaitTask
+                    |> Async.RunSynchronously
+
+                let schemaJson = JObject.Parse(schemaContent)
+                let processedSchema = preprocessRelativeExternalReferences schemaJson config.schema
+                getSchema (processedSchema.ToString()) config.overrideSchema
+
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".json" then
+                getSchema config.schema config.overrideSchema
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then 
+                let schemaContent =
+                    config.schema
+                    |> client.GetStringAsync
+                    |> Async.AwaitTask
+                    |> Async.RunSynchronously
+                let schemaBytes = Encoding.UTF8.GetBytes(schemaContent)
+                new MemoryStream(schemaBytes) :> Stream
+            elif config.schema.StartsWith "http" then 
+                getSchema config.schema config.overrideSchema
+            else 
+                getSchema (resolveFile config.schema) config.overrideSchema
+        let settings = OpenApiReaderSettings()
+        settings.ReferenceResolution <- ReferenceResolutionSetting.ResolveAllReferences
+        if config.schema.StartsWith "http" then
+            // customize how external references are resolved
+            settings.CustomExternalLoader <- new ExternalResouceLoader(config.schema)
+        let reader = new OpenApiStreamReader(settings)
+        let openApi =
+            reader.ReadAsync(schema)
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        let (openApiDocument, diagnostics) = openApi.OpenApiDocument, openApi.OpenApiDiagnostic
+        if diagnostics.Errors.Count > 0 && isNull openApiDocument then
+            for error in diagnostics.Errors do
+                System.Console.WriteLine error.Message
+            1
+        else
+            let tags = [
+                for path in openApiDocument.Paths do 
+                for operation in path.Value.Operations do 
+                if isNotNull operation.Value.OperationId then 
+                    for tag in operation.Value.Tags do tag.Name, operation.Value.OperationId
+            ]
+
+            let content = 
+                tags
+                |> List.groupBy fst
+                |> List.sortByDescending (fun (tag, operations) -> operations.Length)
+                |> List.map (fun (tag, operations) -> $"Tag {tag} has {operations.Length} operations(s)")
+                |> String.concat "\n"
+
+            File.WriteAllText("tags.txt", content)
+            printfn "Tags information saved to tags.txt"
+            0
+
 [<EntryPoint>]
 let main argv =
     Console.InputEncoding <- Encoding.UTF8
@@ -2983,6 +3073,12 @@ let main argv =
             printfn "Invalid OData schema"
             printfn "Schema %s" schema
             1
+
+    | [| "--show-tags"; filePath |] -> 
+        printfn "Extracting OpenAPI tags schema at %s" filePath
+        showTags filePath
+    | [| "--show-tags" |] -> 
+        showTags "./hawaii.json"
     | arguments ->
         printfn "Unknown arguments [%s]" (String.concat ", " arguments)
         1

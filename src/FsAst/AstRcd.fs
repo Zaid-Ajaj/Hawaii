@@ -2,9 +2,10 @@
 module FsAst.AstRcd
 
 open System
-open FSharp.Compiler.Range
+open FSharp.Compiler.Text
 open FSharp.Compiler.SyntaxTree
 open FSharp.Compiler.XmlDoc
+
 
 type ParsedImplFileInputRcd = {
     File: string
@@ -491,7 +492,7 @@ type SynTypeDefnSimpleRepr with
         | SynTypeDefnSimpleRepr.General(kind, _, _, _, _ , _, _, range) -> // TODO
             SynTypeDefnSimpleReprRcd.General { Kind = kind; Range = range }
         | SynTypeDefnSimpleRepr.LibraryOnlyILAssembly(iltype, range) ->
-            SynTypeDefnSimpleReprRcd.LibraryOnlyILAssembly { ILType = iltype; Range = range }
+            SynTypeDefnSimpleReprRcd.LibraryOnlyILAssembly { ILType = unbox iltype; Range = range }
         | SynTypeDefnSimpleRepr.TypeAbbrev(parseDetail, typ, range) ->
             SynTypeDefnSimpleReprRcd.TypeAbbrev { ParseDetail = parseDetail; Type = typ; Range = range }
         | SynTypeDefnSimpleRepr.None(range) ->
@@ -517,16 +518,6 @@ type SynEnumCase with
 type XmlDoc with
     member x.Lines =
         x.GetElaboratedXmlLines()
-
-type PreXmlDoc with
-    member x.Lines: string []  =
-        match x with
-        | PreXmlDocEmpty -> [||]
-        | PreXmlMerge(d, d2) ->
-            [| yield! d.Lines; yield! d2.Lines |]
-        | PreXmlDoc(_, d) ->
-            [||] //TODO: this is wrong, but no idea how to fix it
-
 
 type SynUnionCaseRcd = {
     Attributes: SynAttributes

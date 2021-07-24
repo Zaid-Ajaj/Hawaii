@@ -4,7 +4,7 @@ open FsAst
 open FSharp.Compiler.XmlDoc
 open FSharp.Compiler.SyntaxTree
 open Fantomas
-open FSharp.Compiler.Range
+open FSharp.Compiler.Text
 open Fantomas.FormatConfig
 
 let createNamespace (names: seq<string>) declarations =

@@ -32,7 +32,8 @@ Create a configuration file called `hawaii.json` with the following shape:
     ["asyncReturnType"]: <"async" | "task">,
     ["resolveReferences"]: <true | false>,
     ["emptyDefinitions"]: <"ignore" | "free-form">,
-    ["overrideSchema"]: <JSON schema subset>
+    ["overrideSchema"]: <JSON schema subset>,
+    ["filterTags"]: <list of tags>
 }
 ```
 Where
@@ -45,6 +46,7 @@ Where
  - `<resolveReferences>` determines whether hawaii will attempt to resolve external references via schema pre-processing. This is set to `false` by default but sometimes an OpenApi schema is scattered into multiple schemas across a repository and this might help with the resolution.
  - `<emptyDefintions>` determines what hawaii should do when encountering a global type definition without schema information. When set to "ignore" (default) hawaii will generate the global type. However, sometimes these global types are still referenced from other types or definitions, in which case the setting this option to "free-form" will generate a type abbreviation for the empty schema equal to a free form object (`JToken` when targetting F# or `obj` when targetting Fable)
  - `<overrideSchema>` Allows you to override the resolved schema either to add more information (such as a missing operation ID) or _correct_ the types when you know better (see below)
+ - `<filterTags>` Allows to filter which operations will be included based on their OpenAPI tags. Useful when generating the full schema isn't possible or isn't practical. To see what tags are available, use `hawaii --show-tags`
 
 ### Example ([PetStore](https://petstore3.swagger.io) Schema)
 Here is an example configuration for the pet store API:

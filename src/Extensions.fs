@@ -3,7 +3,7 @@ module Extensions
 
 open FsAst
 open FSharp.Compiler.SyntaxTree
-open FSharp.Compiler.Range
+open FSharp.Compiler.Text
 open FSharp.Compiler.XmlDoc
 open Fantomas
 
