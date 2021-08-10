@@ -201,7 +201,7 @@ You can go a step further by overriding the return types of certain responses. T
 
 ### Limitations
 These are the very early days of Hawaii as a tool to generate F# clients and there are some known limitations and rough edges that I will be working on:
- - `anyOf`/`oneOf` not supported
+ - `anyOf`/`oneOf` not supported unless they contain a single element, in which case they are reduced away
 
 > You can watch the live coding sessions as a playlist published on [YouTube here](https://www.youtube.com/watch?v=8dgjD6vG7yw&list=PLBzGkJMamtz0KCkK7OFnuXyXP7yUtnt9o)
 

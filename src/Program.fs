@@ -213,6 +213,35 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
 
 let client = new HttpClient()
 
+let simplifyRedundantAnyOfAndAllOfReferences (schema: JObject) =
+    let rec iterate (part: JObject) =
+        let properties = List.ofSeq(part.Properties())
+        for property in properties do
+            if property.Value.Type = JTokenType.Object then
+                iterate (unbox<JObject> property.Value)
+            elif property.Name = "anyOf" && property.Value.Type = JTokenType.Array then
+                let anyOfArray = unbox<JArray> property.Value
+                if anyOfArray.Count = 1 && anyOfArray.[0].Type = JTokenType.Object then
+                    let innerObject = unbox<JObject> anyOfArray.[0]
+                    for innerProp in innerObject.Properties() do 
+                        part.Add(innerProp)
+                    part.Remove("anyOf") |> ignore
+            elif property.Name = "allOf" && property.Value.Type = JTokenType.Array then
+                let anyOfArray = unbox<JArray> property.Value
+                if anyOfArray.Count = 1 && anyOfArray.[0].Type = JTokenType.Object then
+                    let innerObject = unbox<JObject> anyOfArray.[0]
+                    for innerProp in innerObject.Properties() do 
+                        part.Add(innerProp)
+                    part.Remove("allOf") |> ignore
+            elif property.Value.Type = JTokenType.Array then
+                let elements = unbox<JArray> property.Value
+                for element in elements do
+                    if element.Type = JTokenType.Object then
+                        iterate (unbox<JObject> element)
+
+    iterate schema
+    schema
+
 let readExternalODataSchema (schemaUrl: string) =
     let content = 
         schemaUrl
@@ -279,7 +308,8 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
                             if not (operationAsObject.ContainsKey "produces") then
                                 operationAsObject.Add(JProperty("produces", [| "application/json" |]))
 
-    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(schemaContents.ToString())
+    let reducedAnyOf = simplifyRedundantAnyOfAndAllOfReferences schemaContents
+    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(reducedAnyOf.ToString())
     new MemoryStream(schemaBytes) :> Stream
 
 let capitalize (input: string) =
@@ -2843,6 +2873,7 @@ let preprocessRelativeExternalReferences (schema: JObject) (url: string) =
 
     iterate schema
     schema
+
 
 type ExternalResouceLoader(schema: string) =
     interface Interface.IStreamLoader with
