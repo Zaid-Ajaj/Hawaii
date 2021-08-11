@@ -3106,7 +3106,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.39.0"
+        printfn "0.44.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
@@ -3128,20 +3128,23 @@ let main argv =
             let openApiSchema = readExternalODataSchema schemaWithMetadata
             let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
             File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
-            printfn "Generated OpenAPI specs saved as %s" output
+            printfn "Generated OpenAPI specs saved as %s" (resolveFile output)
             0
         elif schema.EndsWith ".xml" && File.Exists (resolveFile schema) then 
             let openApiSchema = readLocalODataSchema schema
             let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
             File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
-            printfn "Generated OpenAPI specs saved as %s" output
+            printfn "Generated OpenAPI specs saved as %s" (resolveFile output)
             0
         else 
             printfn "Invalid OData schema"
             printfn "Schema %s" schema
             1
 
-    | [| "--show-tags"; filePath |] -> 
+    | [| "--show-tags"; "--config"; filePath |] -> 
+        printfn "Extracting OpenAPI tags schema at %s" filePath
+        showTags filePath
+    | [| "--config"; filePath; "--show-tags" |] -> 
         printfn "Extracting OpenAPI tags schema at %s" filePath
         showTags filePath
     | [| "--show-tags" |] -> 
