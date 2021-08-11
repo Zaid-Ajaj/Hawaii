@@ -17,6 +17,7 @@ open System.Text
 open Microsoft.OpenApi.OData
 open Microsoft.OData.Edm.Csdl
 open Microsoft.OpenApi.Writers
+open Newtonsoft.Json
 
 
 
@@ -213,31 +214,58 @@ let xmlDocsWithParams (description: string) (parameters: (string * string) seq) 
 
 let client = new HttpClient()
 
-let simplifyRedundantAnyOfAndAllOfReferences (schema: JObject) =
+let simplifyRedundantSchemaParts (schema: JObject) =
     let rec iterate (part: JObject) =
         let properties = List.ofSeq(part.Properties())
         for property in properties do
-            if property.Value.Type = JTokenType.Object then
-                iterate (unbox<JObject> property.Value)
+            if property.Name.StartsWith "application/vnd" && property.Name.EndsWith "+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then 
+                // rewrite JSON-like media types into application/json
+                let mediaType = unbox<JObject> property.Value
+                part.Add("application/json", mediaType)
+                part.Remove(property.Name) |> ignore
+                ()
             elif property.Name = "anyOf" && property.Value.Type = JTokenType.Array then
+                // simplify this shape
+                // { anyOf: [ first ] }
+                // into
+                // { ...first }
                 let anyOfArray = unbox<JArray> property.Value
                 if anyOfArray.Count = 1 && anyOfArray.[0].Type = JTokenType.Object then
                     let innerObject = unbox<JObject> anyOfArray.[0]
                     for innerProp in innerObject.Properties() do 
                         part.Add(innerProp)
                     part.Remove("anyOf") |> ignore
-            elif property.Name = "allOf" && property.Value.Type = JTokenType.Array then
-                let anyOfArray = unbox<JArray> property.Value
-                if anyOfArray.Count = 1 && anyOfArray.[0].Type = JTokenType.Object then
-                    let innerObject = unbox<JObject> anyOfArray.[0]
+            elif property.Name = "oneOf" && property.Value.Type = JTokenType.Array then
+                // simplify this shape
+                // { oneOf: [ first ] }
+                // into
+                // { ...first }
+                let oneOfArray = unbox<JArray> property.Value
+                if oneOfArray.Count = 1 && oneOfArray.[0].Type = JTokenType.Object then
+                    let innerObject = unbox<JObject> oneOfArray.[0]
                     for innerProp in innerObject.Properties() do 
                         part.Add(innerProp)
-                    part.Remove("allOf") |> ignore
+                    part.Remove("oneOf") |> ignore
+            elif property.Name = "allOf" && property.Value.Type = JTokenType.Array then 
+                // simplify this shape
+                // { allOf: [ first, { "example": ... } ] }
+                // into
+                // { ...first }
+                let allOfArray = unbox<JArray> property.Value
+                if allOfArray.Count = 2 && allOfArray.[0].Type = JTokenType.Object && allOfArray.[1].Type = JTokenType.Object then
+                    let firstObject = unbox<JObject> allOfArray.[0]
+                    let secondObject = unbox<JObject> allOfArray.[1]
+                    if secondObject.Count = 1 && secondObject.ContainsKey "example" then 
+                        for innerProp in firstObject.Properties() do 
+                            part.Add(innerProp)
+                        part.Remove("allOf") |> ignore
             elif property.Value.Type = JTokenType.Array then
                 let elements = unbox<JArray> property.Value
                 for element in elements do
                     if element.Type = JTokenType.Object then
                         iterate (unbox<JObject> element)
+            if property.Value.Type = JTokenType.Object then
+                iterate (unbox<JObject> property.Value)
 
     iterate schema
     schema
@@ -308,8 +336,8 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
                             if not (operationAsObject.ContainsKey "produces") then
                                 operationAsObject.Add(JProperty("produces", [| "application/json" |]))
 
-    let reducedAnyOf = simplifyRedundantAnyOfAndAllOfReferences schemaContents
-    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(reducedAnyOf.ToString())
+    let simplified = simplifyRedundantSchemaParts schemaContents
+    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(simplified.ToString())
     new MemoryStream(schemaBytes) :> Stream
 
 let capitalize (input: string) =
@@ -674,6 +702,8 @@ let createEnumType (enumName: string) (values: seq<string>) (docs: string option
                             "Equal"
                         elif part = "!=" || part = "<>" then
                             "NotEqual"
+                        elif part = "*" then
+                            "Star"
                         else
                             part
                     capitalize removedNumberPrefix
@@ -1597,12 +1627,15 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     ()
             elif topLevelObject.Value.Type = "array" then
                 let elementType = topLevelObject.Value.Items
-                if not (isNull elementType.Reference) then
-                    let referencedType =
-                        if invalidTitle elementType.Title
-                        then sanitizeTypeName elementType.Reference.Id
-                        else sanitizeTypeName elementType.Title
-
+                if isNull elementType then 
+                    if config.target = Target.FSharp then
+                        moduleTypes.Add (createTypeAbbreviation typeName (SynType.JArray()))
+                        visitedTypes.Add typeName
+                    else
+                        moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Object())))
+                        visitedTypes.Add typeName
+                elif isNotNull elementType.Reference && isNotNull elementType.Reference.Id then
+                    let referencedType = elementType.Reference.Id
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Create referencedType)))
                     visitedTypes.Add typeName
                 elif elementType.Type = "string" then
@@ -1658,9 +1691,10 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     // create type abbreviation
                     moduleTypes.Add (createTypeAbbreviation typeName (SynType.List(SynType.Bool())))
                     visitedTypes.Add typeName
-                elif elementType.Type = "object" && isNotNull elementType then
+                elif elementType.Type = "object" && not (visitedTypes.Contains $"{typeName}ArrayItem") then
                     let elementTypeName = $"{typeName}ArrayItem"
                     visitedTypes.Add typeName
+                    visitedTypes.Add elementTypeName
                     let factory = FactoryFunction.Create
                     for createdType in createRecordFromSchema elementTypeName elementType visitedTypes config openApiDocument factory do
                         moduleTypes.Add createdType
@@ -3092,12 +3126,14 @@ let main argv =
                 then schema 
                 else $"{schema.TrimEnd '/'}/$metadata"
             let openApiSchema = readExternalODataSchema schemaWithMetadata
-            File.WriteAllText(resolveFile output, openApiSchema)
+            let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
+            File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
             printfn "Generated OpenAPI specs saved as %s" output
             0
         elif schema.EndsWith ".xml" && File.Exists (resolveFile schema) then 
             let openApiSchema = readLocalODataSchema schema
-            File.WriteAllText(resolveFile output, openApiSchema)
+            let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
+            File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
             printfn "Generated OpenAPI specs saved as %s" output
             0
         else 

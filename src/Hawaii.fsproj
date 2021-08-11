@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.42.0</Version>
-    <PackageReleaseNotes>Simplify redundant anyOf and allOf references</PackageReleaseNotes>
+    <Version>0.43.0</Version>
+    <PackageReleaseNotes>Reduce vender specific JSON media types into "application/json"</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">
