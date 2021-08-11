@@ -259,6 +259,14 @@ let simplifyRedundantSchemaParts (schema: JObject) =
                         for innerProp in firstObject.Properties() do 
                             part.Add(innerProp)
                         part.Remove("allOf") |> ignore
+                    else 
+                        for element in allOfArray do
+                            if element.Type = JTokenType.Object then
+                                iterate (unbox<JObject> element)
+                else 
+                    for element in allOfArray do
+                        if element.Type = JTokenType.Object then
+                            iterate (unbox<JObject> element)
             elif property.Value.Type = JTokenType.Array then
                 let elements = unbox<JArray> property.Value
                 for element in elements do
@@ -3106,7 +3114,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.44.0"
+        printfn "0.45.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
