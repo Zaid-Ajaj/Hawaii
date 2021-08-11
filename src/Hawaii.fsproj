@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.45.0</Version>
-    <PackageReleaseNotes>Expand recursive schema reduction</PackageReleaseNotes>
+    <Version>0.46.0</Version>
+    <PackageReleaseNotes>Serialize odata type name in request bodies</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">

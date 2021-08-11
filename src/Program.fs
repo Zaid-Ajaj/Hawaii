@@ -68,6 +68,7 @@ type CodegenConfig = {
     emptyDefinitions: EmptyDefinitionResolution
     overrideSchema: JToken option
     filterTags: string list
+    odataSchema: bool
 }
 
 let inline isNotNull (x: 't) = not (isNull x)
@@ -159,6 +160,7 @@ let readConfig file =
                             if tag.Type = JTokenType.String then 
                                 tag.ToObject<string>() ]
                     else [ ]
+                odataSchema = false
             }
     with
     | error ->
@@ -345,8 +347,14 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
                                 operationAsObject.Add(JProperty("produces", [| "application/json" |]))
 
     let simplified = simplifyRedundantSchemaParts schemaContents
-    let schemaBytes = System.Text.Encoding.UTF8.GetBytes(simplified.ToString())
-    new MemoryStream(schemaBytes) :> Stream
+    let simplifiedContents = simplified.ToString()
+    if simplifiedContents.Contains "\"@odata.type\"" then 
+        simplified.Add(JProperty("x-odata", true))
+        let schemaBytes = System.Text.Encoding.UTF8.GetBytes(simplified.ToString())
+        new MemoryStream(schemaBytes) :> Stream
+    else 
+        let schemaBytes = System.Text.Encoding.UTF8.GetBytes simplifiedContents
+        new MemoryStream(schemaBytes) :> Stream
 
 let capitalize (input: string) =
     if String.IsNullOrWhiteSpace input
@@ -1214,6 +1222,13 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         let dictionaryType = SynType.Map(SynType.String(), valueType)
         [ createTypeAbbreviation recordName dictionaryType ]
     else
+        if config.odataSchema then 
+            let propertyName = "@odata.type"
+            let required = false
+            let fieldType = SynType.Option(SynType.String())
+            recordFields.Add (SynFieldRcd.Create(propertyName, fieldType))
+            addedFields.Add((propertyName, required, fieldType))
+
         let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
         let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
 
@@ -1234,6 +1249,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                                     for (fieldName, required, fieldType) in addedFields do
                                                         if fieldName = "additionalProperties" && not containsPreservedProperty then
                                                             ()
+                                                        elif fieldName = "@odata.type" then 
+                                                            ()
                                                         else
                                                             if required then yield SynPatRcd.Typed {
                                                                 Type = fieldType
@@ -1253,17 +1270,19 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                 let expr =
                                     if fieldName = "additionalProperties" && not containsPreservedProperty
                                     then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
+                                    elif fieldName = "@odata.type" 
+                                    then Some(SynExpr.CreatePartialApp([ "Some" ], [ SynExpr.CreateConstString $"#{schema.Title}" ]))
                                     elif required
                                     then Some(SynExpr.Ident(Ident.Create (camelCase fieldName)))
                                     else Some(SynExpr.Ident(Ident.Create "None"))
-                                ((LongIdentWithDots.CreateString fieldName, false), expr)
+                                ((LongIdentWithDots.CreateFromLongIdent([ Ident.Create fieldName ]), false), expr)
                         ]
                 }
         ]
 
         let anyFieldHasDots =
             addedFields
-            |> Seq.exists (fun (fieldName, _, _) -> fieldName.Contains "." || fieldName.Contains "/")
+            |> Seq.exists (fun (fieldName, _, _) -> (fieldName.Contains "." || fieldName.Contains "/") && fieldName <> "@odata.type")
 
         // when fields have dots, they are not escaped for some reason
         // TODO: fix it later in fantomas
@@ -1557,6 +1576,10 @@ let includeOperation (operation: OpenApiOperation) (config: CodegenConfig) : boo
 let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenConfig) =
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
+
+    if config.odataSchema then 
+        moduleTypes.Add (SynModuleDecl.CreateHashDirective("nowarn", [ "1104" ]))
+
     if isNotNull openApiDocument.Components then
 
         // first add all global enum types
@@ -1721,6 +1744,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 if canUseTitle
                 then sanitizeTypeName topLevelObject.Value.Title
                 else sanitizeTypeName topLevelObject.Key
+
+            if config.odataSchema then  
+                topLevelObject.Value.Title <- topLevelObject.Key
 
             let isAllOf =
                 isNull topLevelObject.Value.Type
@@ -2989,6 +3015,7 @@ let runConfig filePath =
                 System.Console.WriteLine error.Message
             1
         else
+            let config = { config with odataSchema = openApiDocument.Extensions.ContainsKey "x-odata" }
             let outputDir = config.output
             // prepare output directory
             if Directory.Exists outputDir
@@ -3114,7 +3141,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.45.0"
+        printfn "0.46.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
