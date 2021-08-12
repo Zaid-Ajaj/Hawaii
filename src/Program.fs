@@ -1222,12 +1222,25 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         let dictionaryType = SynType.Map(SynType.String(), valueType)
         [ createTypeAbbreviation recordName dictionaryType ]
     else
-        if config.odataSchema then 
+        let odataTypeNameField = "ODataTypeName"
+        if config.odataSchema && config.target = Target.FSharp then 
+            let required = false
+            let fieldType = SynType.Option(SynType.String())
+            let recordField = SynFieldRcd.Create(odataTypeNameField, fieldType)
+            let attributes = SynAttributeList.Create [
+                // create [<JsonProperty "@odata.type">]
+                SynAttribute.Create([ Ident.Create "Newtonsoft"; Ident.Create "Json"; Ident.Create "JsonProperty" ], SynConst.CreateString "@odata.type")
+            ]
+            recordFields.Insert(0, { recordField with Attributes = [ attributes ] })
+            addedFields.Insert(0, (odataTypeNameField, required, fieldType))
+        elif config.odataSchema then 
+            // fable
             let propertyName = "@odata.type"
             let required = false
             let fieldType = SynType.Option(SynType.String())
-            recordFields.Add (SynFieldRcd.Create(propertyName, fieldType))
-            addedFields.Add((propertyName, required, fieldType))
+           
+            recordFields.Insert(0, SynFieldRcd.Create(propertyName, fieldType))
+            addedFields.Insert(0, (propertyName, required, fieldType))
 
         let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create (List.ofSeq recordFields)
         let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
@@ -1249,7 +1262,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                                     for (fieldName, required, fieldType) in addedFields do
                                                         if fieldName = "additionalProperties" && not containsPreservedProperty then
                                                             ()
-                                                        elif fieldName = "@odata.type" then 
+                                                        elif fieldName = "@odata.type" || (fieldName = "ODataTypeName" && config.odataSchema) then 
                                                             ()
                                                         else
                                                             if required then yield SynPatRcd.Typed {
@@ -1270,7 +1283,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                 let expr =
                                     if fieldName = "additionalProperties" && not containsPreservedProperty
                                     then Some(SynExpr.CreateLongIdent(LongIdentWithDots.CreateString "Map.empty"))
-                                    elif fieldName = "@odata.type" 
+                                    elif fieldName = "@odata.type" || (fieldName = "ODataTypeName" && config.odataSchema)
                                     then Some(SynExpr.CreatePartialApp([ "Some" ], [ SynExpr.CreateConstString $"#{schema.Title}" ]))
                                     elif required
                                     then Some(SynExpr.Ident(Ident.Create (camelCase fieldName)))
@@ -3141,7 +3154,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.46.0"
+        printfn "0.48.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

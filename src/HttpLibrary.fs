@@ -15,6 +15,7 @@ module Serializer =
     let converter = FableJsonConverter() :> JsonConverter
     let settings = JsonSerializerSettings(Converters=[| converter |])
     settings.DateParseHandling <- DateParseHandling.None
+    settings.NullValueHandling <- NullValueHandling.Ignore
     let serialize<'t> (value: 't) = JsonConvert.SerializeObject(value, settings)
     let deserialize<'t> (content: string) = JsonConvert.DeserializeObject<'t>(content, settings)
 
