@@ -1335,25 +1335,54 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
     visitedTypes.Add operationName
     // hack: add it to the operation and retrieve it later
     operation.Extensions.Add("ResponseTypeName", new Microsoft.OpenApi.Any.OpenApiString(operationName))
-    let rec getFieldType (schema: OpenApiSchema) (status: string) =
+    let rec getFieldType (schema: OpenApiSchema) (status: string) (wrapODataResponse: bool) =
         match schema.Type with
-        | "integer" when schema.Format = "int64" -> SynType.Int64()
-        | "integer" -> SynType.Int()
-        | "number" when schema.Format = "float" -> SynType.Float32()
-        | "number" ->  SynType.Double()
-        | "boolean" -> SynType.Bool()
-        | "string" when schema.Format = "uuid" -> SynType.Guid()
-        | "string" when schema.Format = "guid" -> SynType.Guid()
-        | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
+        | "integer" when schema.Format = "int64" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Int64())
+            else SynType.Int64()
+        | "integer" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Int())
+            else SynType.Int()
+        | "number" when schema.Format = "float" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Float32())
+            else SynType.Float32()
+        | "number" ->
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Double())
+            else SynType.Double()
+        | "boolean" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Bool())
+            else SynType.Bool()
+            
+        | "string" when schema.Format = "uuid" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Guid())
+            else SynType.Guid()
+        | "string" when schema.Format = "guid" ->
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.Guid())
+            else SynType.Guid()
+        | "string" when schema.Format = "date-time" -> 
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.DateTimeOffset())
+            else SynType.DateTimeOffset()
         | "string" when schema.Format = "byte" ->
             // base64 encoded characters
-            SynType.ByteArray()
+            if config.odataSchema && wrapODataResponse 
+            then SynType.ODataResponse(SynType.ByteArray())
+            else SynType.ByteArray()
         | "file" ->
             SynType.ByteArray()
         | "array" when isNotNull schema.Items ->
             let elementSchema = schema.Items
-            let elementType = getFieldType elementSchema status
-            SynType.List elementType
+            let elementType = getFieldType elementSchema status false
+            if config.odataSchema && wrapODataResponse
+            then SynType.ODataResponse(SynType.List elementType)
+            else SynType.List elementType
         | "array" ->
             // element type schema is null
             let elementType =
@@ -1361,7 +1390,10 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                 then SynType.CreateLongIdent "Newtonsoft.Json.Linq.JArray"
                 else SynType.ResizeArray(SynType.Create "obj")
 
-            elementType
+            if config.odataSchema && wrapODataResponse
+            then SynType.ODataResponse(elementType)
+            else elementType
+
         | _ when not (isNull schema.Reference) ->
             // working with a reference type
             let typeName =
@@ -1370,7 +1402,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                 else sanitizeTypeName schema.Title
             SynType.Create typeName
         | _ when schema.AdditionalPropertiesAllowed && not (isNull schema.AdditionalProperties) ->
-            let valueType = getFieldType schema.AdditionalProperties status
+            let valueType = getFieldType schema.AdditionalProperties status false
             let keyType = SynType.String()
             SynType.Map(keyType, valueType)
         | "object" ->
@@ -1381,7 +1413,9 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                 intermediateTypes.Add generatedType
             SynType.Create recordName
         | _ ->
-            SynType.String()
+            if config.odataSchema && wrapODataResponse
+            then SynType.ODataResponse(SynType.String())
+            else SynType.String()
 
     let hasLoosePayloadRequestBody =
         isNotNull operation.RequestBody
@@ -1424,7 +1458,6 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
         intermediateTypes.Add(createTypeAbbreviation payloadTypeName (SynType.List(SynType.Create elementTypeName)))
         operation.Extensions.Add("RequestTypePayload", new Microsoft.OpenApi.Any.OpenApiString(payloadTypeName))
 
-
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [
@@ -1455,46 +1488,18 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     if response.Value.Content.ContainsKey "application/json" then
                         let responsePayloadType = response.Value.Content.["application/json"]
                         if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
-                            let fieldType =
-                                if config.odataSchema then 
-                                    // when using OData 
-                                    // wrap primitive types with OData response
-                                    let schema = responsePayloadType.Schema
-                                    match schema.Type with
-                                    | "integer" when schema.Format = "int64" -> 
-                                        SynType.ODataResponse(SynType.Int64())
-                                    | "integer" -> 
-                                        SynType.ODataResponse(SynType.Int())
-                                    | "number" when schema.Format = "float" -> 
-                                        SynType.ODataResponse(SynType.Float32())
-                                    | "number" ->  
-                                        SynType.ODataResponse(SynType.Double())
-                                    | "boolean" -> 
-                                        SynType.ODataResponse(SynType.Bool())
-                                    | "string" when schema.Format = "uuid" || schema.Format = "guid" -> 
-                                        SynType.ODataResponse(SynType.Guid())
-                                    | "string" when schema.Format = "date-time" -> 
-                                        SynType.ODataResponse(SynType.DateTimeOffset())
-                                    | "string" when schema.Format = "byte" ->
-                                        // base64 encoded characters
-                                        SynType.ODataResponse(SynType.ByteArray())
-                                    | "string" -> 
-                                        SynType.ODataResponse(SynType.String())
-                                    | _ -> 
-                                        getFieldType responsePayloadType.Schema caseName
-                                else
-                                    getFieldType responsePayloadType.Schema caseName
+                            let fieldType = getFieldType responsePayloadType.Schema caseName true
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         elif isNotNull responsePayloadType.Schema && isEmptySchema responsePayloadType.Schema then
                             if responsePayloadType.Schema.AdditionalPropertiesAllowed && isNotNull responsePayloadType.Schema.AdditionalProperties then
-                                let valueType = getFieldType responsePayloadType.Schema.AdditionalProperties caseName
+                                let valueType = getFieldType responsePayloadType.Schema.AdditionalProperties caseName true
                                 let keyType = SynType.String()
                                 let fieldType =  SynType.Map(keyType, valueType)
                                 [SynFieldRcd.Create("payload", fieldType).FromRcd]
                             elif isNotNull responsePayloadType.Schema.Reference then 
                                 // reference to an empty schema
                                 if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
-                                    let fieldType = getFieldType responsePayloadType.Schema caseName
+                                    let fieldType = getFieldType responsePayloadType.Schema caseName true
                                     [SynFieldRcd.Create("payload", fieldType).FromRcd]
                                 else 
                                     []
@@ -1505,7 +1510,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     elif response.Value.Content.ContainsKey "*/*" then
                         let responsePayloadType = response.Value.Content.["*/*"]
                         if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
-                            let fieldType = getFieldType responsePayloadType.Schema caseName
+                            let fieldType = getFieldType responsePayloadType.Schema caseName false
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         else
                             []
@@ -3262,7 +3267,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.50.0"
+        printfn "0.51.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
