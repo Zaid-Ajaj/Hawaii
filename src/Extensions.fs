@@ -72,6 +72,17 @@ type SynType with
             lessRange=None
         )
 
+    static member ODataResponse(valueType) =
+        SynType.App(
+            typeName=SynType.Create "ODataResponse",
+            typeArgs=[ valueType ],
+            commaRanges = [ ],
+            isPostfix = false,
+            range=range0,
+            greaterRange=None,
+            lessRange=None
+        )
+
     static member ByteArray() = SynType.Array(1, SynType.Byte(), range0)
     static member JToken() = SynType.CreateLongIdent "Newtonsoft.Json.Linq.JToken"
     static member JObject() = SynType.CreateLongIdent "Newtonsoft.Json.Linq.JObject"

@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.48.0</Version>
-    <PackageReleaseNotes>Serialize odata type name properly in request bodies and ignore null values</PackageReleaseNotes>
+    <Version>0.49.0</Version>
+    <PackageReleaseNotes>Wrap primitive OData responses with ODataContext</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">

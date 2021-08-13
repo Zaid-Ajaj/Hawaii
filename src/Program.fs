@@ -348,7 +348,7 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
 
     let simplified = simplifyRedundantSchemaParts schemaContents
     let simplifiedContents = simplified.ToString()
-    if simplifiedContents.Contains "\"@odata.type\"" then 
+    if simplifiedContents.Contains "#/components/schemas/odata.error" then 
         simplified.Add(JProperty("x-odata", true))
         let schemaBytes = System.Text.Encoding.UTF8.GetBytes(simplified.ToString())
         new MemoryStream(schemaBytes) :> Stream
@@ -1223,7 +1223,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         [ createTypeAbbreviation recordName dictionaryType ]
     else
         let odataTypeNameField = "ODataTypeName"
-        if config.odataSchema && config.target = Target.FSharp then 
+        if config.odataSchema && config.target = Target.FSharp && not (String.IsNullOrWhiteSpace schema.Title) then 
             let required = false
             let fieldType = SynType.Option(SynType.String())
             let recordField = SynFieldRcd.Create(odataTypeNameField, fieldType)
@@ -1233,7 +1233,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             ]
             recordFields.Insert(0, { recordField with Attributes = [ attributes ] })
             addedFields.Insert(0, (odataTypeNameField, required, fieldType))
-        elif config.odataSchema then 
+        elif config.odataSchema && not (String.IsNullOrWhiteSpace schema.Title) then 
             // fable
             let propertyName = "@odata.type"
             let required = false
@@ -1455,7 +1455,35 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     if response.Value.Content.ContainsKey "application/json" then
                         let responsePayloadType = response.Value.Content.["application/json"]
                         if not (isNull responsePayloadType.Schema) && not (isEmptySchema responsePayloadType.Schema) then
-                            let fieldType = getFieldType responsePayloadType.Schema caseName
+                            let fieldType =
+                                if config.odataSchema then 
+                                    // when using OData 
+                                    // wrap primitive types with OData response
+                                    let schema = responsePayloadType.Schema
+                                    match schema.Type with
+                                    | "integer" when schema.Format = "int64" -> 
+                                        SynType.ODataResponse(SynType.Int64())
+                                    | "integer" -> 
+                                        SynType.ODataResponse(SynType.Int())
+                                    | "number" when schema.Format = "float" -> 
+                                        SynType.ODataResponse(SynType.Float32())
+                                    | "number" ->  
+                                        SynType.ODataResponse(SynType.Double())
+                                    | "boolean" -> 
+                                        SynType.ODataResponse(SynType.Bool())
+                                    | "string" when schema.Format = "uuid" || schema.Format = "guid" -> 
+                                        SynType.ODataResponse(SynType.Guid())
+                                    | "string" when schema.Format = "date-time" -> 
+                                        SynType.ODataResponse(SynType.DateTimeOffset())
+                                    | "string" when schema.Format = "byte" ->
+                                        // base64 encoded characters
+                                        SynType.ODataResponse(SynType.ByteArray())
+                                    | "string" -> 
+                                        SynType.ODataResponse(SynType.String())
+                                    | _ -> 
+                                        getFieldType responsePayloadType.Schema caseName
+                                else
+                                    getFieldType responsePayloadType.Schema caseName
                             [SynFieldRcd.Create("payload", fieldType).FromRcd]
                         elif isNotNull responsePayloadType.Schema && isEmptySchema responsePayloadType.Schema then
                             if responsePayloadType.Schema.AdditionalPropertiesAllowed && isNotNull responsePayloadType.Schema.AdditionalProperties then
@@ -1541,6 +1569,39 @@ let createKeyValuePair() =
 
     SynModuleDecl.CreateSimpleType(info, simpleRecordType)
 
+// type ODataResponse<'TValue> = { value: 'TValue }
+let createODataResponse(config: CodegenConfig) =
+    let valueTypeArg = SynTypar.Typar(Ident.Create "TValue", TyparStaticReq.NoStaticReq, false)
+
+    let info : SynComponentInfoRcd = {
+        Access = None
+        Attributes = [ ]
+        Id = [ Ident.Create "ODataResponse" ]
+        XmlDoc = PreXmlDoc.Empty
+        Parameters = [ SynTyparDecl.TyparDecl([], valueTypeArg) ]
+        Constraints = [ ]
+        PreferPostfix = true
+        Range = range0
+    }
+
+    let attributes = SynAttributeList.Create [
+        // [<JsonProperty "@odata.context">]
+        SynAttribute.Create([ Ident.Create "Newtonsoft"; Ident.Create "Json"; Ident.Create "JsonProperty" ], SynConst.CreateString "@odata.context")
+    ]
+
+    let odataContextField = SynFieldRcd.Create("ODataContext", SynType.Option(SynType.String()))
+
+    let recordRepr = SynTypeDefnSimpleReprRecordRcd.Create [
+        if config.target = Target.FSharp then
+            { odataContextField with Attributes = [ attributes ] }
+        SynFieldRcd.Create("value", SynType.Var(valueTypeArg, range0))
+    ]
+
+    let simpleRecordType = SynTypeDefnSimpleReprRcd.Record recordRepr
+
+    SynModuleDecl.CreateSimpleType(info, simpleRecordType)
+
+
 let rec isPrimitiveAllOf (schema: OpenApiSchema) =
     if isNotNull schema.AllOf && schema.AllOf.Count > 0 then
         schema.AllOf
@@ -1591,7 +1652,8 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let moduleTypes = ResizeArray<SynModuleDecl>()
 
     if config.odataSchema then 
-        moduleTypes.Add (SynModuleDecl.CreateHashDirective("nowarn", [ "1104" ]))
+        moduleTypes.Add (createODataResponse config)
+        visitedTypes.Add "ODataResponse"
 
     if isNotNull openApiDocument.Components then
 
@@ -3154,7 +3216,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.48.0"
+        printfn "0.49.0"
         0
     | [| |] ->
         Console.WriteLine(logo)

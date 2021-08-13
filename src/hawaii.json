@@ -1,5 +1,5 @@
 {
-  "schema": "https://selectapi.datascope.refinitiv.com/RestApi/v1/Extractions/$metadata",
+  "schema": "https://selectapi.datascope.refinitiv.com/RestApi/v1/Authentication/$metadata",
   "project": "SelectApi",
   "output": "./output"
 }
