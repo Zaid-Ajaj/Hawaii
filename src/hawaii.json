@@ -1,5 +1,8 @@
 {
-  "schema": "https://selectapi.datascope.refinitiv.com/RestApi/v1/Authentication/$metadata",
-  "project": "SelectApi",
-  "output": "./output"
+  "schema": "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json",
+  "project": "FableSlicebox",
+  "output": "./output",
+  "asyncReturnType": "async",
+  "target": "fable",
+  "synchronous": false
 }

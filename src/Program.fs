@@ -1652,6 +1652,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let moduleTypes = ResizeArray<SynModuleDecl>()
 
     if config.odataSchema then 
+        if config.target = Target.Fable then 
+            // Fable target will output @odata.type 
+            moduleTypes.Add (SynModuleDecl.CreateHashDirective("nowarn", [ "1104" ]))
         moduleTypes.Add (createODataResponse config)
         visitedTypes.Add "ODataResponse"
 
@@ -2482,12 +2485,52 @@ let createOpenApiClient
                                     |> wrappedReturn
                                 )
                             else
-                                // when the media type is JSON but the return type is string
-                                // read the string as is without deserialization
-                                SynExpr.CreatePartialApp([responseType; status], [
-                                    createIdent [ "content" ]
-                                ])
-                                |> wrappedReturn
+                                if config.odataSchema then 
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        SynExpr.CreateParen(
+                                            SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                                createIdent [ "content" ]
+                                            ])
+                                        )
+                                    ])
+                                    |> wrappedReturn
+                                else
+                                    // when the media type is JSON but the return type is string
+                                    // read the string as is without deserialization
+                                    SynExpr.CreatePartialApp([responseType; status], [
+                                        createIdent [ "content" ]
+                                    ])
+                                    |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "integer" && config.odataSchema then 
+                            // OData Schema and integer response schema combo
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "boolean" && config.odataSchema then 
+                            // OData Schema and boolean response schema combo
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "number" && config.odataSchema then 
+                            // OData Schema and number response schema combo
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && not (isEmptySchema response.Content.["application/json"].Schema) then
                             if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
@@ -3189,7 +3232,10 @@ let showTags filePath =
         let (openApiDocument, diagnostics) = openApi.OpenApiDocument, openApi.OpenApiDiagnostic
         if diagnostics.Errors.Count > 0 && isNull openApiDocument then
             for error in diagnostics.Errors do
-                System.Console.WriteLine error.Message
+                Console.WriteLine error.Message
+            1
+        elif isNull openApiDocument then
+            Console.WriteLine "Could not parse the OpenAPI schema"
             1
         else
             let tags = [
@@ -3216,7 +3262,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.49.0"
+        printfn "0.50.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
