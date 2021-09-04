@@ -225,7 +225,11 @@ let simplifyRedundantSchemaParts (schema: JObject) =
                 let mediaType = unbox<JObject> property.Value
                 part.Add("application/json", mediaType)
                 part.Remove(property.Name) |> ignore
-                ()
+            elif property.Name = "application/ld+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then 
+                // rewrite JSON-like media types into application/json
+                let mediaType = unbox<JObject> property.Value
+                part.Add("application/json", mediaType)
+                part.Remove(property.Name) |> ignore
             elif property.Name = "anyOf" && property.Value.Type = JTokenType.Array then
                 // simplify this shape
                 // { anyOf: [ first ] }
@@ -1295,7 +1299,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 
         let anyFieldHasDots =
             addedFields
-            |> Seq.exists (fun (fieldName, _, _) -> (fieldName.Contains "." || fieldName.Contains "/") && fieldName <> "@odata.type")
+            |> Seq.exists (fun (fieldName, _, _) -> (fieldName.Contains "." || fieldName.Contains "/" || fieldName.Contains "@") && fieldName <> "@odata.type")
 
         // when fields have dots, they are not escaped for some reason
         // TODO: fix it later in fantomas
@@ -3267,7 +3271,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.51.0"
+        printfn "0.52.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
