@@ -153,11 +153,11 @@ let readConfig file =
                     if isNotNull parts.["overrideSchema"]
                     then Some parts.["overrideSchema"]
                     else None
-                filterTags = 
+                filterTags =
                     if isNotNull parts.["filterTags"] && parts.["filterTags"].Type = JTokenType.Array
-                    then [ 
-                            for tag in unbox<JArray> parts.["filterTags"] do 
-                            if tag.Type = JTokenType.String then 
+                    then [
+                            for tag in unbox<JArray> parts.["filterTags"] do
+                            if tag.Type = JTokenType.String then
                                 tag.ToObject<string>() ]
                     else [ ]
                 odataSchema = false
@@ -220,12 +220,12 @@ let simplifyRedundantSchemaParts (schema: JObject) =
     let rec iterate (part: JObject) =
         let properties = List.ofSeq(part.Properties())
         for property in properties do
-            if property.Name.StartsWith "application/vnd" && property.Name.EndsWith "+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then 
+            if property.Name.StartsWith "application/vnd" && property.Name.EndsWith "+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then
                 // rewrite JSON-like media types into application/json
                 let mediaType = unbox<JObject> property.Value
                 part.Add("application/json", mediaType)
                 part.Remove(property.Name) |> ignore
-            elif property.Name = "application/ld+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then 
+            elif property.Name = "application/ld+json" && property.Value.Type = JTokenType.Object && not (part.ContainsKey "application/json") then
                 // rewrite JSON-like media types into application/json
                 let mediaType = unbox<JObject> property.Value
                 part.Add("application/json", mediaType)
@@ -238,7 +238,7 @@ let simplifyRedundantSchemaParts (schema: JObject) =
                 let anyOfArray = unbox<JArray> property.Value
                 if anyOfArray.Count = 1 && anyOfArray.[0].Type = JTokenType.Object then
                     let innerObject = unbox<JObject> anyOfArray.[0]
-                    for innerProp in innerObject.Properties() do 
+                    for innerProp in innerObject.Properties() do
                         part.Add(innerProp)
                     part.Remove("anyOf") |> ignore
             elif property.Name = "oneOf" && property.Value.Type = JTokenType.Array then
@@ -249,10 +249,10 @@ let simplifyRedundantSchemaParts (schema: JObject) =
                 let oneOfArray = unbox<JArray> property.Value
                 if oneOfArray.Count = 1 && oneOfArray.[0].Type = JTokenType.Object then
                     let innerObject = unbox<JObject> oneOfArray.[0]
-                    for innerProp in innerObject.Properties() do 
+                    for innerProp in innerObject.Properties() do
                         part.Add(innerProp)
                     part.Remove("oneOf") |> ignore
-            elif property.Name = "allOf" && property.Value.Type = JTokenType.Array then 
+            elif property.Name = "allOf" && property.Value.Type = JTokenType.Array then
                 // simplify this shape
                 // { allOf: [ first, { "example": ... } ] }
                 // into
@@ -261,15 +261,15 @@ let simplifyRedundantSchemaParts (schema: JObject) =
                 if allOfArray.Count = 2 && allOfArray.[0].Type = JTokenType.Object && allOfArray.[1].Type = JTokenType.Object then
                     let firstObject = unbox<JObject> allOfArray.[0]
                     let secondObject = unbox<JObject> allOfArray.[1]
-                    if secondObject.Count = 1 && secondObject.ContainsKey "example" then 
-                        for innerProp in firstObject.Properties() do 
+                    if secondObject.Count = 1 && secondObject.ContainsKey "example" then
+                        for innerProp in firstObject.Properties() do
                             part.Add(innerProp)
                         part.Remove("allOf") |> ignore
-                    else 
+                    else
                         for element in allOfArray do
                             if element.Type = JTokenType.Object then
                                 iterate (unbox<JObject> element)
-                else 
+                else
                     for element in allOfArray do
                         if element.Type = JTokenType.Object then
                             iterate (unbox<JObject> element)
@@ -285,12 +285,12 @@ let simplifyRedundantSchemaParts (schema: JObject) =
     schema
 
 let readExternalODataSchema (schemaUrl: string) =
-    let content = 
+    let content =
         schemaUrl
         |> client.GetStringAsync
         |> Async.AwaitTask
         |> Async.RunSynchronously
-    
+
     let odataModel = CsdlReader.Parse(XElement.Parse(content).CreateReader())
     let openApiModel = odataModel.ConvertToOpenApi();
     use stringTextWriter = new StringWriter()
@@ -312,11 +312,11 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
         if File.Exists schema && schema.EndsWith ".json" then
             let content = File.ReadAllText schema
             JObject.Parse(content)
-        elif File.Exists schema && schema.EndsWith ".xml" then 
+        elif File.Exists schema && schema.EndsWith ".xml" then
             Console.WriteLine "Detected local OData schema"
             let openApiJson = readLocalODataSchema schema
             JObject.Parse openApiJson
-        elif schema.StartsWith "http" && schema.EndsWith "$metadata" then 
+        elif schema.StartsWith "http" && schema.EndsWith "$metadata" then
             Console.WriteLine "Detected external OData schema"
             let openApiJson = readExternalODataSchema schema
             JObject.Parse openApiJson
@@ -352,11 +352,11 @@ let getSchema(schema: string) (overrideSchema: JToken option) =
 
     let simplified = simplifyRedundantSchemaParts schemaContents
     let simplifiedContents = simplified.ToString()
-    if simplifiedContents.Contains "#/components/schemas/odata.error" then 
+    if simplifiedContents.Contains "#/components/schemas/odata.error" then
         simplified.Add(JProperty("x-odata", true))
         let schemaBytes = System.Text.Encoding.UTF8.GetBytes(simplified.ToString())
         new MemoryStream(schemaBytes) :> Stream
-    else 
+    else
         let schemaBytes = System.Text.Encoding.UTF8.GetBytes simplifiedContents
         new MemoryStream(schemaBytes) :> Stream
 
@@ -488,6 +488,14 @@ let rec cleanOperationName (operationName: string) =
         |> String.concat ""
     elif operation.Contains "/" then
         operation.Split('/', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    elif operation.Contains "[" then
+        operation.Split('[', StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
+    elif operation.Contains "]" then
+        operation.Split(']', StringSplitOptions.RemoveEmptyEntries)
         |> Array.map capitalize
         |> String.concat ""
     elif operation.Contains "?" then
@@ -1227,7 +1235,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
         [ createTypeAbbreviation recordName dictionaryType ]
     else
         let odataTypeNameField = "ODataTypeName"
-        if config.odataSchema && config.target = Target.FSharp && not (String.IsNullOrWhiteSpace schema.Title) then 
+        if config.odataSchema && config.target = Target.FSharp && not (String.IsNullOrWhiteSpace schema.Title) then
             let required = false
             let fieldType = SynType.Option(SynType.String())
             let recordField = SynFieldRcd.Create(odataTypeNameField, fieldType)
@@ -1237,12 +1245,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             ]
             recordFields.Insert(0, { recordField with Attributes = [ attributes ] })
             addedFields.Insert(0, (odataTypeNameField, required, fieldType))
-        elif config.odataSchema && not (String.IsNullOrWhiteSpace schema.Title) then 
+        elif config.odataSchema && not (String.IsNullOrWhiteSpace schema.Title) then
             // fable
             let propertyName = "@odata.type"
             let required = false
             let fieldType = SynType.Option(SynType.String())
-           
+
             recordFields.Insert(0, SynFieldRcd.Create(propertyName, fieldType))
             addedFields.Insert(0, (propertyName, required, fieldType))
 
@@ -1266,7 +1274,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                                                     for (fieldName, required, fieldType) in addedFields do
                                                         if fieldName = "additionalProperties" && not containsPreservedProperty then
                                                             ()
-                                                        elif fieldName = "@odata.type" || (fieldName = "ODataTypeName" && config.odataSchema) then 
+                                                        elif fieldName = "@odata.type" || (fieldName = "ODataTypeName" && config.odataSchema) then
                                                             ()
                                                         else
                                                             if required then yield SynPatRcd.Typed {
@@ -1318,15 +1326,15 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
 /// Rewrites application/vnd.api+json into application/json to simplify the rest of the codegen pipeline
 /// </summary>
 /// <param name="operation">The operation to rewrite</param>
-let rewriteOperationVendorJson  (operation: OpenApiOperation) = 
-    for response in operation.Responses do 
-        if response.Value.Content.ContainsKey "application/vnd.api+json" && not (response.Value.Content.ContainsKey "application/json") then 
+let rewriteOperationVendorJson  (operation: OpenApiOperation) =
+    for response in operation.Responses do
+        if response.Value.Content.ContainsKey "application/vnd.api+json" && not (response.Value.Content.ContainsKey "application/json") then
             let mediaType = response.Value.Content.["application/vnd.api+json"]
             response.Value.Content.Remove "application/vnd.api+json" |> ignore
             response.Value.Content.Add("application/json", mediaType)
 
-    if isNotNull operation.RequestBody && isNotNull operation.RequestBody.Content then 
-        if operation.RequestBody.Content.ContainsKey "application/vnd.api+json" && not (operation.RequestBody.Content.ContainsKey "application/json") then 
+    if isNotNull operation.RequestBody && isNotNull operation.RequestBody.Content then
+        if operation.RequestBody.Content.ContainsKey "application/vnd.api+json" && not (operation.RequestBody.Content.ContainsKey "application/json") then
             let mediaType = operation.RequestBody.Content.["application/vnd.api+json"]
             operation.RequestBody.Content.Remove "application/vnd.api+json" |> ignore
             operation.RequestBody.Content.Add("application/json", mediaType)
@@ -1341,42 +1349,42 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
     operation.Extensions.Add("ResponseTypeName", new Microsoft.OpenApi.Any.OpenApiString(operationName))
     let rec getFieldType (schema: OpenApiSchema) (status: string) (wrapODataResponse: bool) =
         match schema.Type with
-        | "integer" when schema.Format = "int64" -> 
-            if config.odataSchema && wrapODataResponse 
+        | "integer" when schema.Format = "int64" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Int64())
             else SynType.Int64()
-        | "integer" -> 
-            if config.odataSchema && wrapODataResponse 
+        | "integer" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Int())
             else SynType.Int()
-        | "number" when schema.Format = "float" -> 
-            if config.odataSchema && wrapODataResponse 
+        | "number" when schema.Format = "float" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Float32())
             else SynType.Float32()
         | "number" ->
-            if config.odataSchema && wrapODataResponse 
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Double())
             else SynType.Double()
-        | "boolean" -> 
-            if config.odataSchema && wrapODataResponse 
+        | "boolean" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Bool())
             else SynType.Bool()
-            
-        | "string" when schema.Format = "uuid" -> 
-            if config.odataSchema && wrapODataResponse 
+
+        | "string" when schema.Format = "uuid" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Guid())
             else SynType.Guid()
         | "string" when schema.Format = "guid" ->
-            if config.odataSchema && wrapODataResponse 
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.Guid())
             else SynType.Guid()
-        | "string" when schema.Format = "date-time" -> 
-            if config.odataSchema && wrapODataResponse 
+        | "string" when schema.Format = "date-time" ->
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.DateTimeOffset())
             else SynType.DateTimeOffset()
         | "string" when schema.Format = "byte" ->
             // base64 encoded characters
-            if config.odataSchema && wrapODataResponse 
+            if config.odataSchema && wrapODataResponse
             then SynType.ODataResponse(SynType.ByteArray())
             else SynType.ByteArray()
         | "file" ->
@@ -1500,12 +1508,12 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                                 let keyType = SynType.String()
                                 let fieldType =  SynType.Map(keyType, valueType)
                                 [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                            elif isNotNull responsePayloadType.Schema.Reference then 
+                            elif isNotNull responsePayloadType.Schema.Reference then
                                 // reference to an empty schema
-                                if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
+                                if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
                                     let fieldType = getFieldType responsePayloadType.Schema caseName true
                                     [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                                else 
+                                else
                                     []
                             else
                                 []
@@ -1527,7 +1535,7 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                     elif response.Value.Content.ContainsKey "image/png" && isNotNull response.Value.Content.["image/png"].Schema && response.Value.Content.["image/png"].Schema.Format = "binary" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                    elif response.Value.Content.ContainsKey "image/png" then 
+                    elif response.Value.Content.ContainsKey "image/png" then
                         let fieldType = SynType.ByteArray()
                         [SynFieldRcd.Create("payload", fieldType).FromRcd]
                     else
@@ -1644,14 +1652,14 @@ let rec collectPrimitiveAllOf (schema: OpenApiSchema) =
 
         ]
 
-let includeOperation (operation: OpenApiOperation) (config: CodegenConfig) : bool = 
-    if config.filterTags.IsEmpty then 
+let includeOperation (operation: OpenApiOperation) (config: CodegenConfig) : bool =
+    if config.filterTags.IsEmpty then
         true
-    elif operation.Tags.Count = 0 && config.filterTags.Length > 0 then 
+    elif operation.Tags.Count = 0 && config.filterTags.Length > 0 then
         false
     else
         operation.Tags
-        |> Seq.exists (fun tag -> 
+        |> Seq.exists (fun tag ->
             config.filterTags
             |> List.exists (fun configTag -> tag.Name.StartsWith configTag)
         )
@@ -1660,9 +1668,9 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
     let visitedTypes = ResizeArray<string>()
     let moduleTypes = ResizeArray<SynModuleDecl>()
 
-    if config.odataSchema then 
-        if config.target = Target.Fable then 
-            // Fable target will output @odata.type 
+    if config.odataSchema then
+        if config.target = Target.Fable then
+            // Fable target will output @odata.type
             moduleTypes.Add (SynModuleDecl.CreateHashDirective("nowarn", [ "1104" ]))
         moduleTypes.Add (createODataResponse config)
         visitedTypes.Add "ODataResponse"
@@ -1745,7 +1753,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                     ()
             elif topLevelObject.Value.Type = "array" then
                 let elementType = topLevelObject.Value.Items
-                if isNull elementType then 
+                if isNull elementType then
                     if config.target = Target.FSharp then
                         moduleTypes.Add (createTypeAbbreviation typeName (SynType.JArray()))
                         visitedTypes.Add typeName
@@ -1832,7 +1840,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
                 then sanitizeTypeName topLevelObject.Value.Title
                 else sanitizeTypeName topLevelObject.Key
 
-            if config.odataSchema then  
+            if config.odataSchema then
                 topLevelObject.Value.Title <- topLevelObject.Key
 
             let isAllOf =
@@ -1879,7 +1887,7 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
 
     for path in openApiDocument.Paths do
         for operation in path.Value.Operations do
-            if includeOperation operation.Value config then 
+            if includeOperation operation.Value config then
                 let responseTypes = createResponseType operation.Value path.Key operation.Key visitedTypes config openApiDocument
                 moduleTypes.AddRange responseTypes
 
@@ -2116,7 +2124,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                     location = "multipartFormData"
                     style = "formfield"
                 }
-        
+
         elif content.ContainsKey "multipart/form-data" && isNotNull content.["multipart/form-data"].Schema && content.["multipart/form-data"].Schema.Type = "file" then
             let parameterName =
                 if operation.RequestBody.Extensions.ContainsKey "x-bodyName" then
@@ -2130,7 +2138,7 @@ let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray
                 parameterName = parameterName
                 parameterIdent = cleanParamIdent parameterName parameters
                 required = true
-                parameterType = 
+                parameterType =
                     if config.target = Target.FSharp
                     then SynType.ByteArray()
                     else SynType.Create "File" // from Browser.Types
@@ -2247,23 +2255,23 @@ let createOpenApiClient
     let urlContructorParam = SynSimplePat.CreateTyped(Ident.Create "url", SynType.String())
     let headersConstructorParam = SynSimplePat.CreateTyped(Ident.Create "headers", SynType.List(SynType.Create "Header"))
 
-    if config.target = Target.FSharp then 
+    if config.target = Target.FSharp then
         clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ httpClient ])
-    else 
-        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [ 
+    else
+        clientMembers.Add(SynMemberDefn.CreateImplicitCtor [
             urlContructorParam
             headersConstructorParam
         ])
 
         let emptyHeadersList = SynExpr.CreateList [ ]
-        let synValDataAsConstructor = 
-            match SynBindingRcd.Null.ValData with 
-            | SynValData(Some memberFlags, synValInfo, ident) -> 
+        let synValDataAsConstructor =
+            match SynBindingRcd.Null.ValData with
+            | SynValData(Some memberFlags, synValInfo, ident) ->
                 let modifiedFlags = { memberFlags with MemberKind = MemberKind.Constructor }
                 SynValData(Some modifiedFlags, synValInfo, ident)
-            | _ -> 
+            | _ ->
                 SynBindingRcd.Null.ValData
- 
+
         // generates new(url: string) = Client(url, [])
         // to initialize the client without extra headers
         let implicitConstructor = SynMemberDefn.CreateMember {
@@ -2389,7 +2397,7 @@ let createOpenApiClient
                         SynExpr.CreateIdent (Ident.Create "httpClient")
                         SynExpr.CreateConstString fullPath
                         SynExpr.Ident requestParts
-                    else 
+                    else
                         // apply the base path to the generated functions
                         SynExpr.CreateIdent (Ident.Create "url")
                         // the path the of the end point
@@ -2400,7 +2408,7 @@ let createOpenApiClient
                 ])
 
                 let wrappedReturn expr =
-                    match config.target with 
+                    match config.target with
                     | Target.FSharp when config.synchronous -> expr
                     | _ -> SynExpr.CreateReturn expr
 
@@ -2481,7 +2489,7 @@ let createOpenApiClient
                                     ])
                                     |> wrappedReturn
                                 )
-                            elif hasBinaryResponse && config.target = Target.Fable then 
+                            elif hasBinaryResponse && config.target = Target.Fable then
                                 let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
                                     createIdent [ "contentBinary" ]
                                 ])
@@ -2494,7 +2502,7 @@ let createOpenApiClient
                                     |> wrappedReturn
                                 )
                             else
-                                if config.odataSchema then 
+                                if config.odataSchema then
                                     SynExpr.CreatePartialApp([responseType; status], [
                                         SynExpr.CreateParen(
                                             SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
@@ -2510,7 +2518,7 @@ let createOpenApiClient
                                         createIdent [ "content" ]
                                     ])
                                     |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "integer" && config.odataSchema then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "integer" && config.odataSchema then
                             // OData Schema and integer response schema combo
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
@@ -2520,7 +2528,7 @@ let createOpenApiClient
                                 )
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "boolean" && config.odataSchema then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "boolean" && config.odataSchema then
                             // OData Schema and boolean response schema combo
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
@@ -2530,7 +2538,7 @@ let createOpenApiClient
                                 )
                             ])
                             |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "number" && config.odataSchema then 
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "number" && config.odataSchema then
                             // OData Schema and number response schema combo
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
@@ -2557,7 +2565,7 @@ let createOpenApiClient
                                     ])
                                     |> wrappedReturn
                                 )
-                            elif hasBinaryResponse && config.target = Target.Fable then 
+                            elif hasBinaryResponse && config.target = Target.Fable then
                                 let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
                                     createIdent [ "contentBinary" ]
                                 ])
@@ -2599,7 +2607,7 @@ let createOpenApiClient
                                     ])
                                     |> wrappedReturn
                                 )
-                            elif hasBinaryResponse && config.target = Target.Fable then 
+                            elif hasBinaryResponse && config.target = Target.Fable then
                                 let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
                                     createIdent [ "contentBinary" ]
                                 ])
@@ -2626,7 +2634,7 @@ let createOpenApiClient
                                 |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema then
                             // reference to an empty schema
-                            if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then 
+                            if config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
                                 if hasBinaryResponse && config.target = Target.FSharp then
                                     let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                         createIdent [ "contentBinary" ]
@@ -2643,7 +2651,7 @@ let createOpenApiClient
                                         ])
                                         |> wrappedReturn
                                     )
-                                elif hasBinaryResponse && config.target = Target.Fable then 
+                                elif hasBinaryResponse && config.target = Target.Fable then
                                     let body = SynExpr.CreatePartialApp(["Utilities"; "readBytesAsText"], [
                                         createIdent [ "contentBinary" ]
                                     ])
@@ -2668,12 +2676,12 @@ let createOpenApiClient
                                         )
                                     ])
                                     |> wrappedReturn
-                            else 
+                            else
                                 // ignore
                                 createIdent [ responseType; status ]
                                 |> wrappedReturn
 
-                        elif response.Content.ContainsKey "application/json" && isNull response.Content.["application/json"].Schema then 
+                        elif response.Content.ContainsKey "application/json" && isNull response.Content.["application/json"].Schema then
                             createIdent [ responseType; status ]
                             |> wrappedReturn
                         elif response.Content.ContainsKey "*/*" && isNotNull (response.Content.["*/*"].Schema) && not (isEmptySchema response.Content.["*/*"].Schema) then
@@ -2768,8 +2776,8 @@ let createOpenApiClient
                             |> wrappedReturn
 
                     let statusIsEqual status =
-                        let statusCode = 
-                            match status with 
+                        let statusCode =
+                            match status with
                             | nameof HttpStatusCode.OK -> 200
                             | nameof HttpStatusCode.Created -> 201
                             | nameof HttpStatusCode.Accepted -> 202
@@ -2788,9 +2796,9 @@ let createOpenApiClient
                             | nameof HttpStatusCode.PaymentRequired -> 402
                             | _ -> 0
 
-                        if config.target = Target.FSharp then 
+                        if config.target = Target.FSharp then
                             equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; status ])
-                        else 
+                        else
                             equal (createIdent [ "status" ]) (SynExpr.CreateConst(SynConst.Int32 statusCode))
 
                     if responses.Length = 1 then
@@ -2883,7 +2891,7 @@ let createOpenApiClient
                         )
 
                 let asyncBuilder expr =
-                    if config.target = Target.Fable then 
+                    if config.target = Target.Fable then
                         SynExpr.CreateAsync expr
                     else
                         if config.synchronous then
@@ -2894,7 +2902,7 @@ let createOpenApiClient
                             | AsyncReturnType.Task -> SynExpr.CreateTask expr
 
                 let destructExpr httpFunc =
-                    match config.target with 
+                    match config.target with
                     | Target.FSharp when config.synchronous -> deconstructResponse (httpCall httpFunc) returnExpr
                     | _ -> deconstructAsyncResponse (httpCall httpFunc) returnExpr
 
@@ -2933,16 +2941,16 @@ let createOpenApiClient
                             ])
                 }
 
-                match config.target with 
-                | Target.FSharp when config.synchronous -> 
+                match config.target with
+                | Target.FSharp when config.synchronous ->
                     clientMembers.Add (clientOperation httpFunction memberName)
-                | _ -> 
+                | _ ->
                     clientMembers.Add (clientOperation httpFunctionAsync memberName)
 
     let clientType = SynModuleDecl.CreateType(info, Seq.toList clientMembers)
 
     let moduleContents = [
-        if config.target = Target.FSharp then 
+        if config.target = Target.FSharp then
             yield SynModuleDecl.CreateOpen "System.Net"
             yield SynModuleDecl.CreateOpen "System.Net.Http"
             yield SynModuleDecl.CreateOpen "System.Text"
@@ -3113,7 +3121,7 @@ let runConfig filePath =
 
             elif config.schema.StartsWith "http" && config.schema.EndsWith ".json" then
                 getSchema config.schema config.overrideSchema
-            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then 
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then
                 let schemaContent =
                     config.schema
                     |> client.GetStringAsync
@@ -3121,9 +3129,9 @@ let runConfig filePath =
                     |> Async.RunSynchronously
                 let schemaBytes = Encoding.UTF8.GetBytes(schemaContent)
                 new MemoryStream(schemaBytes) :> Stream
-            elif config.schema.StartsWith "http" then 
+            elif config.schema.StartsWith "http" then
                 getSchema config.schema config.overrideSchema
-            else 
+            else
                 getSchema (resolveFile config.schema) config.overrideSchema
         let settings = OpenApiReaderSettings()
         settings.ReferenceResolution <- ReferenceResolutionSetting.ResolveAllReferences
@@ -3171,7 +3179,7 @@ let runConfig filePath =
                 let files = [
                     if config.target = Target.FSharp then
                         XElement.Compile "StringEnum.fs"
-                    
+
                     XElement.Compile "OpenApiHttp.fs"
                     XElement.Compile "Types.fs"
                     XElement.Compile "Client.fs"
@@ -3194,7 +3202,7 @@ let runConfig filePath =
             printfn "Succesfully generated project %s" (path [outputDir; $"{config.project}.fsproj" ])
             0
 
-let showTags filePath = 
+let showTags filePath =
     let config = resolveFile filePath
     match readConfig config with
     | Error errorMsg ->
@@ -3215,7 +3223,7 @@ let showTags filePath =
 
             elif config.schema.StartsWith "http" && config.schema.EndsWith ".json" then
                 getSchema config.schema config.overrideSchema
-            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then 
+            elif config.schema.StartsWith "http" && config.schema.EndsWith ".yaml" then
                 let schemaContent =
                     config.schema
                     |> client.GetStringAsync
@@ -3223,9 +3231,9 @@ let showTags filePath =
                     |> Async.RunSynchronously
                 let schemaBytes = Encoding.UTF8.GetBytes(schemaContent)
                 new MemoryStream(schemaBytes) :> Stream
-            elif config.schema.StartsWith "http" then 
+            elif config.schema.StartsWith "http" then
                 getSchema config.schema config.overrideSchema
-            else 
+            else
                 getSchema (resolveFile config.schema) config.overrideSchema
         let settings = OpenApiReaderSettings()
         settings.ReferenceResolution <- ReferenceResolutionSetting.ResolveAllReferences
@@ -3248,13 +3256,13 @@ let showTags filePath =
             1
         else
             let tags = [
-                for path in openApiDocument.Paths do 
-                for operation in path.Value.Operations do 
-                if isNotNull operation.Value.OperationId then 
+                for path in openApiDocument.Paths do
+                for operation in path.Value.Operations do
+                if isNotNull operation.Value.OperationId then
                     for tag in operation.Value.Tags do tag.Name, operation.Value.OperationId
             ]
 
-            let content = 
+            let content =
                 tags
                 |> List.groupBy fst
                 |> List.sortByDescending (fun (tag, operations) -> operations.Length)
@@ -3271,7 +3279,7 @@ let main argv =
     Console.OutputEncoding <- Encoding.UTF8
     match argv with
     | [| "--version" |] ->
-        printfn "0.52.0"
+        printfn "0.53.0"
         0
     | [| |] ->
         Console.WriteLine(logo)
@@ -3283,36 +3291,36 @@ let main argv =
         runConfig file
     | [|"--config"; file; "--no-logo" |] ->
         runConfig file
-    | [| "--from-odata-schema"; schema; "--output"; output |] -> 
+    | [| "--from-odata-schema"; schema; "--output"; output |] ->
         printfn "Generating OpenAPI specs from OData schema at %s" schema
-        if schema.StartsWith "http" then 
-            let schemaWithMetadata = 
-                if schema.EndsWith "$metadata" 
-                then schema 
+        if schema.StartsWith "http" then
+            let schemaWithMetadata =
+                if schema.EndsWith "$metadata"
+                then schema
                 else $"{schema.TrimEnd '/'}/$metadata"
             let openApiSchema = readExternalODataSchema schemaWithMetadata
             let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
             File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
             printfn "Generated OpenAPI specs saved as %s" (resolveFile output)
             0
-        elif schema.EndsWith ".xml" && File.Exists (resolveFile schema) then 
+        elif schema.EndsWith ".xml" && File.Exists (resolveFile schema) then
             let openApiSchema = readLocalODataSchema schema
             let simplified = simplifyRedundantSchemaParts (JObject.Parse openApiSchema)
             File.WriteAllText(resolveFile output, simplified.ToString(Formatting.Indented))
             printfn "Generated OpenAPI specs saved as %s" (resolveFile output)
             0
-        else 
+        else
             printfn "Invalid OData schema"
             printfn "Schema %s" schema
             1
 
-    | [| "--show-tags"; "--config"; filePath |] -> 
+    | [| "--show-tags"; "--config"; filePath |] ->
         printfn "Extracting OpenAPI tags schema at %s" filePath
         showTags filePath
-    | [| "--config"; filePath; "--show-tags" |] -> 
+    | [| "--config"; filePath; "--show-tags" |] ->
         printfn "Extracting OpenAPI tags schema at %s" filePath
         showTags filePath
-    | [| "--show-tags" |] -> 
+    | [| "--show-tags" |] ->
         showTags "./hawaii.json"
     | arguments ->
         printfn "Unknown arguments [%s]" (String.concat ", " arguments)
