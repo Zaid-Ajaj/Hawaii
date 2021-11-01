@@ -470,35 +470,8 @@ let (|StringEnum|_|) (schema: OpenApiSchema) =
 
 let rec cleanOperationName (operationName: string) =
     let operation = operationName.Replace("{", "").Replace("}", "")
-    if operation.Contains "-" then
-        operation.Split('-', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "." then
-        operation.Split('.', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "#" then
-        operation.Split('#', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "_" then
-        operation.Split('_', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "/" then
-        operation.Split('/', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "[" then
-        operation.Split('[', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "]" then
-        operation.Split(']', StringSplitOptions.RemoveEmptyEntries)
-        |> Array.map capitalize
-        |> String.concat ""
-    elif operation.Contains "?" then
+
+    if operation.Contains "?" then
         match operation.Split '?' with
         | [| path; parameters |] ->
             let queryParams =
@@ -512,8 +485,12 @@ let rec cleanOperationName (operationName: string) =
             operation.Split([| '?'; '='; '&' |], StringSplitOptions.RemoveEmptyEntries)
             |> Array.map capitalize
             |> String.concat ""
+            |> cleanOperationName
     else
-        operation
+        let invalidChars = [| '-'; '#'; '_'; '.'; '+'; '$'; '&'; '['; ']'; '/'; '\\'; '*'; '"'; '`' |]
+        operation.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map capitalize
+        |> String.concat ""
 
 let rec deriveOperationName (operationName: string) (path: string) (operationType: OperationType) (visitedTypes: ResizeArray<string>) =
     if not (String.IsNullOrWhiteSpace operationName) then

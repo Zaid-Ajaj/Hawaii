@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.53.0</Version>
-    <PackageReleaseNotes>Rewrite application/ld+json into just application/json</PackageReleaseNotes>
+    <Version>0.54.0</Version>
+    <PackageReleaseNotes>Take brackets into account when cleaning operation name</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">
