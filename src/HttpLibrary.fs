@@ -797,6 +797,7 @@ module OpenApiHttp =
                 |> applyMultipartFormData parts
                 |> applyUrlEncodedFormData parts
                 |> Http.headers extraHeaders
+                |> Http.withCredentials true
                 |> Http.send
 
             let status = response.statusCode
@@ -817,6 +818,7 @@ module OpenApiHttp =
                 |> applyUrlEncodedFormData parts
                 |> Http.headers extraHeaders
                 |> Http.overrideResponseType ResponseTypes.ArrayBuffer
+                |> Http.withCredentials true
                 |> Http.send
 
             match response.content with
