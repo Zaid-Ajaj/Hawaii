@@ -1492,6 +1492,13 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                                     [SynFieldRcd.Create("payload", fieldType).FromRcd]
                                 else
                                     []
+                            elif responsePayloadType.Schema.Type = "object" then
+                                if config.target = Target.FSharp then 
+                                    let fieldType = SynType.JToken()
+                                    [SynFieldRcd.Create("payload", fieldType).FromRcd]
+                                else 
+                                    let fieldType = SynType.Object()
+                                    [SynFieldRcd.Create("payload", fieldType).FromRcd]
                             else
                                 []
                         else
@@ -2572,7 +2579,7 @@ let createOpenApiClient
                                     )
                                 ])
                                 |> wrappedReturn
-                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && isNotNull response.Content.["application/json"].Schema.AdditionalProperties then
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && isEmptySchema response.Content.["application/json"].Schema && (isNotNull response.Content.["application/json"].Schema.AdditionalProperties || response.Content.["application/json"].Schema.Type = "object") then
                             if hasBinaryResponse && config.target = Target.FSharp then
                                 let body = SynExpr.CreatePartialApp(["Encoding"; "UTF8"; "GetString"], [
                                     createIdent [ "contentBinary" ]
