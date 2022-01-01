@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.55.0</Version>
-    <PackageReleaseNotes>Apply Http.withCredentials as true by default for Fable clients</PackageReleaseNotes>
+    <Version>0.56.0</Version>
+    <PackageReleaseNotes>Deal with parameters that do not have a schema</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">

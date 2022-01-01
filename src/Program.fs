@@ -1925,6 +1925,11 @@ let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationPa
 let operationParameters (operation: OpenApiOperation) (visitedTypes: ResizeArray<string>) (config: CodegenConfig) =
     let parameters = ResizeArray<OperationParameter>()
     let rec readParamType (schema: OpenApiSchema) =
+        if isNull schema then 
+            if config.target = Target.FSharp
+            then SynType.JToken()
+            else SynType.Object()
+        else
         match schema.Type with
         | "integer" when schema.Format = "int64" -> SynType.Int64()
         | "integer" -> SynType.Int()
