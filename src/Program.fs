@@ -2,11 +2,9 @@
 open Microsoft.OpenApi.Readers
 open System.Net.Http
 open FsAst
-open Fantomas
 open FSharp.Compiler.SyntaxTree
 open FSharp.Compiler.XmlDoc
 open Microsoft.OpenApi.Models
-open System.Linq
 open System.IO
 open System.Xml.Linq
 open System.Net
@@ -1085,7 +1083,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                 addedFields.Add((propertyName, required, fieldType))
 
     let containsPreservedProperty =
-        schema.Properties.Any(fun prop -> prop.Key = "additionalProperties")
+        schema.Properties |> Seq.exists (fun prop -> prop.Key = "additionalProperties")
 
     let includeAdditionalProperties =
         schema.AdditionalPropertiesAllowed
@@ -1913,7 +1911,7 @@ let createOpenApiClient
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
-                let parameters = operationParameters operationInfo visitedTypes config
+                let parameters = operationParameters operationInfo config
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
                     then operationInfo.Summary
