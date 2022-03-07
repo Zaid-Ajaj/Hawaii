@@ -8,8 +8,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.57.0</Version>
-    <PackageReleaseNotes>Better handling of empty responses of type object</PackageReleaseNotes>
+    <Version>0.58.0</Version>
+    <PackageReleaseNotes>Fix response with format "uuid" or "guid"</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">
