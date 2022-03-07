@@ -83,10 +83,11 @@ let rec private readParamType (target: Target) (schema: OpenApiSchema) : SynType
         SynType.String()
 
 let private processOperationParameters
-            (target: Target)
-            (parameters: OperationParameter seq)
-            (parameter: OpenApiParameter)
-            : OperationParameter option =
+    (target: Target)
+    (parameters: OperationParameter seq)
+    (parameter: OpenApiParameter)
+    : OperationParameter option =
+
     if isNull parameter ||
        parameter.Deprecated ||
        not parameter.In.HasValue ||
@@ -146,10 +147,11 @@ let private processOperationParameters
         }
 
 let private processOperationRequestBody
-            (config: CodegenConfig)
-            (operation: OpenApiOperation)
-            (parameters: OperationParameter seq)
-            : OperationParameter list =
+    (config: CodegenConfig)
+    (operation: OpenApiOperation)
+    (parameters: OperationParameter seq)
+    : OperationParameter list =
+
     if isNull operation.RequestBody then []
     else
         let content = operation.RequestBody.Content
@@ -291,9 +293,14 @@ let private processOperationRequestBody
             }]
         else []
 
-let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) : OperationParameter list =
+let operationParameters
+    (operation: OpenApiOperation)
+    (pathInfoParameters: OpenApiParameter seq)
+    (config: CodegenConfig)
+    : OperationParameter list =
+
     let opParameters =
-        operation.Parameters
+        (Seq.append pathInfoParameters operation.Parameters)
         |> Seq.fold (fun opParameters oaParameter ->
             match (processOperationParameters config.target opParameters oaParameter) with
             | None -> opParameters

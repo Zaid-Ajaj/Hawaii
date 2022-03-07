@@ -1911,7 +1911,7 @@ let createOpenApiClient
         for operation in pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
-                let parameters = operationParameters operationInfo config
+                let parameters = operationParameters operationInfo pathInfo.Parameters config
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
                     then operationInfo.Summary
