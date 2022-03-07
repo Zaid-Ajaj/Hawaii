@@ -6,7 +6,7 @@ open FsAst
 open FSharp.Compiler.SyntaxTree
 open Microsoft.OpenApi.Models
 
-let private paramReplace (parameter: string) (sep: char) =
+let private paramReplace (parameter: string) (sep: char) : string =
     let parts = parameter.Split(sep)
     let firstPart = parts.[0]
     let otherParts = parts.[1..]
@@ -21,9 +21,9 @@ let private paramReplace (parameter: string) (sep: char) =
     |> String.concat ""
     |> camelCase
 
-let rec private cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) =
+let rec private cleanParamIdent (parameter: string) (parameters: OperationParameter seq) : string =
     if String.IsNullOrWhiteSpace parameter then
-        $"p{parameters.Count + 1}"
+        $"p{(parameters |> Seq.length) + 1}"
     else
         let parameter = String(Array.ofSeq (parameter |> Seq.skipWhile (Char.IsLetter >> not)))
         let cleanedParam =
@@ -41,7 +41,7 @@ let rec private cleanParamIdent (parameter: string) (parameters: ResizeArray<Ope
                 camelCase (parameter.Replace("$", "").Replace("@", "").Replace(":", ""))
 
         if String.IsNullOrWhiteSpace cleanedParam then
-            $"p{parameters.Count + 1}"
+            $"p{(parameters |> Seq.length) + 1}"
         else
             cleanedParam
 
@@ -74,9 +74,7 @@ let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : 
             else sanitizeTypeName schema.Title
         SynType.Create typeName
     | "array" ->
-        let elementSchema = schema.Items
-        let elementType = readParamType config elementSchema
-        SynType.List elementType
+        readParamType config schema.Items |> SynType.List
     | "object" ->
         if config.target = Target.FSharp
         then SynType.JObject()
@@ -84,10 +82,17 @@ let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : 
     | _ ->
         SynType.String()
 
-let private processOperationParameters (parameter: OpenApiParameter) (parameters:ResizeArray<OperationParameter>) (config: CodegenConfig) =
-    let readParamType = readParamType config
-
-    if isNotNull parameter then
+let private processOperationParameters
+            (config: CodegenConfig)
+            (parameters: OperationParameter seq)
+            (parameter: OpenApiParameter)
+            : OperationParameter option =
+    if isNull parameter ||
+       parameter.Deprecated ||
+       not parameter.In.HasValue ||
+       isNull parameter.Schema
+    then None
+    else
         let shouldSpreadProperties =
             parameter.Style.HasValue
             && parameter.Style.Value = ParameterStyle.DeepObject
@@ -100,55 +105,55 @@ let private processOperationParameters (parameter: OpenApiParameter) (parameters
             then List.ofSeq parameter.Schema.Properties.Keys
             else []
 
-        if not parameter.Deprecated && parameter.In.HasValue then
-
-            if isNull parameter.Schema then
-                ()
+        let paramType =
+            if parameter.Content.Count = 1 then
+                let firstKey = Seq.head parameter.Content.Keys
+                readParamType config parameter.Content.[firstKey].Schema
+            elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
+                // edge case for a weird schema
+                SynType.String()
             else
-                let paramType =
-                    if parameter.Content.Count = 1 then
-                        let firstKey = Seq.head parameter.Content.Keys
-                        readParamType parameter.Content.[firstKey].Schema
-                    elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
-                        // edge case for a weird schema
-                        SynType.String()
-                    else
-                        readParamType parameter.Schema
+                readParamType config parameter.Schema
 
-                let nullable =
-                    if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
-                        match parameter.Extensions.["x-nullable"] with
-                        | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
-                        | _ -> true
-                    else
-                        true
+        let nullable =
+            if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
+                match parameter.Extensions.["x-nullable"] with
+                | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
+                | _ -> true
+            else
+                true
 
-                let parameterIdentifier = cleanParamIdent parameter.Name parameters
-                let identifierAlreadyAdded =
-                    parameters
-                    |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+        let parameterIdentifier = cleanParamIdent parameter.Name parameters
+        let identifierAlreadyAdded =
+            parameters
+            |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
-                parameters.Add {
-                    parameterName = parameter.Name
-                    parameterIdent =
-                        if identifierAlreadyAdded
-                        then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}"
-                        else parameterIdentifier
-                    required = parameter.Required || not nullable
-                    parameterType =  paramType
-                    docs = parameter.Description
-                    location = (string parameter.In.Value).ToLower()
-                    properties = properties
-                    style =
-                        if parameter.Style.HasValue
-                        then (string parameter.Style).ToLower()
-                        else "none"
-                }
+        Some {
+            parameterName = parameter.Name
+            parameterIdent =
+                if identifierAlreadyAdded
+                then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}"
+                else parameterIdentifier
+            required = parameter.Required || not nullable
+            parameterType =  paramType
+            docs = parameter.Description
+            location = (string parameter.In.Value).ToLower()
+            properties = properties
+            style =
+                if parameter.Style.HasValue
+                then (string parameter.Style).ToLower()
+                else "none"
+        }
 
-let private processOperationRequestBody (operation: OpenApiOperation) (parameters:ResizeArray<OperationParameter>) (config: CodegenConfig) =
+let private processOperationRequestBody
+            (config: CodegenConfig)
+            (operation: OpenApiOperation)
+            (parameters: OperationParameter seq)
+            : OperationParameter list =
     let readParamType = readParamType config
 
-    if not (isNull operation.RequestBody) then
+    if isNull operation.RequestBody then []
+    else
         let content = operation.RequestBody.Content
 
         if content.ContainsKey "application/json" && not (isEmptySchema content.["application/json"].Schema) then
@@ -172,7 +177,7 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 else
                     readParamType schema
 
-            parameters.Add {
+            [{
                 parameterName = parameterName
                 parameterIdent = cleanParamIdent parameterName parameters
                 required = true
@@ -181,7 +186,7 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 location = "jsonContent"
                 style = "none"
                 properties = []
-            }
+            }]
 
         elif content.ContainsKey "application/json" && isEmptySchema content.["application/json"].Schema && config.emptyDefinitions = EmptyDefinitionResolution.GenerateFreeForm then
             let schema = content.["application/json"].Schema
@@ -194,7 +199,7 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 else
                     camelCase (normalizeFullCaps typeName)
 
-            parameters.Add {
+            [{
                 parameterName = parameterName
                 parameterIdent = cleanParamIdent parameterName parameters
                 required = true
@@ -209,16 +214,17 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 location = "jsonContent"
                 style = "none"
                 properties = []
-            }
+            }]
 
         elif content.ContainsKey "multipart/form-data" && isNotNull content.["multipart/form-data"].Schema && content.["multipart/form-data"].Schema.Type = "object" then
-            for property in content.["multipart/form-data"].Schema.Properties do
+            content.["multipart/form-data"].Schema.Properties
+            |> Seq.map (fun property ->
                 let parameterIdentifier = cleanParamIdent property.Key parameters
                 let identifierAlreadyAdded =
                     parameters
                     |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
 
-                parameters.Add {
+                {
                     parameterName = property.Key
                     parameterIdent =
                         if identifierAlreadyAdded
@@ -230,7 +236,8 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                     properties = []
                     location = "multipartFormData"
                     style = "formfield"
-                }
+                })
+            |> Seq.toList
 
         elif content.ContainsKey "multipart/form-data" && isNotNull content.["multipart/form-data"].Schema && content.["multipart/form-data"].Schema.Type = "file" then
             let parameterName =
@@ -241,7 +248,7 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 else
                     "body"
 
-            parameters.Add {
+            [{
                 parameterName = parameterName
                 parameterIdent = cleanParamIdent parameterName parameters
                 required = true
@@ -253,13 +260,15 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 properties = []
                 location = "multipartFormData"
                 style = "formfield"
-            }
+            }]
 
         elif content.ContainsKey "application/x-www-form-urlencoded" then
             let schema = content.["application/x-www-form-urlencoded"].Schema
-            if isNotNull schema && schema.Type <> "object" then
-                for property in schema.Properties do
-                    parameters.Add {
+            if isNull schema || schema.Type = "object" then []
+            else
+                schema.Properties
+                |> Seq.map (fun property ->
+                    {
                         parameterName = property.Key
                         parameterIdent = cleanParamIdent property.Key parameters
                         required = schema.Required.Contains property.Key
@@ -268,10 +277,11 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                         properties = []
                         location = "urlEncodedFormData"
                         style = "formfield"
-                    }
+                    })
+                |> Seq.toList
 
         elif content.ContainsKey "application/octet-stream" then
-            parameters.Add {
+            [{
                 parameterName = "requestBody"
                 parameterIdent = "requestBody"
                 required = false
@@ -280,21 +290,24 @@ let private processOperationRequestBody (operation: OpenApiOperation) (parameter
                 location = "binaryContent"
                 style = "formfield"
                 properties = []
-            }
-        else
-            ()
+            }]
+        else []
 
-let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) =
-    let parameters = ResizeArray<OperationParameter>()
-    let readParamType = readParamType config
+let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) : OperationParameter list =
+    let opParameters =
+        operation.Parameters
+        |> Seq.fold (fun opParameters oaParameter ->
+            match (processOperationParameters config opParameters oaParameter) with
+            | None -> opParameters
+            | Some opParameter -> opParameter :: opParameters) []
+        |> List.rev
+    
+    let rqParameters =
+        processOperationRequestBody config operation opParameters
+        |> List.rev
 
-    for parameter in operation.Parameters do
-        processOperationParameters parameter parameters config
-
-    processOperationRequestBody operation parameters config
-
-    parameters
-    |> Seq.sortBy (fun param ->
+    opParameters @ rqParameters
+    |> List.sortBy (fun param ->
         // required parameters come first
         if param.required
         then 0
