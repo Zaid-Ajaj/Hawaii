@@ -45,9 +45,9 @@ let rec private cleanParamIdent (parameter: string) (parameters: OperationParame
         else
             cleanedParam
 
-let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : SynType =
+let rec private readParamType (target: Target) (schema: OpenApiSchema) : SynType =
     if isNull schema then 
-        if config.target = Target.FSharp
+        if target = Target.FSharp
         then SynType.JToken()
         else SynType.Object()
     else
@@ -62,7 +62,7 @@ let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : 
     | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
     | "string" -> SynType.String()
     | "file" ->
-        if config.target = Target.FSharp
+        if target = Target.FSharp
         then SynType.ByteArray()
         else SynType.Create "File" // from Browser.Types
 
@@ -74,16 +74,16 @@ let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : 
             else sanitizeTypeName schema.Title
         SynType.Create typeName
     | "array" ->
-        readParamType config schema.Items |> SynType.List
+        readParamType target schema.Items |> SynType.List
     | "object" ->
-        if config.target = Target.FSharp
+        if target = Target.FSharp
         then SynType.JObject()
         else SynType.Object()
     | _ ->
         SynType.String()
 
 let private processOperationParameters
-            (config: CodegenConfig)
+            (target: Target)
             (parameters: OperationParameter seq)
             (parameter: OpenApiParameter)
             : OperationParameter option =
@@ -108,12 +108,12 @@ let private processOperationParameters
         let paramType =
             if parameter.Content.Count = 1 then
                 let firstKey = Seq.head parameter.Content.Keys
-                readParamType config parameter.Content.[firstKey].Schema
+                readParamType target parameter.Content.[firstKey].Schema
             elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
                 // edge case for a weird schema
                 SynType.String()
             else
-                readParamType config parameter.Schema
+                readParamType target parameter.Schema
 
         let nullable =
             if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
@@ -150,8 +150,6 @@ let private processOperationRequestBody
             (operation: OpenApiOperation)
             (parameters: OperationParameter seq)
             : OperationParameter list =
-    let readParamType = readParamType config
-
     if isNull operation.RequestBody then []
     else
         let content = operation.RequestBody.Content
@@ -173,9 +171,9 @@ let private processOperationRequestBody
                     | :? Microsoft.OpenApi.Any.OpenApiString as requestTypePayload ->
                         SynType.Create requestTypePayload.Value
                     | _ ->
-                        readParamType schema
+                        readParamType config.target schema
                 else
-                    readParamType schema
+                    readParamType config.target schema
 
             [{
                 parameterName = parameterName
@@ -231,7 +229,7 @@ let private processOperationRequestBody
                         then $"{parameterIdentifier}InFormData"
                         else parameterIdentifier
                     required = content.["multipart/form-data"].Schema.Required.Contains property.Key
-                    parameterType = readParamType property.Value
+                    parameterType = readParamType config.target property.Value
                     docs = property.Value.Description
                     properties = []
                     location = "multipartFormData"
@@ -272,7 +270,7 @@ let private processOperationRequestBody
                         parameterName = property.Key
                         parameterIdent = cleanParamIdent property.Key parameters
                         required = schema.Required.Contains property.Key
-                        parameterType = readParamType property.Value
+                        parameterType = readParamType config.target property.Value
                         docs = property.Value.Description
                         properties = []
                         location = "urlEncodedFormData"
@@ -297,7 +295,7 @@ let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) : 
     let opParameters =
         operation.Parameters
         |> Seq.fold (fun opParameters oaParameter ->
-            match (processOperationParameters config opParameters oaParameter) with
+            match (processOperationParameters config.target opParameters oaParameter) with
             | None -> opParameters
             | Some opParameter -> opParameter :: opParameters) []
         |> List.rev
