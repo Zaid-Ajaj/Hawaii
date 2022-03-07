@@ -6,7 +6,7 @@ open FsAst
 open FSharp.Compiler.SyntaxTree
 open Microsoft.OpenApi.Models
 
-let paramReplace (parameter: string) (sep: char) =
+let private paramReplace (parameter: string) (sep: char) =
     let parts = parameter.Split(sep)
     let firstPart = parts.[0]
     let otherParts = parts.[1..]
@@ -21,7 +21,7 @@ let paramReplace (parameter: string) (sep: char) =
     |> String.concat ""
     |> camelCase
 
-let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) =
+let rec private cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationParameter>) =
     if String.IsNullOrWhiteSpace parameter then
         $"p{parameters.Count + 1}"
     else
@@ -45,108 +45,110 @@ let rec cleanParamIdent (parameter: string) (parameters: ResizeArray<OperationPa
         else
             cleanedParam
 
-let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) =
-    let parameters = ResizeArray<OperationParameter>()
-    let rec readParamType (schema: OpenApiSchema) =
-        if isNull schema then 
-            if config.target = Target.FSharp
-            then SynType.JToken()
-            else SynType.Object()
-        else
-        match schema.Type with
-        | "integer" when schema.Format = "int64" -> SynType.Int64()
-        | "integer" -> SynType.Int()
-        | "number" when schema.Format = "float" -> SynType.Float32()
-        | "number" ->  SynType.Double()
-        | "boolean" -> SynType.Bool()
-        | "string" when schema.Format = "uuid" -> SynType.Guid()
-        | "string" when schema.Format = "guid" -> SynType.Guid()
-        | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
-        | "string" -> SynType.String()
-        | "file" ->
-            if config.target = Target.FSharp
-            then SynType.ByteArray()
-            else SynType.Create "File" // from Browser.Types
+let rec private readParamType (config: CodegenConfig) (schema: OpenApiSchema) : SynType =
+    if isNull schema then 
+        if config.target = Target.FSharp
+        then SynType.JToken()
+        else SynType.Object()
+    else
+    match schema.Type with
+    | "integer" when schema.Format = "int64" -> SynType.Int64()
+    | "integer" -> SynType.Int()
+    | "number" when schema.Format = "float" -> SynType.Float32()
+    | "number" ->  SynType.Double()
+    | "boolean" -> SynType.Bool()
+    | "string" when schema.Format = "uuid" -> SynType.Guid()
+    | "string" when schema.Format = "guid" -> SynType.Guid()
+    | "string" when schema.Format = "date-time" -> SynType.DateTimeOffset()
+    | "string" -> SynType.String()
+    | "file" ->
+        if config.target = Target.FSharp
+        then SynType.ByteArray()
+        else SynType.Create "File" // from Browser.Types
 
-        | _ when not (isNull schema.Reference) ->
-            // working with a reference type
-            let typeName =
-                if invalidTitle schema.Title
-                then sanitizeTypeName schema.Reference.Id
-                else sanitizeTypeName schema.Title
-            SynType.Create typeName
-        | "array" ->
-            let elementSchema = schema.Items
-            let elementType = readParamType elementSchema
-            SynType.List elementType
-        | "object" ->
-            if config.target = Target.FSharp
-            then SynType.JObject()
-            else SynType.Object()
-        | _ ->
-            SynType.String()
+    | _ when not (isNull schema.Reference) ->
+        // working with a reference type
+        let typeName =
+            if invalidTitle schema.Title
+            then sanitizeTypeName schema.Reference.Id
+            else sanitizeTypeName schema.Title
+        SynType.Create typeName
+    | "array" ->
+        let elementSchema = schema.Items
+        let elementType = readParamType config elementSchema
+        SynType.List elementType
+    | "object" ->
+        if config.target = Target.FSharp
+        then SynType.JObject()
+        else SynType.Object()
+    | _ ->
+        SynType.String()
 
-    for parameter in operation.Parameters do
-        if isNotNull parameter then
-            let shouldSpreadProperties =
-                parameter.Style.HasValue
-                && parameter.Style.Value = ParameterStyle.DeepObject
-                && parameter.Explode
-                && isNotNull parameter.Schema
-                && parameter.Schema.Type = "object"
+let private processOperationParameters (parameter: OpenApiParameter) (parameters:ResizeArray<OperationParameter>) (config: CodegenConfig) =
+    let readParamType = readParamType config
 
-            let properties =
-                if shouldSpreadProperties
-                then List.ofSeq parameter.Schema.Properties.Keys
-                else []
+    if isNotNull parameter then
+        let shouldSpreadProperties =
+            parameter.Style.HasValue
+            && parameter.Style.Value = ParameterStyle.DeepObject
+            && parameter.Explode
+            && isNotNull parameter.Schema
+            && parameter.Schema.Type = "object"
 
-            if not parameter.Deprecated && parameter.In.HasValue then
+        let properties =
+            if shouldSpreadProperties
+            then List.ofSeq parameter.Schema.Properties.Keys
+            else []
 
-                if isNull parameter.Schema then
-                    ()
-                else
-                    let paramType =
-                        if parameter.Content.Count = 1 then
-                            let firstKey = Seq.head parameter.Content.Keys
-                            readParamType parameter.Content.[firstKey].Schema
-                        elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
-                            // edge case for a weird schema
-                            SynType.String()
-                        else
-                            readParamType parameter.Schema
+        if not parameter.Deprecated && parameter.In.HasValue then
 
-                    let nullable =
-                        if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
-                            match parameter.Extensions.["x-nullable"] with
-                            | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
-                            | _ -> true
-                        else
-                            true
+            if isNull parameter.Schema then
+                ()
+            else
+                let paramType =
+                    if parameter.Content.Count = 1 then
+                        let firstKey = Seq.head parameter.Content.Keys
+                        readParamType parameter.Content.[firstKey].Schema
+                    elif parameter.In.Value = ParameterLocation.Header && isNotNull parameter.Schema && parameter.Schema.Type = "object" then
+                        // edge case for a weird schema
+                        SynType.String()
+                    else
+                        readParamType parameter.Schema
 
-                    let parameterIdentifier = cleanParamIdent parameter.Name parameters
-                    let identifierAlreadyAdded =
-                        parameters
-                        |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+                let nullable =
+                    if isNotNull parameter.Extensions && parameter.Extensions.ContainsKey "x-nullable" then
+                        match parameter.Extensions.["x-nullable"] with
+                        | :? Microsoft.OpenApi.Any.OpenApiBoolean as isNullable -> isNullable.Value
+                        | _ -> true
+                    else
+                        true
 
-                    parameters.Add {
-                        parameterName = parameter.Name
-                        parameterIdent =
-                            if identifierAlreadyAdded
-                            then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}"
-                            else parameterIdentifier
-                        required = parameter.Required || not nullable
-                        parameterType =  paramType
-                        docs = parameter.Description
-                        location = (string parameter.In.Value).ToLower()
-                        properties = properties
-                        style =
-                            if parameter.Style.HasValue
-                            then (string parameter.Style).ToLower()
-                            else "none"
-                    }
+                let parameterIdentifier = cleanParamIdent parameter.Name parameters
+                let identifierAlreadyAdded =
+                    parameters
+                    |> Seq.exists (fun opParam -> opParam.parameterIdent = parameterIdentifier)
+
+                parameters.Add {
+                    parameterName = parameter.Name
+                    parameterIdent =
+                        if identifierAlreadyAdded
+                        then  $"{parameterIdentifier}In{capitalize(string parameter.In.Value)}"
+                        else parameterIdentifier
+                    required = parameter.Required || not nullable
+                    parameterType =  paramType
+                    docs = parameter.Description
+                    location = (string parameter.In.Value).ToLower()
+                    properties = properties
+                    style =
+                        if parameter.Style.HasValue
+                        then (string parameter.Style).ToLower()
+                        else "none"
+                }
+
+let private processOperationRequestBody (operation: OpenApiOperation) (parameters:ResizeArray<OperationParameter>) (config: CodegenConfig) =
+    let readParamType = readParamType config
 
     if not (isNull operation.RequestBody) then
-        let mutable alreadyHasRequestBody = false
         let content = operation.RequestBody.Content
 
         if content.ContainsKey "application/json" && not (isEmptySchema content.["application/json"].Schema) then
@@ -281,6 +283,15 @@ let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) =
             }
         else
             ()
+
+let operationParameters (operation: OpenApiOperation) (config: CodegenConfig) =
+    let parameters = ResizeArray<OperationParameter>()
+    let readParamType = readParamType config
+
+    for parameter in operation.Parameters do
+        processOperationParameters parameter parameters config
+
+    processOperationRequestBody operation parameters config
 
     parameters
     |> Seq.sortBy (fun param ->
