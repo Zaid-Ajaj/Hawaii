@@ -2462,7 +2462,7 @@ let createOpenApiClient
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && (response.Content.["application/json"].Schema.Format = "uuid" || response.Content.["application/json"].Schema.Format = "guid") then
                             SynExpr.CreatePartialApp([responseType; status], [
                                 SynExpr.CreateParen(
-                                    SynExpr.CreatePartialApp(["System"; "Guid"], [
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
                                         createIdent [ "content" ]
                                     ])
                                 )
