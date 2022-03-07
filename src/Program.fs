@@ -2459,6 +2459,15 @@ let createOpenApiClient
                                 createIdent [ contentIdent ]
                             ])
                             |> wrappedReturn
+                        elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "string" && (response.Content.["application/json"].Schema.Format = "uuid" || response.Content.["application/json"].Schema.Format = "guid") then
+                            SynExpr.CreatePartialApp([responseType; status], [
+                                SynExpr.CreateParen(
+                                    SynExpr.CreatePartialApp(["Serializer"; "deserialize"], [
+                                        createIdent [ "content" ]
+                                    ])
+                                )
+                            ])
+                            |> wrappedReturn
                         elif response.Content.ContainsKey "application/json" && isNotNull response.Content.["application/json"].Schema && response.Content.["application/json"].Schema.Type = "file" then
                             // Assume we have a binary response
                             SynExpr.CreatePartialApp([responseType; status], [
