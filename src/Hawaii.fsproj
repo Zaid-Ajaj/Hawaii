@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>dotnet CLI tool to generate type-safe F# clients from OpenAPI/Swagger services</Description>
     <OutputType>Exe</OutputType>
@@ -7,8 +7,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.58.0</Version>
-    <PackageReleaseNotes>Fix response with format "uuid" or "guid"</PackageReleaseNotes>
+    <Version>0.59.0</Version>
+    <PackageReleaseNotes>Include path level parameters</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">

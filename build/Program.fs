@@ -101,7 +101,10 @@ let publish() =
         let nugetKey =
             match Environment.environVarOrNone "NUGET_KEY" with
             | Some nugetKey -> nugetKey
-            | None -> failwith "The Nuget API key must be set in a NUGET_KEY environmental variable"
+            | None -> 
+                printfn "The Nuget API key was not found in a NUGET_KEY environmental variable"
+                printf "Enter NUGET_KEY: "
+                Console.ReadLine()
 
         let nugetPath =
             Directory.GetFiles(path [ src; "bin"; "Release" ])
