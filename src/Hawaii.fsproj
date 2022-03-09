@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>dotnet CLI tool to generate type-safe F# clients from OpenAPI/Swagger services</Description>
     <OutputType>Exe</OutputType>
@@ -51,16 +50,17 @@
     <Compile Include="HttpLibrary.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="CodeGen.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="OperationParameters.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Fantomas" Version="4.5.1" />
     <PackageReference Include="Microsoft.OpenApi.OData" Version="1.0.8" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.0-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="5.0.1" />
   </ItemGroup>
