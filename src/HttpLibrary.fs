@@ -775,6 +775,19 @@ module OpenApiHttp =
                 |> Http.header (Headers.contentType "application/x-www-form-urlencoded")
                 |> Http.content (BodyContent.Text (data |> String.concat "&"))
 
+    let applyHeaders (parts: RequestPart list) (httpRequest: HttpRequest) =
+        parts
+        |> List.choose (function 
+            | RequestPart.Header (s, v) ->
+                Fable.SimpleHttp.Header (s, serializeValue v)
+                |> Some
+            | _ -> None)
+        |> function
+            | [] -> httpRequest
+            | headers ->
+                httpRequest
+                |> Http.headers headers
+
     let sendAsync (method: HttpMethod) (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) : Async<int * string> =
         async {
             let requestPath = applyPathParts path parts
@@ -786,6 +799,7 @@ module OpenApiHttp =
                 |> applyJsonRequestBody parts
                 |> applyMultipartFormData parts
                 |> applyUrlEncodedFormData parts
+                |> applyHeaders parts
                 |> Http.headers extraHeaders
                 |> Http.withCredentials true
                 |> Http.send
