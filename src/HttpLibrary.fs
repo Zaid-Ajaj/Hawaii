@@ -731,19 +731,16 @@ module OpenApiHttp =
         basePath.TrimEnd '/' + "/" + path.TrimStart '/'
 
     let applyJsonRequestBody (parts: RequestPart list) (httpRequest: HttpRequest) =
-        let bodyJson =
-            parts
-            |> List.choose(function
-                | JsonContent content -> Some content
-                | _ -> None)
-            |> List.tryHead
-
-        match bodyJson with
-        | None -> httpRequest
-        | Some json ->
-            httpRequest
-            |> Http.header (Headers.contentType "application/json")
-            |> Http.content (BodyContent.Text json)
+        parts
+        |> Seq.choose (function
+            | JsonContent json ->
+                httpRequest
+                |> Http.header (Headers.contentType "application/json")
+                |> Http.content (BodyContent.Text json)
+                |> Some
+            | _ -> None)
+        |> Seq.tryHead
+        |> Option.defaultValue httpRequest
 
     let applyMultipartFormData (parts: RequestPart list) (httpRequest: HttpRequest) =
         let formParts =
@@ -753,7 +750,7 @@ module OpenApiHttp =
                 | _ -> None
             )
 
-        if formParts.Length = 0 then
+        if formParts |> List.isEmpty then
             httpRequest
         else
             let formData = FormData.create()
@@ -766,24 +763,17 @@ module OpenApiHttp =
             |> Http.content (BodyContent.Form formData)
 
     let applyUrlEncodedFormData (parts: RequestPart list) (httpRequest: HttpRequest) =
-        let formParts =
-            parts
-            |> List.choose(function
-                | UrlEncodedFormData(key, value) -> Some(key, value)
-                | _ -> None
-            )
-
-        if formParts.Length = 0 then
-            httpRequest
-        else
-            let encodedData =
-                formParts
-                |> List.map (fun (key, value) -> $"{key}={encodeURIComponent(serializeValue value)}")
-                |> String.concat "&"
-
-            httpRequest
-            |> Http.header (Headers.contentType "application/x-www-form-urlencoded")
-            |> Http.content (BodyContent.Text encodedData)
+        parts
+        |> List.choose(function
+            | UrlEncodedFormData(key, value) ->
+                Some $"{key}={encodeURIComponent(serializeValue value)}"
+            | _ -> None)
+        |> function
+            | [] -> httpRequest
+            | data ->
+                httpRequest
+                |> Http.header (Headers.contentType "application/x-www-form-urlencoded")
+                |> Http.content (BodyContent.Text (data |> String.concat "&"))
 
     let sendAsync (method: HttpMethod) (basePath: string) (path: string) (extraHeaders: Header list) (parts: RequestPart list) : Async<int * string> =
         async {
