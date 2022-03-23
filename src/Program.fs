@@ -676,12 +676,17 @@ let statusCode = function
     | "201" -> Some (nameof HttpStatusCode.Created)
     | "202" -> Some (nameof HttpStatusCode.Accepted)
     | "204" -> Some (nameof HttpStatusCode.NoContent)
+    | "206" -> Some (nameof HttpStatusCode.PartialContent)
     | "301" -> Some (nameof HttpStatusCode.MovedPermanently)
+    | "302" -> Some (nameof HttpStatusCode.Found)
     | "400" -> Some (nameof HttpStatusCode.BadRequest)
     | "401" -> Some (nameof HttpStatusCode.Unauthorized)
     | "403" -> Some (nameof HttpStatusCode.Forbidden)
     | "404" -> Some (nameof HttpStatusCode.NotFound)
     | "405" -> Some (nameof HttpStatusCode.MethodNotAllowed)
+    | "409" -> Some (nameof HttpStatusCode.Conflict)
+    | "415" -> Some (nameof HttpStatusCode.UnsupportedMediaType)
+    | "416" -> Some (nameof HttpStatusCode.RequestedRangeNotSatisfiable)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
     | "503" -> Some (nameof HttpStatusCode.ServiceUnavailable)
     | "default" -> Some "DefaultResponse"
@@ -2405,18 +2410,24 @@ let createOpenApiClient
                             | nameof HttpStatusCode.Created -> 201
                             | nameof HttpStatusCode.Accepted -> 202
                             | nameof HttpStatusCode.NoContent -> 204
+                            | nameof HttpStatusCode.PartialContent -> 206
+                            | nameof HttpStatusCode.MovedPermanently -> 301
+                            | nameof HttpStatusCode.Moved -> 301
+                            | nameof HttpStatusCode.Found -> 302
                             | nameof HttpStatusCode.BadRequest -> 400
                             | nameof HttpStatusCode.Unauthorized -> 401
+                            | nameof HttpStatusCode.PaymentRequired -> 402
                             | nameof HttpStatusCode.Forbidden -> 403
                             | nameof HttpStatusCode.NotFound -> 404
                             | nameof HttpStatusCode.MethodNotAllowed -> 405
+                            | nameof HttpStatusCode.Conflict -> 409
+                            | nameof HttpStatusCode.UnsupportedMediaType -> 415
+                            | nameof HttpStatusCode.RequestedRangeNotSatisfiable -> 416
                             | nameof HttpStatusCode.InternalServerError -> 500
-                            | nameof HttpStatusCode.BadGateway -> 502
-                            | nameof HttpStatusCode.Found -> 302
-                            | nameof HttpStatusCode.GatewayTimeout -> 504
-                            | nameof HttpStatusCode.Moved -> 301
                             | nameof HttpStatusCode.NotImplemented -> 501
-                            | nameof HttpStatusCode.PaymentRequired -> 402
+                            | nameof HttpStatusCode.BadGateway -> 502
+                            | nameof HttpStatusCode.ServiceUnavailable -> 503
+                            | nameof HttpStatusCode.GatewayTimeout -> 504
                             | _ -> 0
 
                         if config.target = Target.FSharp then
