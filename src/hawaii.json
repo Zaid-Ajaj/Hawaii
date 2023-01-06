@@ -1,5 +1,5 @@
 {
-  "schema": "./recursive-types.json",
+  "schema": "https://api.mews.com/Swagger/connector/swagger.yaml",
   "project": "Mews",
   "output": "./output"
 }
