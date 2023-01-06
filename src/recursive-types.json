@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ConnectorApi",
+    "version": "v1"
+  },
+  "components": {
+    "schemas": {
+      "CoproductParameters": {
+        "type": "object",
+        "properties": {
+          "Discriminator": {
+            "type": "string",
+            "nullable": true
+          },
+          "Value": {
+            "$ref": "#/components/schemas/JToken"
+          },
+          "EmptyValue": {
+            
+          }
+        },
+        "additionalProperties": false
+      },
+      "JToken": {
+        
+      }
+    }
+  }
+}

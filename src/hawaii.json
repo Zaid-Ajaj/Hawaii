@@ -1,5 +1,5 @@
 {
-  "schema": "https://selectapi.datascope.refinitiv.com/RestApi/v1/Extractions/$metadata",
-  "project": "SelectApi",
+  "schema": "./recursive-types.json",
+  "project": "Mews",
   "output": "./output"
 }

@@ -44,6 +44,10 @@ let resolveRelativeFile current (path: string) =
     else
         Path.GetFullPath (Path.Combine(current, path))
 
+let safeSeq (xs: seq<'a>) =
+    if isNull xs
+    then Seq.empty
+    else xs
 
 let readConfig file =
     try
@@ -544,6 +548,13 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         if config.target = Target.FSharp
         then SynType.JToken()
         else SynType.Object()
+    elif not (isNull propertySchema.Reference) then
+        // working with a reference type
+        let typeName =
+            if invalidTitle propertySchema.Title
+            then sanitizeTypeName propertySchema.Reference.Id
+            else sanitizeTypeName propertySchema.Title
+        SynType.Create typeName
     else
         match propertySchema.Type with
         | "integer" when propertySchema.Format = "int64" -> SynType.Int64()
@@ -560,13 +571,6 @@ let rec createFieldType recordName required (propertyName: string) (propertySche
         | "array" ->
             let arrayItemsType = createFieldType recordName required propertyName propertySchema.Items config
             SynType.List(arrayItemsType)
-        | _ when not (isNull propertySchema.Reference) ->
-            // working with a reference type
-            let typeName =
-                if invalidTitle propertySchema.Title
-                then sanitizeTypeName propertySchema.Reference.Id
-                else sanitizeTypeName propertySchema.Title
-            SynType.Create typeName
         | _ ->
             SynType.String()
 
@@ -827,6 +831,8 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             && (isNull propertyType.AllOf || propertyType.AllOf.Count = 0)
             && (isNull propertyType.AnyOf || propertyType.AnyOf.Count = 0)
 
+        let isEmptyDefinition = isNull propertyType.Type
+
         let isKeyValuePairObject =
             propertyType.Type = "object"
             && propertyType.Title = "KeyValuePair`2"
@@ -858,6 +864,7 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             not isObjectArray
             not isEnumArray
             not isEmptyObjectDefinition
+            not isEmptyDefinition
             not isKeyValuePairObject
             not isArrayOfKeyValuePairObject
             not isArrayOfEmptyObject
@@ -922,6 +929,19 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
                     then SynType.Option(SynType.JObject())
                     else SynType.Option(SynType.Object())
             Some fieldType
+        else if isEmptyDefinition then
+            // empty object definition
+            let fieldType =
+                if required then
+                    if config.target = Target.FSharp
+                    then SynType.JToken()
+                    else SynType.Object()
+                else
+                    if config.target = Target.FSharp
+                    then SynType.Option(SynType.JToken())
+                    else SynType.Option(SynType.Object())
+            Some fieldType
+
         else if isKeyValuePairObject then
             let keySchema = propertyType.Properties.["Key"]
             let valueSchema = propertyType.Properties.["Value"]
@@ -1405,10 +1425,10 @@ let createResponseType (operation: OpenApiOperation) (path: string) (operationTy
                                 else
                                     []
                             elif responsePayloadType.Schema.Type = "object" then
-                                if config.target = Target.FSharp then 
+                                if config.target = Target.FSharp then
                                     let fieldType = SynType.JToken()
                                     [SynFieldRcd.Create("payload", fieldType).FromRcd]
-                                else 
+                                else
                                     let fieldType = SynType.Object()
                                     [SynFieldRcd.Create("payload", fieldType).FromRcd]
                             else
@@ -1781,8 +1801,8 @@ let createGlobalTypesModule (openApiDocument: OpenApiDocument) (config: CodegenC
             else
                 ()
 
-    for path in openApiDocument.Paths do
-        for operation in path.Value.Operations do
+    for path in safeSeq openApiDocument.Paths do
+        for operation in safeSeq path.Value.Operations do
             if includeOperation operation.Value config then
                 let responseTypes = createResponseType operation.Value path.Key operation.Key visitedTypes config openApiDocument
                 moduleTypes.AddRange responseTypes
@@ -1910,10 +1930,10 @@ let createOpenApiClient
 
         clientMembers.Add(implicitConstructor)
 
-    for path in openApiDocument.Paths do
+    for path in safeSeq openApiDocument.Paths do
         let fullPath = path.Key
         let pathInfo = path.Value
-        for operation in pathInfo.Operations do
+        for operation in safeSeq pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
                 let parameters = operationParameters operationInfo pathInfo.Parameters config
@@ -2602,7 +2622,9 @@ let createOpenApiClient
         for extraType in extraTypes do
             yield extraType
         // the main http client
-        yield clientType
+        if Seq.length (safeSeq openApiDocument.Paths) > 0 then
+            // only when we actually have members
+            yield clientType
     ]
 
     let clientModule = CodeGen.createNamespace [ config.project ] moduleContents
@@ -2890,8 +2912,8 @@ let showTags filePath =
             1
         else
             let tags = [
-                for path in openApiDocument.Paths do
-                for operation in path.Value.Operations do
+                for path in safeSeq openApiDocument.Paths do
+                for operation in safeSeq path.Value.Operations do
                 if isNotNull operation.Value.OperationId then
                     for tag in operation.Value.Tags do tag.Name, operation.Value.OperationId
             ]

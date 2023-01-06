@@ -3,12 +3,12 @@
     <Description>dotnet CLI tool to generate type-safe F# clients from OpenAPI/Swagger services</Description>
     <OutputType>Exe</OutputType>
     <ToolCommandName>hawaii</ToolCommandName>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.60.0</Version>
-    <PackageReleaseNotes>Apply headers from request parts</PackageReleaseNotes>
+    <Version>0.61.0</Version>
+    <PackageReleaseNotes>Handle infinite recursion on recursive types</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">
