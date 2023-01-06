@@ -1,6 +1,6 @@
 # Hawaii  [![Nuget](https://img.shields.io/nuget/v/Hawaii.svg?colorB=green)](https://www.nuget.org/packages/Hawaii)
 
-![](logo.png)
+![](hawaii.png)
 
 A dotnet CLI tool to generate type-safe F# and Fable clients from OpenAPI/Swagger/OData services.
 
