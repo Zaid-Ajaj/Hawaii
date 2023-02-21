@@ -7,7 +7,7 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.62.0</Version>
+    <Version>0.63.0</Version>
     <PackageReleaseNotes>Handle reference payload on return types</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
