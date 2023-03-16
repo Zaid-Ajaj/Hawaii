@@ -875,9 +875,12 @@ let rec createRecordFromSchema (recordName: string) (schema: OpenApiSchema) (vis
             None
         elif isAdditionalProperties then
             let fieldType = createFieldType recordName true propertyName propertyType.AdditionalProperties config
-            if required
-            then Some (SynType.Map(SynType.String(), fieldType))
-            else Some (SynType.Option(SynType.Map(SynType.String(), fieldType)))
+            match required, propertyType.AdditionalProperties.Nullable with
+            | false, false -> SynType.Option(SynType.Map(SynType.String(), fieldType))
+            | true, false -> SynType.Map(SynType.String(), fieldType)
+            | false, true -> SynType.Option(SynType.Map(SynType.String(), SynType.Option(fieldType)))
+            | true, true -> SynType.Map(SynType.String(), SynType.Option(fieldType))
+            |> Some
         elif isPrimitve then
             let fieldType = createFieldType recordName required propertyName propertyType config
             Some fieldType
