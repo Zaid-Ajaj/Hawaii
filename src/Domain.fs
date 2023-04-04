@@ -20,6 +20,8 @@ type Target =
 type AsyncReturnType =
     | Async
     | Task
+    | CancellableAsync
+    | CancellableTask
 
 [<RequireQualifiedAccess>]
 type FactoryFunction =
@@ -39,6 +41,9 @@ type CodegenConfig = {
     filterTags: string list
     odataSchema: bool
 }
+with 
+    member this.IsTask = this.asyncReturnType = AsyncReturnType.Task || this.asyncReturnType = AsyncReturnType.CancellableTask
+    member this.IsCancellable = this.asyncReturnType = AsyncReturnType.CancellableAsync || this.asyncReturnType = AsyncReturnType.CancellableTask
 
 type OperationParameter = {
     parameterName: string

@@ -50,6 +50,12 @@ let safeSeq (xs: seq<'a>) =
     else xs
 
 let readConfig file =
+    let isValidAsyncReturnType (jt: JToken) = 
+        match jt.ToString() with
+        | "async" | "task" | "async-ct" | "task-ct" -> true
+        | _ -> false
+
+
     try
         if not (File.Exists file) then
             Error $"Hawaii configuration file {file} was not found"
@@ -76,8 +82,8 @@ let readConfig file =
             Error "The 'project' configuration element cannot be empty"
         elif isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].Type <> JTokenType.String then
             Error "The 'asyncReturnType' configuration element must be a string"
-        elif isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].ToObject<string>().ToLower().Trim() <> "task" && parts.["asyncReturnType"].ToObject<string>().ToLower().Trim() <> "async" then
-            Error "The 'asyncReturnType' configuration element can only be 'async' (default) or 'task'"
+        elif not <| isValidAsyncReturnType parts.["asyncReturnType"] then
+            Error "The 'asyncReturnType' configuration element can only be 'async' (default), 'task', 'async-ct', 'task-ct'"
         elif isNotNull parts.["synchronous"] && parts.["synchronous"].Type <> JTokenType.Boolean then
             Error "The 'synchronous' configuration element must be a boolean"
         elif isNotNull parts.["resolveReferences"] && parts.["resolveReferences"].Type <> JTokenType.Boolean then
@@ -95,9 +101,11 @@ let readConfig file =
                     then Target.Fable
                     else Target.FSharp
                 asyncReturnType =
-                    if isNotNull parts.["asyncReturnType"] && parts.["asyncReturnType"].ToString() = "task"
-                    then AsyncReturnType.Task
-                    else AsyncReturnType.Async
+                    match parts.["asyncReturnType"] with
+                    | jo when jo.ToString() = "task" -> AsyncReturnType.Task
+                    | jo when jo.ToString() = "async-ct" -> AsyncReturnType.CancellableAsync
+                    | jo when jo.ToString() = "task-ct" -> AsyncReturnType.CancellableTask
+                    | _ -> AsyncReturnType.Async
                 synchronous =
                     if isNotNull parts.["synchronous"]
                     then parts.["synchronous"].ToObject<bool>()
@@ -1939,7 +1947,20 @@ let createOpenApiClient
         for operation in safeSeq pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
-                let parameters = operationParameters operationInfo pathInfo.Parameters config
+
+                let parameters = [
+                    if config.IsCancellable then {
+                        parameterName = "ct"
+                        parameterIdent = "ct"
+                        required = true
+                        parameterType = SynType.Create "System.Threading.CancellationToken"
+                        docs = null
+                        location = null
+                        properties = []
+                        style = "none" }
+
+                    yield! operationParameters operationInfo pathInfo.Parameters config ]
+
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
                     then operationInfo.Summary
@@ -1979,15 +2000,16 @@ let createOpenApiClient
                     for parameter in parameters do
                         if parameter.required then
                             if parameter.properties.Length = 0 then
-                                yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
-                                    if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
-                                        SynExpr.CreateParen(SynExpr.CreateTuple [
-                                            stringExpr parameter.parameterName
+                                if not <| isNull parameter.location then
+                                    yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
+                                        if parameter.location <> "jsonContent" && parameter.location <> "binaryContent" then
+                                            SynExpr.CreateParen(SynExpr.CreateTuple [
+                                                stringExpr parameter.parameterName
+                                                createIdent [ parameter.parameterIdent ]
+                                            ])
+                                        else
                                             createIdent [ parameter.parameterIdent ]
-                                        ])
-                                    else
-                                        createIdent [ parameter.parameterIdent ]
-                                ])
+                                    ])
                             else
                                 for property in parameter.properties do
                                 yield SynExpr.CreatePartialApp(["RequestPart"; parameter.location], [
@@ -2039,6 +2061,7 @@ let createOpenApiClient
                         SynExpr.CreateIdent (Ident.Create "httpClient")
                         SynExpr.CreateConstString fullPath
                         SynExpr.Ident requestParts
+                        if config.IsCancellable then SynExpr.Ident <| Ident.Create "ct"
                     else
                         // apply the base path to the generated functions
                         SynExpr.CreateIdent (Ident.Create "url")
@@ -2555,8 +2578,8 @@ let createOpenApiClient
                             expr
                         else
                             match config.asyncReturnType with
-                            | AsyncReturnType.Async -> SynExpr.CreateAsync expr
-                            | AsyncReturnType.Task -> SynExpr.CreateTask expr
+                            | AsyncReturnType.Async | AsyncReturnType.CancellableAsync -> SynExpr.CreateAsync expr
+                            | AsyncReturnType.Task | AsyncReturnType.CancellableTask -> SynExpr.CreateTask expr
 
                 let destructExpr httpFunc =
                     match config.target with
@@ -2828,7 +2851,7 @@ let runConfig filePath =
                     if config.target = Target.FSharp then
                         XElement.PackageReference("Fable.Remoting.Json", "2.18.0")
                         XElement.PackageReference("Newtonsoft.Json", "13.0.1")
-                        if config.asyncReturnType = AsyncReturnType.Task
+                        if config.IsTask
                         then XElement.PackageReference("Ply", "0.3.1")
                     else
                         XElement.PackageReference("Fable.SimpleJson", "3.21.0")
@@ -2850,7 +2873,7 @@ let runConfig filePath =
                 generateProjectDocument packages files copyLocalLockFileAssemblies contentItems projectReferences
 
             if config.target = Target.FSharp then
-                let httpLibrary = HttpLibrary.library (config.asyncReturnType = AsyncReturnType.Task) config.project
+                let httpLibrary = HttpLibrary.library config.IsTask config.IsCancellable config.project
                 write httpLibrary [ outputDir; "OpenApiHttp.fs" ]
                 write CodeGen.stringEnumAttr [ outputDir; "StringEnum.fs" ]
             else
