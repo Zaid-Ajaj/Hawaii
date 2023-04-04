@@ -383,10 +383,6 @@ let library isTask isCancellable projectName =
         then "|> Async.AwaitTask |> Async.RunSynchronously"
         else "|> Async.RunSynchronously"
 
-    //let getResponse =
-    //    if isTask
-    //    then "httpClient.SendAsync(populatedRequest, ct)"
-    //    else "Async.AwaitTask(httpClient.SendAsync(populatedRequest, ct))"
     let getResponse =
         match isTask, isCancellable with
         | false, false -> "Async.AwaitTask(httpClient.SendAsync populatedRequest)"
