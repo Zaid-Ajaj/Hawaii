@@ -1939,7 +1939,14 @@ let createOpenApiClient
         for operation in safeSeq pathInfo.Operations do
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
+
+                operationInfo.Parameters.Add(OpenApiParameter(
+                    Name = "cancellationToken",
+                    In = ParameterLocation.Query,
+                    Schema = OpenApiSchema(Reference = OpenApiReference(Id = "CancellationToken"))))
+
                 let parameters = operationParameters operationInfo pathInfo.Parameters config
+
                 let summary =
                     if String.IsNullOrWhiteSpace operationInfo.Description
                     then operationInfo.Summary
@@ -1996,7 +2003,7 @@ let createOpenApiClient
                                         createIdent [ parameter.parameterIdent; property ]
                                     ])
                                 ])
-                        else
+                        elif parameter.style <> "cancellation-token" then
                             let condition = createIdent [ parameter.parameterIdent; "IsSome" ]
                             let value =
                                 if parameter.properties.Length = 0 then
@@ -2039,6 +2046,7 @@ let createOpenApiClient
                         SynExpr.CreateIdent (Ident.Create "httpClient")
                         SynExpr.CreateConstString fullPath
                         SynExpr.Ident requestParts
+                        SynExpr.Ident <| Ident.Create "cancellationToken"
                     else
                         // apply the base path to the generated functions
                         SynExpr.CreateIdent (Ident.Create "url")
@@ -2611,6 +2619,7 @@ let createOpenApiClient
             yield SynModuleDecl.CreateOpen "System.Net"
             yield SynModuleDecl.CreateOpen "System.Net.Http"
             yield SynModuleDecl.CreateOpen "System.Text"
+            yield SynModuleDecl.CreateOpen "System.Threading"
         else
             yield SynModuleDecl.CreateOpen "Browser.Types"
             yield SynModuleDecl.CreateOpen "Fable.SimpleHttp"

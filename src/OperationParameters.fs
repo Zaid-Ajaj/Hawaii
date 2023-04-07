@@ -82,6 +82,9 @@ let rec private readParamType (target: Target) (schema: OpenApiSchema) : SynType
     | _ ->
         SynType.String()
 
+let private isCancellationToken (parameter: OpenApiParameter) = 
+    isNotNull parameter.Schema && isNotNull parameter.Schema.Reference && parameter.Schema.Reference.Id = "CancellationToken"
+
 let private processOperationParameters
     (target: Target)
     (parameters: OperationParameter seq)
@@ -141,8 +144,8 @@ let private processOperationParameters
             location = (string parameter.In.Value).ToLower()
             properties = properties
             style =
-                if parameter.Style.HasValue
-                then (string parameter.Style).ToLower()
+                if parameter.Style.HasValue then (string parameter.Style).ToLower()
+                elif isCancellationToken parameter then "cancellation-token"
                 else "none"
         }
 

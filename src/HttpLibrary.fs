@@ -8,6 +8,7 @@ open System.Globalization
 open System.Collections.Generic
 open System.Text
 open Fable.Remoting.Json
+open System.Threading
 {taskLibrary}
 
 module Serializer =
@@ -254,7 +255,8 @@ module OpenApiHttp =
             httpRequest.Content <- new FormUrlEncodedContent(contents)
             httpRequest
 
-    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) =
+    let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        let cancellationToken = Option.defaultValue CancellationToken.None cancellationToken
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
@@ -273,7 +275,8 @@ module OpenApiHttp =
             return (response.StatusCode, content)
         }
 
-    let sendBinaryAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) =
+    let sendBinaryAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        let cancellationToken = Option.defaultValue CancellationToken.None cancellationToken
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
@@ -292,88 +295,88 @@ module OpenApiHttp =
             return (response.StatusCode, content)
         }
 
-    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient HttpMethod.Get path parts
+    let getAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient HttpMethod.Get path parts {cancellationParameter}
 
-    let get (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        getAsync httpClient path parts
+    let get (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        getAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let getBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient HttpMethod.Get path parts
+    let getBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient HttpMethod.Get path parts {cancellationParameter}
 
-    let getBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        getBinaryAsync httpClient path parts
+    let getBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        getBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient HttpMethod.Post path parts
+    let postAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient HttpMethod.Post path parts {cancellationParameter}
 
-    let post (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        postAsync httpClient path parts
+    let post (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        postAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let postBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient HttpMethod.Post path parts
+    let postBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient HttpMethod.Post path parts {cancellationParameter}
 
-    let postBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) = 
-        postBinaryAsync httpClient path parts
+    let postBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} = 
+        postBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient HttpMethod.Delete path parts
+    let deleteAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient HttpMethod.Delete path parts {cancellationParameter}
 
-    let delete (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        deleteAsync httpClient path parts
+    let delete (httpClient: HttpClient) (path: string) (parts: RequestPart list)  {cancellationArgument} =
+        deleteAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let deleteBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient HttpMethod.Delete path parts
+    let deleteBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient HttpMethod.Delete path parts {cancellationParameter}
 
-    let deleteBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        deleteBinaryAsync httpClient path parts
+    let deleteBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list)  {cancellationArgument} =
+        deleteBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient HttpMethod.Put path parts
+    let putAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient HttpMethod.Put path parts {cancellationParameter}
 
-    let put (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        putAsync httpClient path parts
+    let put (httpClient: HttpClient) (path: string) (parts: RequestPart list)  {cancellationArgument} =
+        putAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let putBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient HttpMethod.Put path parts
+    let putBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient HttpMethod.Put path parts {cancellationParameter}
 
-    let putBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        putBinaryAsync httpClient path parts
+    let putBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        putBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient (HttpMethod "PATCH") path parts
+    let patchAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient (HttpMethod "PATCH") path parts {cancellationParameter}
 
-    let patch (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        patchAsync httpClient path parts
+    let patch (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        patchAsync httpClient path parts {cancellationParameter} 
         {convertSync}
 
-    let patchBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient (HttpMethod "PATCH") path parts
+    let patchBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient (HttpMethod "PATCH") path parts {cancellationParameter}
 
-    let patchBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        patchBinaryAsync httpClient path parts
+    let patchBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        patchBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
     
-    let headAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendAsync httpClient (HttpMethod "HEAD") path parts
-
-    let head (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        headAsync httpClient path parts
+    let headAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendAsync httpClient (HttpMethod "HEAD") path parts {cancellationParameter}
+         
+    let head (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        headAsync httpClient path parts {cancellationParameter}
         {convertSync}
 
-    let headBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        sendBinaryAsync httpClient (HttpMethod "HEAD") path parts
+    let headBinaryAsync (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        sendBinaryAsync httpClient (HttpMethod "HEAD") path parts {cancellationParameter}
 
-    let headBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) =
-        headBinaryAsync httpClient path parts
+    let headBinary (httpClient: HttpClient) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        headBinaryAsync httpClient path parts {cancellationParameter}
         {convertSync}
 """
 
@@ -385,8 +388,8 @@ let library isTask projectName =
 
     let getResponse =
         if isTask
-        then "httpClient.SendAsync populatedRequest"
-        else "Async.AwaitTask(httpClient.SendAsync populatedRequest)"
+        then "httpClient.SendAsync(populatedRequest, cancellationToken)"
+        else "Async.AwaitTask(httpClient.SendAsync(populatedRequest, cancellationToken))"
 
     let getContent =
         if isTask
@@ -402,6 +405,8 @@ let library isTask projectName =
         .Replace("{projectName}", projectName)
         .Replace("{taskLibrary}", if isTask then "open FSharp.Control.Tasks" else "")
         .Replace("{asyncBuilder}", if isTask then "task" else "async")
+        .Replace("{cancellationArgument}", "(cancellationToken: CancellationToken option)")
+        .Replace("{cancellationParameter}", "cancellationToken")
         .Replace("{convertSync}", convertSync)
         .Replace("{getResponse}", getResponse)
         .Replace("{getContent}", getContent)
