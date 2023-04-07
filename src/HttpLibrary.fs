@@ -8,6 +8,7 @@ open System.Globalization
 open System.Collections.Generic
 open System.Text
 open Fable.Remoting.Json
+open System.Threading
 {taskLibrary}
 
 module Serializer =
@@ -255,6 +256,7 @@ module OpenApiHttp =
             httpRequest
 
     let sendAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        let cancellationToken = Option.defaultValue CancellationToken.None cancellationToken
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
@@ -274,6 +276,7 @@ module OpenApiHttp =
         }
 
     let sendBinaryAsync (httpClient: HttpClient) (method: HttpMethod) (path: string) (parts: RequestPart list) {cancellationArgument} =
+        let cancellationToken = Option.defaultValue CancellationToken.None cancellationToken
         let modifiedPath = applyPathParts path parts
         let modifiedQueryParams = applyQueryStringParameters modifiedPath parts
         let requestUri = Uri(httpClient.BaseAddress.OriginalString.TrimEnd '/' + modifiedQueryParams)
@@ -377,18 +380,16 @@ module OpenApiHttp =
         {convertSync}
 """
 
-let library isTask isCancellable projectName =
+let library isTask projectName =
     let convertSync =
         if isTask
         then "|> Async.AwaitTask |> Async.RunSynchronously"
         else "|> Async.RunSynchronously"
 
     let getResponse =
-        match isTask, isCancellable with
-        | false, false -> "Async.AwaitTask(httpClient.SendAsync populatedRequest)"
-        | false, true -> "Async.AwaitTask(httpClient.SendAsync(populatedRequest, ct))"
-        | true, false -> "httpClient.SendAsync populatedRequest"
-        | true, true -> "httpClient.SendAsync(populatedRequest, ct)"
+        if isTask
+        then "httpClient.SendAsync(populatedRequest, cancellationToken)"
+        else "Async.AwaitTask(httpClient.SendAsync(populatedRequest, cancellationToken))"
 
     let getContent =
         if isTask
@@ -404,8 +405,8 @@ let library isTask isCancellable projectName =
         .Replace("{projectName}", projectName)
         .Replace("{taskLibrary}", if isTask then "open FSharp.Control.Tasks" else "")
         .Replace("{asyncBuilder}", if isTask then "task" else "async")
-        .Replace("{cancellationArgument}", if isCancellable then "(ct: System.Threading.CancellationToken)" else "")
-        .Replace("{cancellationParameter}", if isCancellable then "ct" else "")
+        .Replace("{cancellationArgument}", "(cancellationToken: CancellationToken option)")
+        .Replace("{cancellationParameter}", "cancellationToken")
         .Replace("{convertSync}", convertSync)
         .Replace("{getResponse}", getResponse)
         .Replace("{getContent}", getContent)
