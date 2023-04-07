@@ -1940,10 +1940,11 @@ let createOpenApiClient
             let operationInfo = operation.Value
             if not operationInfo.Deprecated && includeOperation operationInfo config then
 
-                operationInfo.Parameters.Add(OpenApiParameter(
-                    Name = "cancellationToken",
-                    In = ParameterLocation.Query,
-                    Schema = OpenApiSchema(Reference = OpenApiReference(Id = "CancellationToken"))))
+                if config.target = Target.FSharp then
+                    operationInfo.Parameters.Add(OpenApiParameter(
+                        Name = "cancellationToken",
+                        In = ParameterLocation.Query,
+                        Schema = OpenApiSchema(Reference = OpenApiReference(Id = "CancellationToken"))))
 
                 let parameters = operationParameters operationInfo pathInfo.Parameters config
 
