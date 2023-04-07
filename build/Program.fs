@@ -119,19 +119,27 @@ let generateAndBuild(schema: ApiGuruSchema) =
     let content = JObject()
     content.Add(JProperty("schema", schema.schemaUrl))
     content.Add(JProperty("project", schema.title))
-    content.Add(JProperty("output", "./output"))
+    let outputDir = path [ solutionRoot; "examples"; schema.title ]
+    if Directory.Exists outputDir then
+        Shell.deleteDir outputDir
+    
+    // create output directory
+    Directory.ensure outputDir
+
+    content.Add(JProperty("output", outputDir))
     content.Add(JProperty("asyncReturnType", schema.asyncReturnType))
     content.Add(JProperty("target", schema.target))
     content.Add(JProperty("synchronous", schema.synchronous))
+    content.Add(JProperty("emptyDefinitions", schema.emptyDefinitions))
 
     File.WriteAllText(integrationSchema, content.ToString(Formatting.Indented))
-    let hawaii = path [ src; "bin"; "Release"; "net5.0"; "Hawaii.dll" ]
+    let hawaii = path [ src; "bin"; "Release"; "net6.0"; "Hawaii.dll" ]
     let configPath = path [ src; "hawaii.json" ]
     printfn $"Attempting to generate project {schema.title} from {schema.schemaUrl}"
     if Shell.Exec(Tools.dotnet, $"{hawaii} --config {configPath} --no-logo", src) <> 0 then
         failwith $"Failed to generate project {schema.title}"
     else
-        if Shell.Exec(Tools.dotnet, "build --configuration Release", path [ src; "output" ]) <> 0
+        if Shell.Exec(Tools.dotnet, "build --configuration Release", outputDir) <> 0
         then failwith "build failed"
 
 let normalize (name: string) = 
@@ -516,7 +524,7 @@ let successRate(n: int) =
     printfn $"Generating and building the first {n} OpenAPI schemas from that list"
 
     let mutable totalSuccess = 0
-    let mutable totalFailed = 0;
+    let mutable totalFailed = 0
 
     let results = 
         schemas

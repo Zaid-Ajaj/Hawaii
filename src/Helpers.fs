@@ -56,5 +56,4 @@ let isEmptySchema (schema: OpenApiSchema) =
         && schema.Properties.Count = 0
         && schema.AllOf.Count = 0
         && schema.AnyOf.Count = 0
-        && isNull schema.Reference
     )

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StringEnum.fs" />
+    <Compile Include="OpenApiHttp.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Client.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Remoting.Json" Version="2.18.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>

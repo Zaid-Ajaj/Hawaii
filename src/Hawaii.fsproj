@@ -7,8 +7,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.64.0</Version>
-    <PackageReleaseNotes>Handle nullable dictionary types as optional</PackageReleaseNotes>
+    <Version>0.65.0</Version>
+    <PackageReleaseNotes>Generate cancellation token for fsharp targets</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">

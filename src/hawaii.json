@@ -1,5 +1,9 @@
 {
-  "schema": "https://api.mews.com/Swagger/connector/swagger.yaml",
-  "project": "Mews",
-  "output": "./output"
+  "schema": "https://api.apis.guru/v2/specs/slicebox.local/2.0/swagger.json",
+  "project": "FableSlicebox",
+  "output": "/Users/zaid/projects/Hawaii/examples/FableSlicebox",
+  "asyncReturnType": "async",
+  "target": "fable",
+  "synchronous": false,
+  "emptyDefinitions": "ignore"
 }

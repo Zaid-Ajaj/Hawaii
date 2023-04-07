@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="OpenApiHttp.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Client.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.SimpleJson" Version="3.21.0" />
+    <PackageReference Include="Fable.SimpleHttp" Version="3.0.0" />
+  </ItemGroup>
+</Project>
