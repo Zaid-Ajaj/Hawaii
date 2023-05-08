@@ -691,6 +691,7 @@ let statusCode = function
     | "409" -> Some (nameof HttpStatusCode.Conflict)
     | "415" -> Some (nameof HttpStatusCode.UnsupportedMediaType)
     | "416" -> Some (nameof HttpStatusCode.RequestedRangeNotSatisfiable)
+    | "422" -> Some (nameof HttpStatusCode.UnprocessableEntity)
     | "500" -> Some (nameof HttpStatusCode.InternalServerError)
     | "503" -> Some (nameof HttpStatusCode.ServiceUnavailable)
     | "default" -> Some "DefaultResponse"
@@ -2455,6 +2456,7 @@ let createOpenApiClient
                             | nameof HttpStatusCode.Conflict -> 409
                             | nameof HttpStatusCode.UnsupportedMediaType -> 415
                             | nameof HttpStatusCode.RequestedRangeNotSatisfiable -> 416
+                            | nameof HttpStatusCode.UnprocessableEntity -> 422
                             | nameof HttpStatusCode.InternalServerError -> 500
                             | nameof HttpStatusCode.NotImplemented -> 501
                             | nameof HttpStatusCode.BadGateway -> 502
