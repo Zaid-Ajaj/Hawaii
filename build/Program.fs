@@ -477,6 +477,42 @@ let integrationKnownSchemas() =
         emptyDefinitions = "ignore"
     }
 
+    let defaultUnlimitedResponses = {
+        schemaUrl = "./schemas/UnlimitedResponses.json"
+        title = "DefaultUnlimitedResponses"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let syncUnlimitedResponses = {
+        schemaUrl = "./schemas/UnlimitedResponses.json"
+        title = "SyncUnlimitedResponses"
+        synchronous = true
+        asyncReturnType = "async"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let taskUnlimitedResponses = {
+        schemaUrl = "./schemas/UnlimitedResponses.json"
+        title = "TaskUnlimitedResponses"
+        synchronous = false
+        asyncReturnType = "task"
+        target = "fsharp"
+        emptyDefinitions = "ignore"
+    }
+
+    let fableUnlimitedResponses = {
+        schemaUrl = "./schemas/UnlimitedResponses.json"
+        title = "FableUnlimitedResponses"
+        synchronous = false
+        asyncReturnType = "async"
+        target = "fable"
+        emptyDefinitions = "ignore"
+    }
+
     let schemas = [
         defaultPetStore
         synchronousPetStore
@@ -512,6 +548,10 @@ let integrationKnownSchemas() =
         defaultSlicebox
         taskSlicebox
         fableSlicebox
+        defaultUnlimitedResponses
+        taskUnlimitedResponses
+        syncUnlimitedResponses
+        fableUnlimitedResponses
     ]
 
     for (index, schema) in List.indexed schemas do 
