@@ -2064,10 +2064,6 @@ let createOpenApiClient
                     | Target.FSharp when config.synchronous -> expr
                     | _ -> SynExpr.CreateReturn expr
 
-                let equal left right =
-                    let innerApp = SynExpr.App(ExprAtomicFlag.NonAtomic, true, (createIdent ["op_Equality"]), left, range0)
-                    SynExpr.CreateApp(innerApp, right)
-
                 let responses =
                     operation.Value.Responses
                     |> Seq.choose (fun pair ->
@@ -2436,127 +2432,84 @@ let createOpenApiClient
                             createIdent [ responseType; status ]
                             |> wrappedReturn
 
-                    let statusIsEqual status =
-                        let statusCode =
-                            match status with
-                            | nameof HttpStatusCode.OK -> 200
-                            | nameof HttpStatusCode.Created -> 201
-                            | nameof HttpStatusCode.Accepted -> 202
-                            | nameof HttpStatusCode.NoContent -> 204
-                            | nameof HttpStatusCode.PartialContent -> 206
-                            | nameof HttpStatusCode.MovedPermanently -> 301
-                            | nameof HttpStatusCode.Moved -> 301
-                            | nameof HttpStatusCode.Found -> 302
-                            | nameof HttpStatusCode.BadRequest -> 400
-                            | nameof HttpStatusCode.Unauthorized -> 401
-                            | nameof HttpStatusCode.PaymentRequired -> 402
-                            | nameof HttpStatusCode.Forbidden -> 403
-                            | nameof HttpStatusCode.NotFound -> 404
-                            | nameof HttpStatusCode.MethodNotAllowed -> 405
-                            | nameof HttpStatusCode.Conflict -> 409
-                            | nameof HttpStatusCode.UnsupportedMediaType -> 415
-                            | nameof HttpStatusCode.RequestedRangeNotSatisfiable -> 416
-                            | nameof HttpStatusCode.UnprocessableEntity -> 422
-                            | nameof HttpStatusCode.InternalServerError -> 500
-                            | nameof HttpStatusCode.NotImplemented -> 501
-                            | nameof HttpStatusCode.BadGateway -> 502
-                            | nameof HttpStatusCode.ServiceUnavailable -> 503
-                            | nameof HttpStatusCode.GatewayTimeout -> 504
-                            | _ -> 0
+                    let statusCode status =
+                        match status with
+                        | nameof HttpStatusCode.OK -> 200
+                        | nameof HttpStatusCode.Created -> 201
+                        | nameof HttpStatusCode.Accepted -> 202
+                        | nameof HttpStatusCode.NoContent -> 204
+                        | nameof HttpStatusCode.PartialContent -> 206
+                        | nameof HttpStatusCode.MovedPermanently -> 301
+                        | nameof HttpStatusCode.Moved -> 301
+                        | nameof HttpStatusCode.Found -> 302
+                        | nameof HttpStatusCode.BadRequest -> 400
+                        | nameof HttpStatusCode.Unauthorized -> 401
+                        | nameof HttpStatusCode.PaymentRequired -> 402
+                        | nameof HttpStatusCode.Forbidden -> 403
+                        | nameof HttpStatusCode.NotFound -> 404
+                        | nameof HttpStatusCode.MethodNotAllowed -> 405
+                        | nameof HttpStatusCode.Conflict -> 409
+                        | nameof HttpStatusCode.UnsupportedMediaType -> 415
+                        | nameof HttpStatusCode.RequestedRangeNotSatisfiable -> 416
+                        | nameof HttpStatusCode.UnprocessableEntity -> 422
+                        | nameof HttpStatusCode.InternalServerError -> 500
+                        | nameof HttpStatusCode.NotImplemented -> 501
+                        | nameof HttpStatusCode.BadGateway -> 502
+                        | nameof HttpStatusCode.ServiceUnavailable -> 503
+                        | nameof HttpStatusCode.GatewayTimeout -> 504
+                        | _ -> 0
 
-                        if config.target = Target.FSharp then
-                            equal (createIdent [ "status" ]) (createIdent [ "HttpStatusCode"; status ])
-                        else
-                            equal (createIdent [ "status" ]) (SynExpr.CreateConst(SynConst.Int32 statusCode))
+                    let matchClause openApiResponse =
+                        let (status, _) = openApiResponse
+                        let ident =
+                            if config.target = Target.FSharp then
+                                SynPat.LongIdent(
+                                    LongIdentWithDots.Create [ "HttpStatusCode"; status ],
+                                    None,
+                                    None,
+                                    SynArgPats.Empty,
+                                    None,
+                                    range0)
+                            else
+                                SynPat.Const(SynConst.Int32 (statusCode status), range0)
 
+                        SynMatchClause.Clause (
+                            ident,
+                            None,
+                            createOutput openApiResponse,
+                            range0,
+                            DebugPointForTarget.Yes
+                        )
                     if responses.Length = 1 then
                         createOutput responses.[0]
-                    elif responses.Length = 2 then
-                        let (status1, response1) = responses.[0]
-                        let (status2, response2) = responses.[1]
-                        SynExpr.CreateIfThenElse(statusIsEqual status1, createOutput responses.[0], createOutput responses.[1])
-                    elif responses.Length = 3 then
-                        let (status1, response1) = responses.[0]
-                        let (status2, response2) = responses.[1]
-                        let (status3, response3) = responses.[2]
-                        SynExpr.CreateIfThenElse(
-                            statusIsEqual status1,
-                            createOutput responses.[0],
-                            SynExpr.CreateIfThenElse(
-                                statusIsEqual status2,
-                                createOutput responses.[1],
-                                createOutput responses.[2]
-                            )
-                        )
-                    elif responses.Length = 4 then
-                        let (status1, response1) = responses.[0]
-                        let (status2, response2) = responses.[1]
-                        let (status3, response3) = responses.[2]
-                        let (status4, response4) = responses.[3]
-                        SynExpr.CreateIfThenElse(
-                            statusIsEqual status1,
-                            createOutput responses.[0],
-                            SynExpr.CreateIfThenElse(
-                                statusIsEqual status2,
-                                createOutput responses.[1],
-                                SynExpr.CreateIfThenElse(
-                                    statusIsEqual status3,
-                                    createOutput responses.[2],
-                                    createOutput responses.[3]
-                                )
-                            )
-                        )
-                    elif responses.Length = 5 then
-                        let (status1, response1) = responses.[0]
-                        let (status2, response2) = responses.[1]
-                        let (status3, response3) = responses.[2]
-                        let (status4, response4) = responses.[3]
-                        let (status5, response5) = responses.[4]
-                        SynExpr.CreateIfThenElse(
-                            statusIsEqual status1,
-                            createOutput responses.[0],
-                            SynExpr.CreateIfThenElse(
-                                statusIsEqual status2,
-                                createOutput responses.[1],
-                                SynExpr.CreateIfThenElse(
-                                    statusIsEqual status3,
-                                    createOutput responses.[2],
-                                    SynExpr.CreateIfThenElse(
-                                        statusIsEqual status4,
-                                        createOutput responses.[3],
-                                        createOutput responses.[4]
-                                    )
-                                )
-                            )
-                        )
                     else
-                        let (status1, response1) = responses.[0]
-                        let (status2, response2) = responses.[1]
-                        let (status3, response3) = responses.[2]
-                        let (status4, response4) = responses.[3]
-                        let (status5, response5) = responses.[4]
-                        let (status6, response6) = responses.[5]
-                        SynExpr.CreateIfThenElse(
-                            statusIsEqual status1,
-                            createOutput responses.[0],
-                            SynExpr.CreateIfThenElse(
-                                statusIsEqual status2,
-                                createOutput responses.[1],
-                                SynExpr.CreateIfThenElse(
-                                    statusIsEqual status3,
-                                    createOutput responses.[2],
-                                    SynExpr.CreateIfThenElse(
-                                        statusIsEqual status4,
-                                        createOutput responses.[3],
-                                        SynExpr.CreateIfThenElse(
-                                            statusIsEqual status5,
-                                            createOutput responses.[4],
-                                            createOutput responses.[5]
-                                        )
-                                    )
-                                )
-                            )
+                        let matchWildClause openApiResponse =
+                            SynMatchClause.Clause (
+                                SynPat.Wild range0,
+                                None,
+                                createOutput openApiResponse,
+                                range0,
+                                DebugPointForTarget.Yes
                         )
+
+                        let responsesRevSorted =
+                            if responses |> List.exists (fun (status, _) -> status = "DefaultResponse") then
+                                (responses |> List.find(fun (status, _) -> status = "DefaultResponse"))
+                                :: (responses
+                                    |> List.filter (fun (status, _) -> status <> "DefaultResponse")
+                                    |> List.sortByDescending (fun (status, _) -> statusCode status))
+                            else
+                                responses
+                                |> List.sortByDescending (fun (status, _) -> statusCode status)
+
+                        let allClausesButFirst =
+                            responsesRevSorted |> List.tail |> List.map matchClause
+
+                        let defaultClause =
+                            responsesRevSorted |> List.head |> matchWildClause
+
+                        let clausesSorted = defaultClause :: allClausesButFirst |> List.rev
+                        SynExpr.CreateMatch(createIdent [ "status" ], clausesSorted)
 
                 let asyncBuilder expr =
                     if config.target = Target.Fable then
