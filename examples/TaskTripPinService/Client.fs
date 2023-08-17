@@ -52,10 +52,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Airlines" headers requestParts
 
-            if status = 200 then
-                return AirlinesAirlineListAirline.OK(Serializer.deserialize content)
-            else
-                return AirlinesAirlineListAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return AirlinesAirlineListAirline.OK(Serializer.deserialize content)
+            | _ -> return AirlinesAirlineListAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -66,10 +65,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/Airlines" headers requestParts
 
-            if status = 201 then
-                return AirlinesAirlineCreateAirline.Created(Serializer.deserialize content)
-            else
-                return AirlinesAirlineCreateAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return AirlinesAirlineCreateAirline.Created(Serializer.deserialize content)
+            | _ -> return AirlinesAirlineCreateAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -89,10 +87,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Airlines({AirlineCode})" headers requestParts
 
-            if status = 200 then
-                return AirlinesAirlineGetAirline.OK(Serializer.deserialize content)
-            else
-                return AirlinesAirlineGetAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return AirlinesAirlineGetAirline.OK(Serializer.deserialize content)
+            | _ -> return AirlinesAirlineGetAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -112,10 +109,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/Airlines({AirlineCode})" headers requestParts
 
-            if status = 204 then
-                return AirlinesAirlineUpdateAirline.NoContent
-            else
-                return AirlinesAirlineUpdateAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return AirlinesAirlineUpdateAirline.NoContent
+            | _ -> return AirlinesAirlineUpdateAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -132,10 +128,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/Airlines({AirlineCode})" headers requestParts
 
-            if status = 204 then
-                return AirlinesAirlineDeleteAirline.NoContent
-            else
-                return AirlinesAirlineDeleteAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return AirlinesAirlineDeleteAirline.NoContent
+            | _ -> return AirlinesAirlineDeleteAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -181,10 +176,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Airports" headers requestParts
 
-            if status = 200 then
-                return AirportsAirportListAirport.OK(Serializer.deserialize content)
-            else
-                return AirportsAirportListAirport.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return AirportsAirportListAirport.OK(Serializer.deserialize content)
+            | _ -> return AirportsAirportListAirport.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -204,10 +198,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Airports({IcaoCode})" headers requestParts
 
-            if status = 200 then
-                return AirportsAirportGetAirport.OK(Serializer.deserialize content)
-            else
-                return AirportsAirportGetAirport.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return AirportsAirportGetAirport.OK(Serializer.deserialize content)
+            | _ -> return AirportsAirportGetAirport.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -223,10 +216,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/Airports({IcaoCode})" headers requestParts
 
-            if status = 204 then
-                return AirportsAirportUpdateAirport.NoContent
-            else
-                return AirportsAirportUpdateAirport.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return AirportsAirportUpdateAirport.NoContent
+            | _ -> return AirportsAirportUpdateAirport.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -241,10 +233,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/GetNearestAirport(lat={lat},lon={lon})" headers requestParts
 
-            if status = 200 then
-                return FunctionImportGetNearestAirport.OK(Serializer.deserialize content)
-            else
-                return FunctionImportGetNearestAirport.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return FunctionImportGetNearestAirport.OK(Serializer.deserialize content)
+            | _ -> return FunctionImportGetNearestAirport.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -262,10 +253,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me" headers requestParts
 
-            if status = 200 then
-                return MePersonGetPerson.OK(Serializer.deserialize content)
-            else
-                return MePersonGetPerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MePersonGetPerson.OK(Serializer.deserialize content)
+            | _ -> return MePersonGetPerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -276,10 +266,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.patchAsync url "/Me" headers requestParts
 
-            if status = 204 then
-                return MePersonUpdatePerson.NoContent
-            else
-                return MePersonUpdatePerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MePersonUpdatePerson.NoContent
+            | _ -> return MePersonUpdatePerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -325,10 +314,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Friends" headers requestParts
 
-            if status = 200 then
-                return MeListFriends.OK(Serializer.deserialize content)
-            else
-                return MeListFriends.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeListFriends.OK(Serializer.deserialize content)
+            | _ -> return MeListFriends.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -366,10 +354,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Friends/$ref" headers requestParts
 
-            if status = 200 then
-                return MeListRefFriends.OK(Serializer.deserialize content)
-            else
-                return MeListRefFriends.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeListRefFriends.OK(Serializer.deserialize content)
+            | _ -> return MeListRefFriends.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -380,10 +367,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.postAsync url "/Me/Friends/$ref" headers requestParts
 
-            if status = 201 then
-                return MeCreateRefFriends.Created(Serializer.deserialize content)
-            else
-                return MeCreateRefFriends.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return MeCreateRefFriends.Created(Serializer.deserialize content)
+            | _ -> return MeCreateRefFriends.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -400,10 +386,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return MeGetFavoriteAirline.OK(Serializer.deserialize content)
-            else
-                return MeGetFavoriteAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeGetFavoriteAirline.OK(Serializer.deserialize content)
+            | _ -> return MeGetFavoriteAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -422,10 +407,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return MeGetFriendsTrips.OK(Serializer.deserialize content)
-            else
-                return MeGetFriendsTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeGetFriendsTrips.OK(Serializer.deserialize content)
+            | _ -> return MeGetFriendsTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -442,10 +426,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 204 then
-                return MeShareTrip.NoContent
-            else
-                return MeShareTrip.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeShareTrip.NoContent
+            | _ -> return MeShareTrip.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -463,10 +446,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Photo" headers requestParts
 
-            if status = 200 then
-                return MeGetPhoto.OK(Serializer.deserialize content)
-            else
-                return MeGetPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeGetPhoto.OK(Serializer.deserialize content)
+            | _ -> return MeGetPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -477,10 +459,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Photo/$ref" headers requestParts
 
-            if status = 200 then
-                return MeGetRefPhoto.OK(Serializer.deserialize content)
-            else
-                return MeGetRefPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeGetRefPhoto.OK(Serializer.deserialize content)
+            | _ -> return MeGetRefPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -491,10 +472,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.putAsync url "/Me/Photo/$ref" headers requestParts
 
-            if status = 204 then
-                return MeUpdateRefPhoto.NoContent
-            else
-                return MeUpdateRefPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeUpdateRefPhoto.NoContent
+            | _ -> return MeUpdateRefPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -509,10 +489,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/Me/Photo/$ref" headers requestParts
 
-            if status = 204 then
-                return MeDeleteRefPhoto.NoContent
-            else
-                return MeDeleteRefPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeDeleteRefPhoto.NoContent
+            | _ -> return MeDeleteRefPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -558,10 +537,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Trips" headers requestParts
 
-            if status = 200 then
-                return MeListTrips.OK(Serializer.deserialize content)
-            else
-                return MeListTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeListTrips.OK(Serializer.deserialize content)
+            | _ -> return MeListTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -572,10 +550,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/Me/Trips" headers requestParts
 
-            if status = 201 then
-                return MeCreateTrips.Created(Serializer.deserialize content)
-            else
-                return MeCreateTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return MeCreateTrips.Created(Serializer.deserialize content)
+            | _ -> return MeCreateTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -595,10 +572,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Trips({TripId})" headers requestParts
 
-            if status = 200 then
-                return MeGetTrips.OK(Serializer.deserialize content)
-            else
-                return MeGetTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeGetTrips.OK(Serializer.deserialize content)
+            | _ -> return MeGetTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -614,10 +590,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/Me/Trips({TripId})" headers requestParts
 
-            if status = 204 then
-                return MeUpdateTrips.NoContent
-            else
-                return MeUpdateTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeUpdateTrips.NoContent
+            | _ -> return MeUpdateTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -634,10 +609,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/Me/Trips({TripId})" headers requestParts
 
-            if status = 204 then
-                return MeDeleteTrips.NoContent
-            else
-                return MeDeleteTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeDeleteTrips.NoContent
+            | _ -> return MeDeleteTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -655,10 +629,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return MeTripsTripGetInvolvedPeople.OK(Serializer.deserialize content)
-            else
-                return MeTripsTripGetInvolvedPeople.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeTripsTripGetInvolvedPeople.OK(Serializer.deserialize content)
+            | _ -> return MeTripsTripGetInvolvedPeople.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -707,10 +680,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Trips({TripId})/Photos" headers requestParts
 
-            if status = 200 then
-                return MeTripsListPhotos.OK(Serializer.deserialize content)
-            else
-                return MeTripsListPhotos.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeTripsListPhotos.OK(Serializer.deserialize content)
+            | _ -> return MeTripsListPhotos.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -751,10 +723,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Trips({TripId})/Photos/$ref" headers requestParts
 
-            if status = 200 then
-                return MeTripsListRefPhotos.OK(Serializer.deserialize content)
-            else
-                return MeTripsListRefPhotos.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeTripsListRefPhotos.OK(Serializer.deserialize content)
+            | _ -> return MeTripsListRefPhotos.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -766,10 +737,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("TripId", tripId) ]
             let! (status, content) = OpenApiHttp.postAsync url "/Me/Trips({TripId})/Photos/$ref" headers requestParts
 
-            if status = 201 then
-                return MeTripsCreateRefPhotos.Created(Serializer.deserialize content)
-            else
-                return MeTripsCreateRefPhotos.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return MeTripsCreateRefPhotos.Created(Serializer.deserialize content)
+            | _ -> return MeTripsCreateRefPhotos.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -818,10 +788,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Me/Trips({TripId})/PlanItems" headers requestParts
 
-            if status = 200 then
-                return MeTripsListPlanItems.OK(Serializer.deserialize content)
-            else
-                return MeTripsListPlanItems.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeTripsListPlanItems.OK(Serializer.deserialize content)
+            | _ -> return MeTripsListPlanItems.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -837,10 +806,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/Me/Trips({TripId})/PlanItems" headers requestParts
 
-            if status = 201 then
-                return MeTripsCreatePlanItems.Created(Serializer.deserialize content)
-            else
-                return MeTripsCreatePlanItems.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return MeTripsCreatePlanItems.Created(Serializer.deserialize content)
+            | _ -> return MeTripsCreatePlanItems.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -863,10 +831,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/Me/Trips({TripId})/PlanItems({PlanItemId})" headers requestParts
 
-            if status = 200 then
-                return MeTripsGetPlanItems.OK(Serializer.deserialize content)
-            else
-                return MeTripsGetPlanItems.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return MeTripsGetPlanItems.OK(Serializer.deserialize content)
+            | _ -> return MeTripsGetPlanItems.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -890,10 +857,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.patchAsync url "/Me/Trips({TripId})/PlanItems({PlanItemId})" headers requestParts
 
-            if status = 204 then
-                return MeTripsUpdatePlanItems.NoContent
-            else
-                return MeTripsUpdatePlanItems.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeTripsUpdatePlanItems.NoContent
+            | _ -> return MeTripsUpdatePlanItems.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -913,10 +879,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync url "/Me/Trips({TripId})/PlanItems({PlanItemId})" headers requestParts
 
-            if status = 204 then
-                return MeTripsDeletePlanItems.NoContent
-            else
-                return MeTripsDeletePlanItems.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return MeTripsDeletePlanItems.NoContent
+            | _ -> return MeTripsDeletePlanItems.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -958,10 +923,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/People" headers requestParts
 
-            if status = 200 then
-                return PeoplePersonListPerson.OK(Serializer.deserialize content)
-            else
-                return PeoplePersonListPerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeoplePersonListPerson.OK(Serializer.deserialize content)
+            | _ -> return PeoplePersonListPerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -972,10 +936,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/People" headers requestParts
 
-            if status = 201 then
-                return PeoplePersonCreatePerson.Created(Serializer.deserialize content)
-            else
-                return PeoplePersonCreatePerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return PeoplePersonCreatePerson.Created(Serializer.deserialize content)
+            | _ -> return PeoplePersonCreatePerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -992,10 +955,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/People({UserName})" headers requestParts
 
-            if status = 200 then
-                return PeoplePersonGetPerson.OK(Serializer.deserialize content)
-            else
-                return PeoplePersonGetPerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeoplePersonGetPerson.OK(Serializer.deserialize content)
+            | _ -> return PeoplePersonGetPerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1011,10 +973,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/People({UserName})" headers requestParts
 
-            if status = 204 then
-                return PeoplePersonUpdatePerson.NoContent
-            else
-                return PeoplePersonUpdatePerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PeoplePersonUpdatePerson.NoContent
+            | _ -> return PeoplePersonUpdatePerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1031,10 +992,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/People({UserName})" headers requestParts
 
-            if status = 204 then
-                return PeoplePersonDeletePerson.NoContent
-            else
-                return PeoplePersonDeletePerson.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PeoplePersonDeletePerson.NoContent
+            | _ -> return PeoplePersonDeletePerson.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1083,10 +1043,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/People({UserName})/Friends" headers requestParts
 
-            if status = 200 then
-                return PeopleListFriends.OK(Serializer.deserialize content)
-            else
-                return PeopleListFriends.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeopleListFriends.OK(Serializer.deserialize content)
+            | _ -> return PeopleListFriends.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1105,10 +1064,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return PeoplePersonGetFavoriteAirline.OK(Serializer.deserialize content)
-            else
-                return PeoplePersonGetFavoriteAirline.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeoplePersonGetFavoriteAirline.OK(Serializer.deserialize content)
+            | _ -> return PeoplePersonGetFavoriteAirline.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1129,10 +1087,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return PeoplePersonGetFriendsTrips.OK(Serializer.deserialize content)
-            else
-                return PeoplePersonGetFriendsTrips.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeoplePersonGetFriendsTrips.OK(Serializer.deserialize content)
+            | _ -> return PeoplePersonGetFriendsTrips.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1153,10 +1110,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 204 then
-                return PeoplePersonShareTrip.NoContent
-            else
-                return PeoplePersonShareTrip.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PeoplePersonShareTrip.NoContent
+            | _ -> return PeoplePersonShareTrip.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1177,10 +1133,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
                     headers
                     requestParts
 
-            if status = 200 then
-                return PeoplePersonTripsTripGetInvolvedPeople.OK(Serializer.deserialize content)
-            else
-                return PeoplePersonTripsTripGetInvolvedPeople.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PeoplePersonTripsTripGetInvolvedPeople.OK(Serializer.deserialize content)
+            | _ -> return PeoplePersonTripsTripGetInvolvedPeople.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1226,10 +1181,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Photos" headers requestParts
 
-            if status = 200 then
-                return PhotosPhotoListPhoto.OK(Serializer.deserialize content)
-            else
-                return PhotosPhotoListPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PhotosPhotoListPhoto.OK(Serializer.deserialize content)
+            | _ -> return PhotosPhotoListPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1240,10 +1194,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/Photos" headers requestParts
 
-            if status = 201 then
-                return PhotosPhotoCreatePhoto.Created(Serializer.deserialize content)
-            else
-                return PhotosPhotoCreatePhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 201 -> return PhotosPhotoCreatePhoto.Created(Serializer.deserialize content)
+            | _ -> return PhotosPhotoCreatePhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1263,10 +1216,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/Photos({Id})" headers requestParts
 
-            if status = 200 then
-                return PhotosPhotoGetPhoto.OK(Serializer.deserialize content)
-            else
-                return PhotosPhotoGetPhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 200 -> return PhotosPhotoGetPhoto.OK(Serializer.deserialize content)
+            | _ -> return PhotosPhotoGetPhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1282,10 +1234,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/Photos({Id})" headers requestParts
 
-            if status = 204 then
-                return PhotosPhotoUpdatePhoto.NoContent
-            else
-                return PhotosPhotoUpdatePhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PhotosPhotoUpdatePhoto.NoContent
+            | _ -> return PhotosPhotoUpdatePhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1302,10 +1253,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/Photos({Id})" headers requestParts
 
-            if status = 204 then
-                return PhotosPhotoDeletePhoto.NoContent
-            else
-                return PhotosPhotoDeletePhoto.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PhotosPhotoDeletePhoto.NoContent
+            | _ -> return PhotosPhotoDeletePhoto.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1317,9 +1267,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("Id", id) ]
             let! (status, contentBinary) = OpenApiHttp.getBinaryAsync url "/Photos({Id})/$value" headers requestParts
 
-            if status = 200 then
-                return PhotosPhotoGetContent.OK contentBinary
-            else
+            match status with
+            | 200 -> return PhotosPhotoGetContent.OK contentBinary
+            | _ ->
                 let! content = Utilities.readBytesAsText contentBinary
                 return PhotosPhotoGetContent.DefaultResponse(Serializer.deserialize content)
         }
@@ -1338,10 +1288,9 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/Photos({Id})/$value" headers requestParts
 
-            if status = 204 then
-                return PhotosPhotoUpdateContent.NoContent
-            else
-                return PhotosPhotoUpdateContent.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return PhotosPhotoUpdateContent.NoContent
+            | _ -> return PhotosPhotoUpdateContent.DefaultResponse(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1352,8 +1301,7 @@ type TaskTripPinServiceClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.postAsync url "/ResetDataSource" headers requestParts
 
-            if status = 204 then
-                return ActionImportResetDataSource.NoContent
-            else
-                return ActionImportResetDataSource.DefaultResponse(Serializer.deserialize content)
+            match status with
+            | 204 -> return ActionImportResetDataSource.NoContent
+            | _ -> return ActionImportResetDataSource.DefaultResponse(Serializer.deserialize content)
         }

@@ -28,12 +28,10 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Brandings/upload" headers requestParts
 
-            if status = 200 then
-                return UploadBrandingImage.OK
-            else if status = 400 then
-                return UploadBrandingImage.BadRequest(Serializer.deserialize content)
-            else
-                return UploadBrandingImage.Unauthorized(Serializer.deserialize content)
+            match status with
+            | 200 -> return UploadBrandingImage.OK
+            | 400 -> return UploadBrandingImage.BadRequest(Serializer.deserialize content)
+            | _ -> return UploadBrandingImage.Unauthorized(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -58,10 +56,9 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/api/Datahub/datasources" headers requestParts
 
-            if status = 200 then
-                return GetDataSources.OK(Serializer.deserialize content)
-            else
-                return GetDataSources.Unauthorized content
+            match status with
+            | 200 -> return GetDataSources.OK(Serializer.deserialize content)
+            | _ -> return GetDataSources.Unauthorized content
         }
 
     ///<summary>
@@ -90,10 +87,9 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Datahub/import" headers requestParts
 
-            if status = 200 then
-                return ImportData.OK(Serializer.deserialize content)
-            else
-                return ImportData.Unauthorized content
+            match status with
+            | 200 -> return ImportData.OK(Serializer.deserialize content)
+            | _ -> return ImportData.Unauthorized content
         }
 
     member this.UploadFile(nodeId: int, ?path: string) =
@@ -105,12 +101,10 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Documents/upload" headers requestParts
 
-            if status = 200 then
-                return UploadFile.OK(Serializer.deserialize content)
-            else if status = 400 then
-                return UploadFile.BadRequest(Serializer.deserialize content)
-            else
-                return UploadFile.Unauthorized(Serializer.deserialize content)
+            match status with
+            | 200 -> return UploadFile.OK(Serializer.deserialize content)
+            | 400 -> return UploadFile.BadRequest(Serializer.deserialize content)
+            | _ -> return UploadFile.Unauthorized(Serializer.deserialize content)
         }
 
     member this.DownloadFile(nodeId: int, ?path: string) =
@@ -123,12 +117,12 @@ type FableNSwagClient(url: string, headers: list<Header>) =
             let! (status, contentBinary) =
                 OpenApiHttp.postBinaryAsync url "/api/Documents/download" headers requestParts
 
-            if status = 200 then
-                return DownloadFile.OK contentBinary
-            else if status = 400 then
+            match status with
+            | 200 -> return DownloadFile.OK contentBinary
+            | 400 ->
                 let! content = Utilities.readBytesAsText contentBinary
                 return DownloadFile.BadRequest(Serializer.deserialize content)
-            else
+            | _ ->
                 let! content = Utilities.readBytesAsText contentBinary
                 return DownloadFile.Unauthorized(Serializer.deserialize content)
         }

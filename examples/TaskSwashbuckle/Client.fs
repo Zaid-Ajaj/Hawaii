@@ -14,10 +14,8 @@ type TaskSwashbuckleClient(httpClient: HttpClient) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync httpClient "/Time" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetTime.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.BadRequest then
-                return GetTime.BadRequest(Serializer.deserialize content)
-            else
-                return GetTime.Forbidden(Serializer.deserialize content)
+            match status with
+            | HttpStatusCode.OK -> return GetTime.OK(Serializer.deserialize content)
+            | HttpStatusCode.BadRequest -> return GetTime.BadRequest(Serializer.deserialize content)
+            | _ -> return GetTime.Forbidden(Serializer.deserialize content)
         }

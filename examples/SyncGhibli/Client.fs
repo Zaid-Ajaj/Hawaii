@@ -104,12 +104,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/films" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetFilms.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetFilms.BadRequest
-        else
-            GetFilms.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetFilms.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetFilms.BadRequest
+        | _ -> GetFilms.NotFound
 
     ///<summary>
     ///Returns a film based on a single ID
@@ -126,12 +124,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/films/{id}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetFilmsById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetFilmsById.BadRequest
-        else
-            GetFilmsById.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetFilmsById.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetFilmsById.BadRequest
+        | _ -> GetFilmsById.NotFound
 
     ///<summary>
     ///The People endpoint returns information about all of the Studio Ghibli people. This broadly includes all Ghibli characters, human and non-.
@@ -149,12 +145,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/people" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetPeople.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetPeople.BadRequest
-        else
-            GetPeople.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetPeople.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetPeople.BadRequest
+        | _ -> GetPeople.NotFound
 
     ///<summary>
     ///Returns a person based on a single ID
@@ -171,12 +165,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/people/{id}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetPeopleById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetPeopleById.BadRequest
-        else
-            GetPeopleById.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetPeopleById.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetPeopleById.BadRequest
+        | _ -> GetPeopleById.NotFound
 
     ///<summary>
     ///The Locations endpoint returns information about all of the Studio Ghibli locations. This broadly includes lands, countries, and places.
@@ -194,12 +186,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/locations" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetLocations.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetLocations.BadRequest
-        else
-            GetLocations.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetLocations.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetLocations.BadRequest
+        | _ -> GetLocations.NotFound
 
     ///<summary>
     ///Returns an individual location.
@@ -216,12 +206,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/locations/{id}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetLocationsById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetLocationsById.BadRequest
-        else
-            GetLocationsById.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetLocationsById.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetLocationsById.BadRequest
+        | _ -> GetLocationsById.NotFound
 
     ///<summary>
     ///The Species endpoint returns information about all of the Studio Ghibli species. This includes humans, animals, and spirits et al.
@@ -239,12 +227,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/species" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetSpecies.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetSpecies.BadRequest
-        else
-            GetSpecies.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetSpecies.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetSpecies.BadRequest
+        | _ -> GetSpecies.NotFound
 
     ///<summary>
     ///Returns an individual species
@@ -261,12 +247,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/species/{id}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetSpeciesById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetSpeciesById.BadRequest
-        else
-            GetSpeciesById.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetSpeciesById.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetSpeciesById.BadRequest
+        | _ -> GetSpeciesById.NotFound
 
     ///<summary>
     ///The Vehicles endpoint returns information about all of the Studio Ghibli vechiles. This includes cars, ships, and planes.
@@ -284,12 +268,10 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/vehicles" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetVehicles.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetVehicles.BadRequest
-        else
-            GetVehicles.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetVehicles.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetVehicles.BadRequest
+        | _ -> GetVehicles.NotFound
 
     ///<summary>
     ///An individual vehicle
@@ -306,9 +288,7 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/vehicles/{id}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetVehiclesById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetVehiclesById.BadRequest
-        else
-            GetVehiclesById.NotFound
+        match status with
+        | HttpStatusCode.OK -> GetVehiclesById.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetVehiclesById.BadRequest
+        | _ -> GetVehiclesById.NotFound

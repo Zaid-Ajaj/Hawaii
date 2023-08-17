@@ -92,10 +92,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/anonymization/keys/{id}" headers requestParts
 
-            if status = 200 then
-                return GetAnonymizationKeysById.OK(Serializer.deserialize content)
-            else
-                return GetAnonymizationKeysById.NotFound
+            match status with
+            | 200 -> return GetAnonymizationKeysById.OK(Serializer.deserialize content)
+            | _ -> return GetAnonymizationKeysById.NotFound
         }
 
     ///<summary>
@@ -107,10 +106,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/anonymization/keys/{id}/keyvalues" headers requestParts
 
-            if status = 200 then
-                return GetAnonymizationKeysKeyvaluesById.OK(Serializer.deserialize content)
-            else
-                return GetAnonymizationKeysKeyvaluesById.NotFound
+            match status with
+            | 200 -> return GetAnonymizationKeysKeyvaluesById.OK(Serializer.deserialize content)
+            | _ -> return GetAnonymizationKeysKeyvaluesById.NotFound
         }
 
     ///<summary>
@@ -199,10 +197,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/boxes/incoming/{id}/images" headers requestParts
 
-            if status = 200 then
-                return GetBoxesIncomingImagesById.OK(Serializer.deserialize content)
-            else
-                return GetBoxesIncomingImagesById.NotFound
+            match status with
+            | 200 -> return GetBoxesIncomingImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetBoxesIncomingImagesById.NotFound
         }
 
     ///<summary>
@@ -242,10 +239,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/boxes/outgoing/{id}/images" headers requestParts
 
-            if status = 200 then
-                return GetBoxesOutgoingImagesById.OK(Serializer.deserialize content)
-            else
-                return GetBoxesOutgoingImagesById.NotFound
+            match status with
+            | 200 -> return GetBoxesOutgoingImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetBoxesOutgoingImagesById.NotFound
         }
 
     ///<summary>
@@ -272,10 +268,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/boxes/{id}/send" headers requestParts
 
-            if status = 201 then
-                return PostBoxesSendById.Created
-            else
-                return PostBoxesSendById.NotFound
+            match status with
+            | 201 -> return PostBoxesSendById.Created
+            | _ -> return PostBoxesSendById.NotFound
         }
 
     ///<summary>
@@ -497,10 +492,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/images" headers requestParts
 
-            if status = 200 then
-                return PostImages.OK(Serializer.deserialize content)
-            else
-                return PostImages.Created(Serializer.deserialize content)
+            match status with
+            | 200 -> return PostImages.OK(Serializer.deserialize content)
+            | _ -> return PostImages.Created(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -536,10 +530,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/images/export" headers requestParts
 
-            if status = 200 then
-                return PostImagesExport.OK(Serializer.deserialize content)
-            else
-                return PostImagesExport.Created
+            match status with
+            | 200 -> return PostImagesExport.OK(Serializer.deserialize content)
+            | _ -> return PostImagesExport.Created
         }
 
     ///<summary>
@@ -581,10 +574,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, contentBinary) = OpenApiHttp.getBinaryAsync url "/images/{id}" headers requestParts
 
-            if status = 200 then
-                return GetImagesById.OK contentBinary
-            else
-                return GetImagesById.NotFound contentBinary
+            match status with
+            | 200 -> return GetImagesById.OK contentBinary
+            | _ -> return GetImagesById.NotFound contentBinary
         }
 
     ///<summary>
@@ -600,10 +592,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/images/{id}/anonymize" headers requestParts
 
-            if status = 200 then
-                return PutImagesAnonymizeById.OK(Serializer.deserialize content)
-            else
-                return PutImagesAnonymizeById.NotFound
+            match status with
+            | 200 -> return PutImagesAnonymizeById.OK(Serializer.deserialize content)
+            | _ -> return PutImagesAnonymizeById.NotFound
         }
 
     ///<summary>
@@ -619,10 +610,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/images/{id}/anonymized" headers requestParts
 
-            if status = 200 then
-                return PostImagesAnonymizedById.OK
-            else
-                return PostImagesAnonymizedById.NotFound
+            match status with
+            | 200 -> return PostImagesAnonymizedById.OK
+            | _ -> return PostImagesAnonymizedById.NotFound
         }
 
     ///<summary>
@@ -634,10 +624,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/images/{id}/attributes" headers requestParts
 
-            if status = 200 then
-                return GetImagesAttributesById.OK(Serializer.deserialize content)
-            else
-                return GetImagesAttributesById.NotFound
+            match status with
+            | 200 -> return GetImagesAttributesById.OK(Serializer.deserialize content)
+            | _ -> return GetImagesAttributesById.NotFound
         }
 
     ///<summary>
@@ -649,10 +638,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/images/{id}/imageinformation" headers requestParts
 
-            if status = 200 then
-                return GetImagesImageinformationById.OK(Serializer.deserialize content)
-            else
-                return GetImagesImageinformationById.NotFound
+            match status with
+            | 200 -> return GetImagesImageinformationById.OK(Serializer.deserialize content)
+            | _ -> return GetImagesImageinformationById.NotFound
         }
 
     ///<summary>
@@ -693,10 +681,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, contentBinary) = OpenApiHttp.getBinaryAsync url "/images/{id}/png" headers requestParts
 
-            if status = 200 then
-                return GetImagesPngById.OK contentBinary
-            else
-                return GetImagesPngById.NotFound contentBinary
+            match status with
+            | 200 -> return GetImagesPngById.OK contentBinary
+            | _ -> return GetImagesPngById.NotFound contentBinary
         }
 
     ///<summary>
@@ -748,10 +735,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/import/sessions/{id}" headers requestParts
 
-            if status = 200 then
-                return GetImportSessionsById.OK(Serializer.deserialize content)
-            else
-                return GetImportSessionsById.NotFound
+            match status with
+            | 200 -> return GetImportSessionsById.OK(Serializer.deserialize content)
+            | _ -> return GetImportSessionsById.NotFound
         }
 
     ///<summary>
@@ -763,10 +749,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/import/sessions/{id}/images" headers requestParts
 
-            if status = 200 then
-                return GetImportSessionsImagesById.OK(Serializer.deserialize content)
-            else
-                return GetImportSessionsImagesById.NotFound
+            match status with
+            | 200 -> return GetImportSessionsImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetImportSessionsImagesById.NotFound
         }
 
     ///<summary>
@@ -782,12 +767,10 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/import/sessions/{id}/images" headers requestParts
 
-            if status = 200 then
-                return PostImportSessionsImagesById.OK(Serializer.deserialize content)
-            else if status = 201 then
-                return PostImportSessionsImagesById.Created(Serializer.deserialize content)
-            else
-                return PostImportSessionsImagesById.NotFound
+            match status with
+            | 200 -> return PostImportSessionsImagesById.OK(Serializer.deserialize content)
+            | 201 -> return PostImportSessionsImagesById.Created(Serializer.deserialize content)
+            | _ -> return PostImportSessionsImagesById.NotFound
         }
 
     ///<summary>
@@ -898,10 +881,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/flatseries/{id}" headers requestParts
 
-            if status = 200 then
-                return GetMetadataFlatseriesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataFlatseriesById.NotFound
+            match status with
+            | 200 -> return GetMetadataFlatseriesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataFlatseriesById.NotFound
         }
 
     ///<summary>
@@ -942,10 +924,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/images/{id}" headers requestParts
 
-            if status = 200 then
-                return GetMetadataImagesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataImagesById.NotFound
+            match status with
+            | 200 -> return GetMetadataImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataImagesById.NotFound
         }
 
     ///<summary>
@@ -1012,10 +993,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/patients/{id}" headers requestParts
 
-            if status = 200 then
-                return GetMetadataPatientsById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataPatientsById.NotFound
+            match status with
+            | 200 -> return GetMetadataPatientsById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataPatientsById.NotFound
         }
 
     ///<summary>
@@ -1095,10 +1075,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/series/{id}" headers requestParts
 
-            if status = 200 then
-                return GetMetadataSeriesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesById.NotFound
+            match status with
+            | 200 -> return GetMetadataSeriesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesById.NotFound
         }
 
     ///<summary>
@@ -1110,10 +1089,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/series/{id}/seriestags" headers requestParts
 
-            if status = 200 then
-                return GetMetadataSeriesSeriestagsById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSeriestagsById.NotFound
+            match status with
+            | 200 -> return GetMetadataSeriesSeriestagsById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSeriestagsById.NotFound
         }
 
     ///<summary>
@@ -1129,10 +1107,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/metadata/series/{id}/seriestags" headers requestParts
 
-            if status = 201 then
-                return PostMetadataSeriesSeriestagsById.Created(Serializer.deserialize content)
-            else
-                return PostMetadataSeriesSeriestagsById.NotFound
+            match status with
+            | 201 -> return PostMetadataSeriesSeriestagsById.Created(Serializer.deserialize content)
+            | _ -> return PostMetadataSeriesSeriestagsById.NotFound
         }
 
     ///<summary>
@@ -1158,10 +1135,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/series/{id}/seriestypes" headers requestParts
 
-            if status = 200 then
-                return GetMetadataSeriesSeriestypesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSeriestypesById.NotFound
+            match status with
+            | 200 -> return GetMetadataSeriesSeriestypesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSeriestypesById.NotFound
         }
 
     ///<summary>
@@ -1173,10 +1149,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/series/{id}/source" headers requestParts
 
-            if status = 200 then
-                return GetMetadataSeriesSourceById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSourceById.NotFound
+            match status with
+            | 200 -> return GetMetadataSeriesSourceById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSourceById.NotFound
         }
 
     ///<summary>
@@ -1231,10 +1206,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.putAsync url "/metadata/series/{seriesId}/seriestypes/{seriesTypeId}" headers requestParts
 
-            if status = 204 then
-                return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NoContent
-            else
-                return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NotFound
+            match status with
+            | 204 -> return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NoContent
+            | _ -> return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NotFound
         }
 
     ///<summary>
@@ -1302,10 +1276,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/studies/{id}" headers requestParts
 
-            if status = 200 then
-                return GetMetadataStudiesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataStudiesById.NotFound
+            match status with
+            | 200 -> return GetMetadataStudiesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataStudiesById.NotFound
         }
 
     ///<summary>
@@ -1328,10 +1301,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/metadata/studies/{id}/images" headers requestParts
 
-            if status = 200 then
-                return GetMetadataStudiesImagesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataStudiesImagesById.NotFound
+            match status with
+            | 200 -> return GetMetadataStudiesImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataStudiesImagesById.NotFound
         }
 
     ///<summary>
@@ -1359,10 +1331,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent scp ]
             let! (status, content) = OpenApiHttp.postAsync url "/scps" headers requestParts
 
-            if status = 201 then
-                return PostScps.Created(Serializer.deserialize content)
-            else
-                return PostScps.BadRequest
+            match status with
+            | 201 -> return PostScps.Created(Serializer.deserialize content)
+            | _ -> return PostScps.BadRequest
         }
 
     ///<summary>
@@ -1401,10 +1372,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent scu ]
             let! (status, content) = OpenApiHttp.postAsync url "/scus" headers requestParts
 
-            if status = 201 then
-                return PostScus.Created(Serializer.deserialize content)
-            else
-                return PostScus.BadRequest
+            match status with
+            | 201 -> return PostScus.Created(Serializer.deserialize content)
+            | _ -> return PostScus.BadRequest
         }
 
     ///<summary>
@@ -1431,10 +1401,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/scus/{id}/send" headers requestParts
 
-            if status = 204 then
-                return PostScusSendById.NoContent
-            else
-                return PostScusSendById.NotFound
+            match status with
+            | 204 -> return PostScusSendById.NoContent
+            | _ -> return PostScusSendById.NotFound
         }
 
     ///<summary>
@@ -1642,10 +1611,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/transactions/{token}/image" headers requestParts
 
-            if status = 204 then
-                return PostTransactionsImageByToken.NoContent
-            else
-                return PostTransactionsImageByToken.Unauthorized
+            match status with
+            | 204 -> return PostTransactionsImageByToken.NoContent
+            | _ -> return PostTransactionsImageByToken.Unauthorized
         }
 
     ///<summary>
@@ -1664,12 +1632,10 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync url "/transactions/{token}/outgoing" headers requestParts
 
-            if status = 200 then
-                return GetTransactionsOutgoingByToken.OK contentBinary
-            else if status = 401 then
-                return GetTransactionsOutgoingByToken.Unauthorized contentBinary
-            else
-                return GetTransactionsOutgoingByToken.NotFound contentBinary
+            match status with
+            | 200 -> return GetTransactionsOutgoingByToken.OK contentBinary
+            | 401 -> return GetTransactionsOutgoingByToken.Unauthorized contentBinary
+            | _ -> return GetTransactionsOutgoingByToken.NotFound contentBinary
         }
 
     ///<summary>
@@ -1690,10 +1656,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.postAsync url "/transactions/{token}/outgoing/done" headers requestParts
 
-            if status = 204 then
-                return PostTransactionsOutgoingDoneByToken.NoContent
-            else
-                return PostTransactionsOutgoingDoneByToken.Unauthorized
+            match status with
+            | 204 -> return PostTransactionsOutgoingDoneByToken.NoContent
+            | _ -> return PostTransactionsOutgoingDoneByToken.Unauthorized
         }
 
     ///<summary>
@@ -1714,10 +1679,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.postAsync url "/transactions/{token}/outgoing/failed" headers requestParts
 
-            if status = 204 then
-                return PostTransactionsOutgoingFailedByToken.NoContent
-            else
-                return PostTransactionsOutgoingFailedByToken.Unauthorized
+            match status with
+            | 204 -> return PostTransactionsOutgoingFailedByToken.NoContent
+            | _ -> return PostTransactionsOutgoingFailedByToken.Unauthorized
         }
 
     ///<summary>
@@ -1729,12 +1693,10 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("token", token) ]
             let! (status, content) = OpenApiHttp.getAsync url "/transactions/{token}/outgoing/poll" headers requestParts
 
-            if status = 200 then
-                return GetTransactionsOutgoingPollByToken.OK(Serializer.deserialize content)
-            else if status = 401 then
-                return GetTransactionsOutgoingPollByToken.Unauthorized
-            else
-                return GetTransactionsOutgoingPollByToken.NotFound
+            match status with
+            | 200 -> return GetTransactionsOutgoingPollByToken.OK(Serializer.deserialize content)
+            | 401 -> return GetTransactionsOutgoingPollByToken.Unauthorized
+            | _ -> return GetTransactionsOutgoingPollByToken.NotFound
         }
 
     ///<summary>
@@ -1750,12 +1712,10 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/transactions/{token}/status" headers requestParts
 
-            if status = 200 then
-                return GetTransactionsStatusByToken.OK
-            else if status = 401 then
-                return GetTransactionsStatusByToken.Unauthorized
-            else
-                return GetTransactionsStatusByToken.NotFound
+            match status with
+            | 200 -> return GetTransactionsStatusByToken.OK
+            | 401 -> return GetTransactionsStatusByToken.Unauthorized
+            | _ -> return GetTransactionsStatusByToken.NotFound
         }
 
     ///<summary>
@@ -1773,10 +1733,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/transactions/{token}/status" headers requestParts
 
-            if status = 204 then
-                return PutTransactionsStatusByToken.NoContent
-            else
-                return PutTransactionsStatusByToken.NotFound
+            match status with
+            | 204 -> return PutTransactionsStatusByToken.NoContent
+            | _ -> return PutTransactionsStatusByToken.NotFound
         }
 
     ///<summary>
@@ -1814,10 +1773,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/users/current" headers requestParts
 
-            if status = 200 then
-                return GetUsersCurrent.OK(Serializer.deserialize content)
-            else
-                return GetUsersCurrent.NotFound
+            match status with
+            | 200 -> return GetUsersCurrent.OK(Serializer.deserialize content)
+            | _ -> return GetUsersCurrent.NotFound
         }
 
     ///<summary>
@@ -1828,10 +1786,9 @@ type FableSliceboxClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent userPass ]
             let! (status, content) = OpenApiHttp.postAsync url "/users/login" headers requestParts
 
-            if status = 201 then
-                return PostUsersLogin.Created
-            else
-                return PostUsersLogin.Unauthorized
+            match status with
+            | 201 -> return PostUsersLogin.Created
+            | _ -> return PostUsersLogin.Unauthorized
         }
 
     ///<summary>

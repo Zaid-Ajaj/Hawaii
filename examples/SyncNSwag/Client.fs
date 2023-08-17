@@ -36,12 +36,10 @@ type SyncNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Brandings/upload" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            UploadBrandingImage.OK
-        else if status = HttpStatusCode.BadRequest then
-            UploadBrandingImage.BadRequest(Serializer.deserialize content)
-        else
-            UploadBrandingImage.Unauthorized(Serializer.deserialize content)
+        match status with
+        | HttpStatusCode.OK -> UploadBrandingImage.OK
+        | HttpStatusCode.BadRequest -> UploadBrandingImage.BadRequest(Serializer.deserialize content)
+        | _ -> UploadBrandingImage.Unauthorized(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieves the data sources for a supplier (data measuring company) for the specified period.
@@ -72,10 +70,9 @@ type SyncNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/api/Datahub/datasources" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetDataSources.OK(Serializer.deserialize content)
-        else
-            GetDataSources.Unauthorized content
+        match status with
+        | HttpStatusCode.OK -> GetDataSources.OK(Serializer.deserialize content)
+        | _ -> GetDataSources.Unauthorized content
 
     ///<summary>
     ///Expects the request body to be JSON formatted as follows:
@@ -104,10 +101,9 @@ type SyncNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Datahub/import" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            ImportData.OK(Serializer.deserialize content)
-        else
-            ImportData.Unauthorized content
+        match status with
+        | HttpStatusCode.OK -> ImportData.OK(Serializer.deserialize content)
+        | _ -> ImportData.Unauthorized content
 
     member this.UploadFile(nodeId: int, ?path: string, ?cancellationToken: CancellationToken) =
         let requestParts =
@@ -118,12 +114,10 @@ type SyncNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Documents/upload" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            UploadFile.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            UploadFile.BadRequest(Serializer.deserialize content)
-        else
-            UploadFile.Unauthorized(Serializer.deserialize content)
+        match status with
+        | HttpStatusCode.OK -> UploadFile.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> UploadFile.BadRequest(Serializer.deserialize content)
+        | _ -> UploadFile.Unauthorized(Serializer.deserialize content)
 
     member this.DownloadFile(nodeId: int, ?path: string, ?cancellationToken: CancellationToken) =
         let requestParts =
@@ -134,12 +128,12 @@ type SyncNSwagClient(httpClient: HttpClient) =
         let (status, contentBinary) =
             OpenApiHttp.postBinary httpClient "/api/Documents/download" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DownloadFile.OK contentBinary
-        else if status = HttpStatusCode.BadRequest then
+        match status with
+        | HttpStatusCode.OK -> DownloadFile.OK contentBinary
+        | HttpStatusCode.BadRequest ->
             let content = Encoding.UTF8.GetString contentBinary
             DownloadFile.BadRequest(Serializer.deserialize content)
-        else
+        | _ ->
             let content = Encoding.UTF8.GetString contentBinary
             DownloadFile.Unauthorized(Serializer.deserialize content)
 

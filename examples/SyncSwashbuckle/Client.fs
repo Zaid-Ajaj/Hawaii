@@ -14,9 +14,7 @@ type SyncSwashbuckleClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/Time" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetTime.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetTime.BadRequest(Serializer.deserialize content)
-        else
-            GetTime.Forbidden(Serializer.deserialize content)
+        match status with
+        | HttpStatusCode.OK -> GetTime.OK(Serializer.deserialize content)
+        | HttpStatusCode.BadRequest -> GetTime.BadRequest(Serializer.deserialize content)
+        | _ -> GetTime.Forbidden(Serializer.deserialize content)
