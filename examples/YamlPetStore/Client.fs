@@ -23,14 +23,11 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync httpClient "/pet" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdatePet.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.BadRequest then
-                return UpdatePet.BadRequest
-            else if status = HttpStatusCode.NotFound then
-                return UpdatePet.NotFound
-            else
-                return UpdatePet.MethodNotAllowed
+            match int status with
+            | 200 -> return UpdatePet.OK(Serializer.deserialize content)
+            | 400 -> return UpdatePet.BadRequest
+            | 404 -> return UpdatePet.NotFound
+            | _ -> return UpdatePet.MethodNotAllowed
         }
 
     ///<summary>
@@ -41,10 +38,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/pet" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return AddPet.OK(Serializer.deserialize content)
-            else
-                return AddPet.MethodNotAllowed
+            match int status with
+            | 200 -> return AddPet.OK(Serializer.deserialize content)
+            | _ -> return AddPet.MethodNotAllowed
         }
 
     ///<summary>
@@ -60,10 +56,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/pet/findByStatus" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FindPetsByStatus.OK(Serializer.deserialize content)
-            else
-                return FindPetsByStatus.BadRequest
+            match int status with
+            | 200 -> return FindPetsByStatus.OK(Serializer.deserialize content)
+            | _ -> return FindPetsByStatus.BadRequest
         }
 
     ///<summary>
@@ -79,10 +74,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/pet/findByTags" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FindPetsByTags.OK(Serializer.deserialize content)
-            else
-                return FindPetsByTags.BadRequest
+            match int status with
+            | 200 -> return FindPetsByTags.OK(Serializer.deserialize content)
+            | _ -> return FindPetsByTags.BadRequest
         }
 
     ///<summary>
@@ -95,12 +89,10 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("petId", petId) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/pet/{petId}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetPetById.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.BadRequest then
-                return GetPetById.BadRequest
-            else
-                return GetPetById.NotFound
+            match int status with
+            | 200 -> return GetPetById.OK(Serializer.deserialize content)
+            | 400 -> return GetPetById.BadRequest
+            | _ -> return GetPetById.NotFound
         }
 
     ///<summary>
@@ -121,10 +113,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/pet/{petId}" requestParts cancellationToken
 
-            if status = HttpStatusCode.MethodNotAllowed then
-                return UpdatePetWithForm.MethodNotAllowed
-            else
-                return UpdatePetWithForm.DefaultResponse
+            match int status with
+            | 405 -> return UpdatePetWithForm.MethodNotAllowed
+            | _ -> return UpdatePetWithForm.DefaultResponse
         }
 
     ///<summary>
@@ -142,10 +133,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/pet/{petId}" requestParts cancellationToken
 
-            if status = HttpStatusCode.BadRequest then
-                return DeletePet.BadRequest
-            else
-                return DeletePet.DefaultResponse
+            match int status with
+            | 400 -> return DeletePet.BadRequest
+            | _ -> return DeletePet.DefaultResponse
         }
 
     ///<summary>
@@ -194,10 +184,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/store/order" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PlaceOrder.OK(Serializer.deserialize content)
-            else
-                return PlaceOrder.MethodNotAllowed
+            match int status with
+            | 200 -> return PlaceOrder.OK(Serializer.deserialize content)
+            | _ -> return PlaceOrder.MethodNotAllowed
         }
 
     ///<summary>
@@ -213,12 +202,10 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/store/order/{orderId}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetOrderById.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.BadRequest then
-                return GetOrderById.BadRequest
-            else
-                return GetOrderById.NotFound
+            match int status with
+            | 200 -> return GetOrderById.OK(Serializer.deserialize content)
+            | 400 -> return GetOrderById.BadRequest
+            | _ -> return GetOrderById.NotFound
         }
 
     ///<summary>
@@ -234,12 +221,10 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync httpClient "/store/order/{orderId}" requestParts cancellationToken
 
-            if status = HttpStatusCode.BadRequest then
-                return DeleteOrder.BadRequest
-            else if status = HttpStatusCode.NotFound then
-                return DeleteOrder.NotFound
-            else
-                return DeleteOrder.DefaultResponse
+            match int status with
+            | 400 -> return DeleteOrder.BadRequest
+            | 404 -> return DeleteOrder.NotFound
+            | _ -> return DeleteOrder.DefaultResponse
         }
 
     ///<summary>
@@ -262,10 +247,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/user/createWithList" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateUsersWithListInput.OK(Serializer.deserialize content)
-            else
-                return CreateUsersWithListInput.DefaultResponse
+            match int status with
+            | 200 -> return CreateUsersWithListInput.OK(Serializer.deserialize content)
+            | _ -> return CreateUsersWithListInput.DefaultResponse
         }
 
     ///<summary>
@@ -284,10 +268,9 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/user/login" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return LoginUser.OK content
-            else
-                return LoginUser.BadRequest
+            match int status with
+            | 200 -> return LoginUser.OK content
+            | _ -> return LoginUser.BadRequest
         }
 
     ///<summary>
@@ -312,12 +295,10 @@ type YamlPetStoreClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/user/{username}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetUserByName.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.BadRequest then
-                return GetUserByName.BadRequest
-            else
-                return GetUserByName.NotFound
+            match int status with
+            | 200 -> return GetUserByName.OK(Serializer.deserialize content)
+            | 400 -> return GetUserByName.BadRequest
+            | _ -> return GetUserByName.NotFound
         }
 
     ///<summary>
@@ -349,10 +330,8 @@ type YamlPetStoreClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync httpClient "/user/{username}" requestParts cancellationToken
 
-            if status = HttpStatusCode.BadRequest then
-                return DeleteUser.BadRequest
-            else if status = HttpStatusCode.NotFound then
-                return DeleteUser.NotFound
-            else
-                return DeleteUser.DefaultResponse
+            match int status with
+            | 400 -> return DeleteUser.BadRequest
+            | 404 -> return DeleteUser.NotFound
+            | _ -> return DeleteUser.DefaultResponse
         }

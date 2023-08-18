@@ -116,10 +116,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/anonymization/keys/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetAnonymizationKeysById.OK(Serializer.deserialize content)
-            else
-                return GetAnonymizationKeysById.NotFound
+            match int status with
+            | 200 -> return GetAnonymizationKeysById.OK(Serializer.deserialize content)
+            | _ -> return GetAnonymizationKeysById.NotFound
         }
 
     ///<summary>
@@ -134,10 +133,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/anonymization/keys/{id}/keyvalues" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetAnonymizationKeysKeyvaluesById.OK(Serializer.deserialize content)
-            else
-                return GetAnonymizationKeysKeyvaluesById.NotFound
+            match int status with
+            | 200 -> return GetAnonymizationKeysKeyvaluesById.OK(Serializer.deserialize content)
+            | _ -> return GetAnonymizationKeysKeyvaluesById.NotFound
         }
 
     ///<summary>
@@ -244,10 +242,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/boxes/incoming/{id}/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetBoxesIncomingImagesById.OK(Serializer.deserialize content)
-            else
-                return GetBoxesIncomingImagesById.NotFound
+            match int status with
+            | 200 -> return GetBoxesIncomingImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetBoxesIncomingImagesById.NotFound
         }
 
     ///<summary>
@@ -295,10 +292,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/boxes/outgoing/{id}/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetBoxesOutgoingImagesById.OK(Serializer.deserialize content)
-            else
-                return GetBoxesOutgoingImagesById.NotFound
+            match int status with
+            | 200 -> return GetBoxesOutgoingImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetBoxesOutgoingImagesById.NotFound
         }
 
     ///<summary>
@@ -332,10 +328,9 @@ type SliceboxClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/boxes/{id}/send" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostBoxesSendById.Created
-            else
-                return PostBoxesSendById.NotFound
+            match int status with
+            | 201 -> return PostBoxesSendById.Created
+            | _ -> return PostBoxesSendById.NotFound
         }
 
     ///<summary>
@@ -606,10 +601,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PostImages.OK(Serializer.deserialize content)
-            else
-                return PostImages.Created(Serializer.deserialize content)
+            match int status with
+            | 200 -> return PostImages.OK(Serializer.deserialize content)
+            | _ -> return PostImages.Created(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -649,10 +643,9 @@ type SliceboxClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/images/export" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PostImagesExport.OK(Serializer.deserialize content)
-            else
-                return PostImagesExport.Created
+            match int status with
+            | 200 -> return PostImagesExport.OK(Serializer.deserialize content)
+            | _ -> return PostImagesExport.Created
         }
 
     ///<summary>
@@ -705,10 +698,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync httpClient "/images/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImagesById.OK contentBinary
-            else
-                return GetImagesById.NotFound contentBinary
+            match int status with
+            | 200 -> return GetImagesById.OK contentBinary
+            | _ -> return GetImagesById.NotFound contentBinary
         }
 
     ///<summary>
@@ -731,10 +723,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.putAsync httpClient "/images/{id}/anonymize" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PutImagesAnonymizeById.OK(Serializer.deserialize content)
-            else
-                return PutImagesAnonymizeById.NotFound
+            match int status with
+            | 200 -> return PutImagesAnonymizeById.OK(Serializer.deserialize content)
+            | _ -> return PutImagesAnonymizeById.NotFound
         }
 
     ///<summary>
@@ -757,10 +748,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/images/{id}/anonymized" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PostImagesAnonymizedById.OK
-            else
-                return PostImagesAnonymizedById.NotFound
+            match int status with
+            | 200 -> return PostImagesAnonymizedById.OK
+            | _ -> return PostImagesAnonymizedById.NotFound
         }
 
     ///<summary>
@@ -775,10 +765,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/images/{id}/attributes" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImagesAttributesById.OK(Serializer.deserialize content)
-            else
-                return GetImagesAttributesById.NotFound
+            match int status with
+            | 200 -> return GetImagesAttributesById.OK(Serializer.deserialize content)
+            | _ -> return GetImagesAttributesById.NotFound
         }
 
     ///<summary>
@@ -793,10 +782,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/images/{id}/imageinformation" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImagesImageinformationById.OK(Serializer.deserialize content)
-            else
-                return GetImagesImageinformationById.NotFound
+            match int status with
+            | 200 -> return GetImagesImageinformationById.OK(Serializer.deserialize content)
+            | _ -> return GetImagesImageinformationById.NotFound
         }
 
     ///<summary>
@@ -855,10 +843,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync httpClient "/images/{id}/png" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImagesPngById.OK contentBinary
-            else
-                return GetImagesPngById.NotFound contentBinary
+            match int status with
+            | 200 -> return GetImagesPngById.OK contentBinary
+            | _ -> return GetImagesPngById.NotFound contentBinary
         }
 
     ///<summary>
@@ -918,10 +905,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/import/sessions/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImportSessionsById.OK(Serializer.deserialize content)
-            else
-                return GetImportSessionsById.NotFound
+            match int status with
+            | 200 -> return GetImportSessionsById.OK(Serializer.deserialize content)
+            | _ -> return GetImportSessionsById.NotFound
         }
 
     ///<summary>
@@ -936,10 +922,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/import/sessions/{id}/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetImportSessionsImagesById.OK(Serializer.deserialize content)
-            else
-                return GetImportSessionsImagesById.NotFound
+            match int status with
+            | 200 -> return GetImportSessionsImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetImportSessionsImagesById.NotFound
         }
 
     ///<summary>
@@ -957,12 +942,10 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/import/sessions/{id}/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return PostImportSessionsImagesById.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Created then
-                return PostImportSessionsImagesById.Created(Serializer.deserialize content)
-            else
-                return PostImportSessionsImagesById.NotFound
+            match int status with
+            | 200 -> return PostImportSessionsImagesById.OK(Serializer.deserialize content)
+            | 201 -> return PostImportSessionsImagesById.Created(Serializer.deserialize content)
+            | _ -> return PostImportSessionsImagesById.NotFound
         }
 
     ///<summary>
@@ -1092,10 +1075,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/flatseries/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataFlatseriesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataFlatseriesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataFlatseriesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataFlatseriesById.NotFound
         }
 
     ///<summary>
@@ -1149,10 +1131,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/images/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataImagesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataImagesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataImagesById.NotFound
         }
 
     ///<summary>
@@ -1227,10 +1208,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/patients/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataPatientsById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataPatientsById.NotFound
+            match int status with
+            | 200 -> return GetMetadataPatientsById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataPatientsById.NotFound
         }
 
     ///<summary>
@@ -1328,10 +1308,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/series/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataSeriesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataSeriesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesById.NotFound
         }
 
     ///<summary>
@@ -1346,10 +1325,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/series/{id}/seriestags" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataSeriesSeriestagsById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSeriestagsById.NotFound
+            match int status with
+            | 200 -> return GetMetadataSeriesSeriestagsById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSeriestagsById.NotFound
         }
 
     ///<summary>
@@ -1367,10 +1345,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/metadata/series/{id}/seriestags" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostMetadataSeriesSeriestagsById.Created(Serializer.deserialize content)
-            else
-                return PostMetadataSeriesSeriestagsById.NotFound
+            match int status with
+            | 201 -> return PostMetadataSeriesSeriestagsById.Created(Serializer.deserialize content)
+            | _ -> return PostMetadataSeriesSeriestagsById.NotFound
         }
 
     ///<summary>
@@ -1400,10 +1377,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/series/{id}/seriestypes" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataSeriesSeriestypesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSeriestypesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataSeriesSeriestypesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSeriestypesById.NotFound
         }
 
     ///<summary>
@@ -1418,10 +1394,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/series/{id}/source" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataSeriesSourceById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataSeriesSourceById.NotFound
+            match int status with
+            | 200 -> return GetMetadataSeriesSourceById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataSeriesSourceById.NotFound
         }
 
     ///<summary>
@@ -1502,10 +1477,9 @@ type SliceboxClient(httpClient: HttpClient) =
                     requestParts
                     cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NoContent
-            else
-                return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NotFound
+            match int status with
+            | 204 -> return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NoContent
+            | _ -> return PutMetadataSeriesSeriestypesBySeriesIdAndSeriesTypeId.NotFound
         }
 
     ///<summary>
@@ -1584,10 +1558,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/studies/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataStudiesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataStudiesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataStudiesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataStudiesById.NotFound
         }
 
     ///<summary>
@@ -1619,10 +1592,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/metadata/studies/{id}/images" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetMetadataStudiesImagesById.OK(Serializer.deserialize content)
-            else
-                return GetMetadataStudiesImagesById.NotFound
+            match int status with
+            | 200 -> return GetMetadataStudiesImagesById.OK(Serializer.deserialize content)
+            | _ -> return GetMetadataStudiesImagesById.NotFound
         }
 
     ///<summary>
@@ -1651,10 +1623,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent scp ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/scps" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostScps.Created(Serializer.deserialize content)
-            else
-                return PostScps.BadRequest
+            match int status with
+            | 201 -> return PostScps.Created(Serializer.deserialize content)
+            | _ -> return PostScps.BadRequest
         }
 
     ///<summary>
@@ -1695,10 +1666,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent scu ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/scus" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostScus.Created(Serializer.deserialize content)
-            else
-                return PostScus.BadRequest
+            match int status with
+            | 201 -> return PostScus.Created(Serializer.deserialize content)
+            | _ -> return PostScus.BadRequest
         }
 
     ///<summary>
@@ -1727,10 +1697,9 @@ type SliceboxClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/scus/{id}/send" requestParts cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PostScusSendById.NoContent
-            else
-                return PostScusSendById.NotFound
+            match int status with
+            | 204 -> return PostScusSendById.NoContent
+            | _ -> return PostScusSendById.NotFound
         }
 
     ///<summary>
@@ -1982,10 +1951,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/transactions/{token}/image" requestParts cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PostTransactionsImageByToken.NoContent
-            else
-                return PostTransactionsImageByToken.Unauthorized
+            match int status with
+            | 204 -> return PostTransactionsImageByToken.NoContent
+            | _ -> return PostTransactionsImageByToken.Unauthorized
         }
 
     ///<summary>
@@ -2011,12 +1979,10 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync httpClient "/transactions/{token}/outgoing" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetTransactionsOutgoingByToken.OK contentBinary
-            else if status = HttpStatusCode.Unauthorized then
-                return GetTransactionsOutgoingByToken.Unauthorized contentBinary
-            else
-                return GetTransactionsOutgoingByToken.NotFound contentBinary
+            match int status with
+            | 200 -> return GetTransactionsOutgoingByToken.OK contentBinary
+            | 401 -> return GetTransactionsOutgoingByToken.Unauthorized contentBinary
+            | _ -> return GetTransactionsOutgoingByToken.NotFound contentBinary
         }
 
     ///<summary>
@@ -2039,10 +2005,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/transactions/{token}/outgoing/done" requestParts cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PostTransactionsOutgoingDoneByToken.NoContent
-            else
-                return PostTransactionsOutgoingDoneByToken.Unauthorized
+            match int status with
+            | 204 -> return PostTransactionsOutgoingDoneByToken.NoContent
+            | _ -> return PostTransactionsOutgoingDoneByToken.Unauthorized
         }
 
     ///<summary>
@@ -2065,10 +2030,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/transactions/{token}/outgoing/failed" requestParts cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PostTransactionsOutgoingFailedByToken.NoContent
-            else
-                return PostTransactionsOutgoingFailedByToken.Unauthorized
+            match int status with
+            | 204 -> return PostTransactionsOutgoingFailedByToken.NoContent
+            | _ -> return PostTransactionsOutgoingFailedByToken.Unauthorized
         }
 
     ///<summary>
@@ -2083,12 +2047,10 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/transactions/{token}/outgoing/poll" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetTransactionsOutgoingPollByToken.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return GetTransactionsOutgoingPollByToken.Unauthorized
-            else
-                return GetTransactionsOutgoingPollByToken.NotFound
+            match int status with
+            | 200 -> return GetTransactionsOutgoingPollByToken.OK(Serializer.deserialize content)
+            | 401 -> return GetTransactionsOutgoingPollByToken.Unauthorized
+            | _ -> return GetTransactionsOutgoingPollByToken.NotFound
         }
 
     ///<summary>
@@ -2111,12 +2073,10 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/transactions/{token}/status" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetTransactionsStatusByToken.OK
-            else if status = HttpStatusCode.Unauthorized then
-                return GetTransactionsStatusByToken.Unauthorized
-            else
-                return GetTransactionsStatusByToken.NotFound
+            match int status with
+            | 200 -> return GetTransactionsStatusByToken.OK
+            | 401 -> return GetTransactionsStatusByToken.Unauthorized
+            | _ -> return GetTransactionsStatusByToken.NotFound
         }
 
     ///<summary>
@@ -2142,10 +2102,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.putAsync httpClient "/transactions/{token}/status" requestParts cancellationToken
 
-            if status = HttpStatusCode.NoContent then
-                return PutTransactionsStatusByToken.NoContent
-            else
-                return PutTransactionsStatusByToken.NotFound
+            match int status with
+            | 204 -> return PutTransactionsStatusByToken.NoContent
+            | _ -> return PutTransactionsStatusByToken.NotFound
         }
 
     ///<summary>
@@ -2184,10 +2143,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync httpClient "/users/current" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return GetUsersCurrent.OK(Serializer.deserialize content)
-            else
-                return GetUsersCurrent.NotFound
+            match int status with
+            | 200 -> return GetUsersCurrent.OK(Serializer.deserialize content)
+            | _ -> return GetUsersCurrent.NotFound
         }
 
     ///<summary>
@@ -2198,10 +2156,9 @@ type SliceboxClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent userPass ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/users/login" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostUsersLogin.Created
-            else
-                return PostUsersLogin.Unauthorized
+            match int status with
+            | 201 -> return PostUsersLogin.Created
+            | _ -> return PostUsersLogin.Unauthorized
         }
 
     ///<summary>

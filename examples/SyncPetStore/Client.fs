@@ -24,14 +24,11 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/pet" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            UpdatePet.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            UpdatePet.BadRequest
-        else if status = HttpStatusCode.NotFound then
-            UpdatePet.NotFound
-        else
-            UpdatePet.MethodNotAllowed
+        match int status with
+        | 200 -> UpdatePet.OK(Serializer.deserialize content)
+        | 400 -> UpdatePet.BadRequest
+        | 404 -> UpdatePet.NotFound
+        | _ -> UpdatePet.MethodNotAllowed
 
     ///<summary>
     ///Add a new pet to the store
@@ -42,10 +39,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/pet" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            AddPet.OK(Serializer.deserialize content)
-        else
-            AddPet.MethodNotAllowed
+        match int status with
+        | 200 -> AddPet.OK(Serializer.deserialize content)
+        | _ -> AddPet.MethodNotAllowed
 
     ///<summary>
     ///Multiple status values can be provided with comma separated strings
@@ -60,10 +56,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/pet/findByStatus" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            FindPetsByStatus.OK(Serializer.deserialize content)
-        else
-            FindPetsByStatus.BadRequest
+        match int status with
+        | 200 -> FindPetsByStatus.OK(Serializer.deserialize content)
+        | _ -> FindPetsByStatus.BadRequest
 
     ///<summary>
     ///Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
@@ -78,10 +73,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/pet/findByTags" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            FindPetsByTags.OK(Serializer.deserialize content)
-        else
-            FindPetsByTags.BadRequest
+        match int status with
+        | 200 -> FindPetsByTags.OK(Serializer.deserialize content)
+        | _ -> FindPetsByTags.BadRequest
 
     ///<summary>
     ///Returns a single pet
@@ -94,12 +88,10 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/pet/{petId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetPetById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetPetById.BadRequest
-        else
-            GetPetById.NotFound
+        match int status with
+        | 200 -> GetPetById.OK(Serializer.deserialize content)
+        | 400 -> GetPetById.BadRequest
+        | _ -> GetPetById.NotFound
 
     ///<summary>
     ///Updates a pet in the store with form data
@@ -119,10 +111,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/pet/{petId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.MethodNotAllowed then
-            UpdatePetWithForm.MethodNotAllowed
-        else
-            UpdatePetWithForm.DefaultResponse
+        match int status with
+        | 405 -> UpdatePetWithForm.MethodNotAllowed
+        | _ -> UpdatePetWithForm.DefaultResponse
 
     ///<summary>
     ///Deletes a pet
@@ -139,10 +130,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/pet/{petId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.BadRequest then
-            DeletePet.BadRequest
-        else
-            DeletePet.DefaultResponse
+        match int status with
+        | 400 -> DeletePet.BadRequest
+        | _ -> DeletePet.DefaultResponse
 
     ///<summary>
     ///uploads an image
@@ -190,10 +180,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/store/order" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PlaceOrder.OK(Serializer.deserialize content)
-        else
-            PlaceOrder.MethodNotAllowed
+        match int status with
+        | 200 -> PlaceOrder.OK(Serializer.deserialize content)
+        | _ -> PlaceOrder.MethodNotAllowed
 
     ///<summary>
     ///For valid response try integer IDs with value &amp;lt;= 5 or &amp;gt; 10. Other values will generate exceptions.
@@ -207,12 +196,10 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/store/order/{orderId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetOrderById.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetOrderById.BadRequest
-        else
-            GetOrderById.NotFound
+        match int status with
+        | 200 -> GetOrderById.OK(Serializer.deserialize content)
+        | 400 -> GetOrderById.BadRequest
+        | _ -> GetOrderById.NotFound
 
     ///<summary>
     ///For valid response try integer IDs with value &amp;lt; 1000. Anything above 1000 or nonintegers will generate API errors
@@ -226,12 +213,10 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/store/order/{orderId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.BadRequest then
-            DeleteOrder.BadRequest
-        else if status = HttpStatusCode.NotFound then
-            DeleteOrder.NotFound
-        else
-            DeleteOrder.DefaultResponse
+        match int status with
+        | 400 -> DeleteOrder.BadRequest
+        | 404 -> DeleteOrder.NotFound
+        | _ -> DeleteOrder.DefaultResponse
 
     ///<summary>
     ///This can only be done by the logged in user.
@@ -253,10 +238,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/user/createWithList" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            CreateUsersWithListInput.OK(Serializer.deserialize content)
-        else
-            CreateUsersWithListInput.DefaultResponse
+        match int status with
+        | 200 -> CreateUsersWithListInput.OK(Serializer.deserialize content)
+        | _ -> CreateUsersWithListInput.DefaultResponse
 
     ///<summary>
     ///Logs user into the system
@@ -274,10 +258,9 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/user/login" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            LoginUser.OK content
-        else
-            LoginUser.BadRequest
+        match int status with
+        | 200 -> LoginUser.OK content
+        | _ -> LoginUser.BadRequest
 
     ///<summary>
     ///Logs out current logged in user session
@@ -302,12 +285,10 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/user/{username}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetUserByName.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetUserByName.BadRequest
-        else
-            GetUserByName.NotFound
+        match int status with
+        | 200 -> GetUserByName.OK(Serializer.deserialize content)
+        | 400 -> GetUserByName.BadRequest
+        | _ -> GetUserByName.NotFound
 
     ///<summary>
     ///This can only be done by the logged in user.
@@ -337,9 +318,7 @@ type SyncPetStoreClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/user/{username}" requestParts cancellationToken
 
-        if status = HttpStatusCode.BadRequest then
-            DeleteUser.BadRequest
-        else if status = HttpStatusCode.NotFound then
-            DeleteUser.NotFound
-        else
-            DeleteUser.DefaultResponse
+        match int status with
+        | 400 -> DeleteUser.BadRequest
+        | 404 -> DeleteUser.NotFound
+        | _ -> DeleteUser.DefaultResponse

@@ -17,14 +17,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/auth/token" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAuthToken.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAuthToken.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAuthToken.Unauthorized(Serializer.deserialize content)
-        else
-            PostAuthToken.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAuthToken.OK(Serializer.deserialize content)
+        | 400 -> PostAuthToken.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAuthToken.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAuthToken.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes username or email as values and sends an email to the user with instructions to reset the password, including a tokenized URL that directs the user to the password reset form.
@@ -39,14 +36,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/auth/recover-password" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAuthRecoverPassword.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAuthRecoverPassword.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAuthRecoverPassword.Unauthorized(Serializer.deserialize content)
-        else
-            PostAuthRecoverPassword.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAuthRecoverPassword.OK(Serializer.deserialize content)
+        | 400 -> PostAuthRecoverPassword.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAuthRecoverPassword.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAuthRecoverPassword.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes token session sent in email and resets the password for the active user.
@@ -67,14 +61,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/auth/reset/{mailtoken}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAuthResetByMailtoken.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAuthResetByMailtoken.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAuthResetByMailtoken.Unauthorized(Serializer.deserialize content)
-        else
-            PostAuthResetByMailtoken.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAuthResetByMailtoken.OK(Serializer.deserialize content)
+        | 400 -> PostAuthResetByMailtoken.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAuthResetByMailtoken.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAuthResetByMailtoken.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Revokes the active session for the user by disabling the token. This disables the different sessions opened on differents computers and browsers.&amp;lt;br /&amp;gt; The user will login again to use the App, and a new token will be generate.
@@ -92,14 +83,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/auth/revoke-token" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAuthRevokeToken.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAuthRevokeToken.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAuthRevokeToken.Unauthorized(Serializer.deserialize content)
-        else
-            PostAuthRevokeToken.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAuthRevokeToken.OK(Serializer.deserialize content)
+        | 400 -> PostAuthRevokeToken.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAuthRevokeToken.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAuthRevokeToken.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Changes the user’s password and resets the session token.
@@ -117,14 +105,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/auth/change-password" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAuthChangePassword.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAuthChangePassword.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAuthChangePassword.Unauthorized(Serializer.deserialize content)
-        else
-            PostAuthChangePassword.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAuthChangePassword.OK(Serializer.deserialize content)
+        | 400 -> PostAuthChangePassword.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAuthChangePassword.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAuthChangePassword.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Creates a new user taking token and new user data. Returns the new user data. An email is sent to the new user with instructions to log in.
@@ -137,14 +122,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/users" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostUsers.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostUsers.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostUsers.Unauthorized(Serializer.deserialize content)
-        else
-            PostUsers.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostUsers.OK(Serializer.deserialize content)
+        | 400 -> PostUsers.BadRequest(Serializer.deserialize content)
+        | 401 -> PostUsers.Unauthorized(Serializer.deserialize content)
+        | _ -> PostUsers.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes token and account ID as mandatory parameters and returns an array of users. If nothing is found returns an empty array.
@@ -209,14 +191,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/users" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetUsers.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetUsers.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetUsers.Unauthorized(Serializer.deserialize content)
-        else
-            GetUsers.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetUsers.OK(Serializer.deserialize content)
+        | 400 -> GetUsers.BadRequest(Serializer.deserialize content)
+        | 401 -> GetUsers.Unauthorized(Serializer.deserialize content)
+        | _ -> GetUsers.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes token, account ID and and bulk search parameters to returns a list of users belonging to a specific account.
@@ -284,14 +263,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/usersbulk" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostUsersbulk.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostUsersbulk.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostUsersbulk.Unauthorized(Serializer.deserialize content)
-        else
-            PostUsersbulk.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostUsersbulk.OK(Serializer.deserialize content)
+        | 400 -> PostUsersbulk.BadRequest(Serializer.deserialize content)
+        | 401 -> PostUsersbulk.Unauthorized(Serializer.deserialize content)
+        | _ -> PostUsersbulk.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes token and returns user data.
@@ -307,14 +283,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/users/me" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetUsersMe.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetUsersMe.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetUsersMe.Unauthorized(Serializer.deserialize content)
-        else
-            GetUsersMe.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetUsersMe.OK(Serializer.deserialize content)
+        | 400 -> GetUsersMe.BadRequest(Serializer.deserialize content)
+        | 401 -> GetUsersMe.Unauthorized(Serializer.deserialize content)
+        | _ -> GetUsersMe.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///User accept terms and conditions.
@@ -326,14 +299,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/users/me/accept-tc" requestParts cancellationToken
 
-        if status = HttpStatusCode.Created then
-            PostUsersMeAcceptTc.Created
-        else if status = HttpStatusCode.BadRequest then
-            PostUsersMeAcceptTc.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostUsersMeAcceptTc.Unauthorized(Serializer.deserialize content)
-        else
-            PostUsersMeAcceptTc.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 201 -> PostUsersMeAcceptTc.Created
+        | 400 -> PostUsersMeAcceptTc.BadRequest(Serializer.deserialize content)
+        | 401 -> PostUsersMeAcceptTc.Unauthorized(Serializer.deserialize content)
+        | _ -> PostUsersMeAcceptTc.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Gets a user by ID, using token, userID and accountID as parameters, and returns a JSON with the users data.
@@ -357,14 +327,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/users/{userId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetUsersByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetUsersByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetUsersByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            GetUsersByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetUsersByUserId.OK(Serializer.deserialize content)
+        | 400 -> GetUsersByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetUsersByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetUsersByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Modify a user using the parameters available.
@@ -388,14 +355,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/users/{userId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutUsersByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutUsersByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutUsersByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            PutUsersByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutUsersByUserId.OK(Serializer.deserialize content)
+        | 400 -> PutUsersByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutUsersByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutUsersByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Takes token and user ID, then removes user.
@@ -419,14 +383,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/users/{userId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteUsersByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            DeleteUsersByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteUsersByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteUsersByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> DeleteUsersByUserId.OK(Serializer.deserialize content)
+        | 400 -> DeleteUsersByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteUsersByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteUsersByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Change a user password using the parameters available.
@@ -447,14 +408,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/users/{userId}/change-password" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutUsersChangePasswordByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutUsersChangePasswordByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutUsersChangePasswordByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            PutUsersChangePasswordByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutUsersChangePasswordByUserId.OK(Serializer.deserialize content)
+        | 400 -> PutUsersChangePasswordByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutUsersChangePasswordByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutUsersChangePasswordByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Modify the user options for favorites using the parameters available.
@@ -474,14 +432,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/users/{userId}/favorites" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutUsersFavoritesByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutUsersFavoritesByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutUsersFavoritesByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            PutUsersFavoritesByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutUsersFavoritesByUserId.OK(Serializer.deserialize content)
+        | 400 -> PutUsersFavoritesByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutUsersFavoritesByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutUsersFavoritesByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Modify the user customization options. Modify the setup of the columns as displayed in tables in the user interface and the sort order.
@@ -501,14 +456,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/users/{userId}/customization" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutUsersCustomizationByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutUsersCustomizationByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutUsersCustomizationByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            PutUsersCustomizationByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutUsersCustomizationByUserId.OK(Serializer.deserialize content)
+        | 400 -> PutUsersCustomizationByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutUsersCustomizationByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutUsersCustomizationByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Gell all users actions for an account.
@@ -526,14 +478,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/users/{userId}/permissions" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutUsersPermissionsByUserId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutUsersPermissionsByUserId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutUsersPermissionsByUserId.Unauthorized(Serializer.deserialize content)
-        else
-            PutUsersPermissionsByUserId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutUsersPermissionsByUserId.OK(Serializer.deserialize content)
+        | 400 -> PutUsersPermissionsByUserId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutUsersPermissionsByUserId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutUsersPermissionsByUserId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all notifications of an account.
@@ -544,14 +493,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/notifications" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsNotifications.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsNotifications.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsNotifications.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsNotifications.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsNotifications.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsNotifications.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsNotifications.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsNotifications.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Set the notification which id has been given as readed.
@@ -562,14 +508,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/accounts/notifications/{notificationId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsNotificationsByNotificationId.OK
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
-        else
-            PutAccountsNotificationsByNotificationId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAccountsNotificationsByNotificationId.OK
+        | 400 -> PutAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAccountsNotificationsByNotificationId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Delete a notification
@@ -580,14 +523,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/accounts/notifications/{notificationId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteAccountsNotificationsByNotificationId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            DeleteAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteAccountsNotificationsByNotificationId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> DeleteAccountsNotificationsByNotificationId.OK(Serializer.deserialize content)
+        | 400 -> DeleteAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteAccountsNotificationsByNotificationId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all accounts and subaccounts.
@@ -598,14 +538,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccounts.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccounts.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccounts.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccounts.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccounts.OK(Serializer.deserialize content)
+        | 400 -> GetAccounts.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccounts.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccounts.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Create a new child account in the system.
@@ -616,14 +553,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/accounts" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAccounts.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAccounts.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAccounts.Unauthorized(Serializer.deserialize content)
-        else
-            PostAccounts.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAccounts.OK(Serializer.deserialize content)
+        | 400 -> PostAccounts.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAccounts.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAccounts.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all accounts and subaccounts.
@@ -634,14 +568,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/accountsbulk" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAccountsbulk.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAccountsbulk.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAccountsbulk.Unauthorized(Serializer.deserialize content)
-        else
-            PostAccountsbulk.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAccountsbulk.OK(Serializer.deserialize content)
+        | 400 -> PostAccountsbulk.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAccountsbulk.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAccountsbulk.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieve one account matching the id provided.
@@ -652,14 +583,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Modify an existing account with the new data setted into the parameters.
@@ -670,14 +598,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/accounts/{accountId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            PutAccountsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAccountsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> PutAccountsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAccountsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAccountsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Remove an existing account from the database.
@@ -692,14 +617,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/accounts/{accountId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteAccountsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            DeleteAccountsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteAccountsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteAccountsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> DeleteAccountsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> DeleteAccountsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteAccountsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteAccountsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Modify the branding information of an account.
@@ -714,14 +636,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/accounts/{accountId}/branding" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsBrandingByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsBrandingByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsBrandingByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            PutAccountsBrandingByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAccountsBrandingByAccountId.OK(Serializer.deserialize content)
+        | 400 -> PutAccountsBrandingByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAccountsBrandingByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAccountsBrandingByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get Account Branding status.
@@ -732,14 +651,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}/branding/verify" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsBrandingVerifyByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsBrandingVerifyByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsBrandingVerifyByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsBrandingVerifyByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsBrandingVerifyByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsBrandingVerifyByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsBrandingVerifyByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsBrandingVerifyByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieve all existing roles.
@@ -750,14 +666,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}/roles" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsRolesByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsRolesByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsRolesByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsRolesByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsRolesByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsRolesByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsRolesByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsRolesByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all actions belonging a role.
@@ -768,14 +681,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}/roles/{rolename}/actions" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsRolesActionsByAccountIdAndRolename.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsRolesActionsByAccountIdAndRolename.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsRolesActionsByAccountIdAndRolename.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsRolesActionsByAccountIdAndRolename.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsRolesActionsByAccountIdAndRolename.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsRolesActionsByAccountIdAndRolename.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsRolesActionsByAccountIdAndRolename.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsRolesActionsByAccountIdAndRolename.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all notifications of an account.
@@ -786,14 +696,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}/notifications" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsNotificationsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsNotificationsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsNotificationsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsNotificationsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsNotificationsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsNotificationsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsNotificationsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsNotificationsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///The notification with the id provided will be check as readed.
@@ -808,14 +715,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
                 requestParts
                 cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsNotificationsByAccountIdAndNotificationId.OK
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsNotificationsByAccountIdAndNotificationId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsNotificationsByAccountIdAndNotificationId.Unauthorized(Serializer.deserialize content)
-        else
-            PutAccountsNotificationsByAccountIdAndNotificationId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAccountsNotificationsByAccountIdAndNotificationId.OK
+        | 400 -> PutAccountsNotificationsByAccountIdAndNotificationId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAccountsNotificationsByAccountIdAndNotificationId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAccountsNotificationsByAccountIdAndNotificationId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Delete a notification
@@ -830,13 +734,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
                 requestParts
                 cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteAccountsNotificationsByAccountIdAndNotificationId.OK
-        else if status = HttpStatusCode.BadRequest then
-            DeleteAccountsNotificationsByAccountIdAndNotificationId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteAccountsNotificationsByAccountIdAndNotificationId.Unauthorized(Serializer.deserialize content)
-        else
+        match int status with
+        | 200 -> DeleteAccountsNotificationsByAccountIdAndNotificationId.OK
+        | 400 -> DeleteAccountsNotificationsByAccountIdAndNotificationId.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteAccountsNotificationsByAccountIdAndNotificationId.Unauthorized(Serializer.deserialize content)
+        | _ ->
             DeleteAccountsNotificationsByAccountIdAndNotificationId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
@@ -850,14 +752,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/accounts/{accountId}/products" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsProductsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsProductsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsProductsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsProductsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsProductsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsProductsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsProductsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsProductsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///- A maximum of 3 alerts per SIM can be set in order to notify the user when the consumption of a  promotion  reaches or exceeds a certain limit, Alerts can also be used to notify the user of usage over their predefined bundle amount.
@@ -874,14 +773,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/accounts/products/alerts" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsProductsAlerts.OK
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsProductsAlerts.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsProductsAlerts.Unauthorized
-        else
-            PutAccountsProductsAlerts.InternalServerError
+        match int status with
+        | 200 -> PutAccountsProductsAlerts.OK
+        | 400 -> PutAccountsProductsAlerts.BadRequest
+        | 401 -> PutAccountsProductsAlerts.Unauthorized
+        | _ -> PutAccountsProductsAlerts.InternalServerError
 
     ///<summary>
     ///Amount in which the balance increases.
@@ -896,14 +792,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/accounts/{accountId}/topup-direct" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAccountsTopupDirectByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAccountsTopupDirectByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAccountsTopupDirectByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            PutAccountsTopupDirectByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAccountsTopupDirectByAccountId.OK(Serializer.deserialize content)
+        | 400 -> PutAccountsTopupDirectByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAccountsTopupDirectByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAccountsTopupDirectByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Add a Security Service Setting inside an account
@@ -978,14 +871,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
                 requestParts
                 cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsSecuritySettingsAvailableGapsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsSecuritySettingsAvailableGapsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsSecuritySettingsAvailableGapsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsSecuritySettingsAvailableGapsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsSecuritySettingsAvailableGapsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsSecuritySettingsAvailableGapsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsSecuritySettingsAvailableGapsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsSecuritySettingsAvailableGapsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieve available ips for particular pool.
@@ -1009,14 +899,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
                 requestParts
                 cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAccountsSecuritySettingsAvailableIpsByAccountId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAccountsSecuritySettingsAvailableIpsByAccountId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAccountsSecuritySettingsAvailableIpsByAccountId.Unauthorized(Serializer.deserialize content)
-        else
-            GetAccountsSecuritySettingsAvailableIpsByAccountId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAccountsSecuritySettingsAvailableIpsByAccountId.OK(Serializer.deserialize content)
+        | 400 -> GetAccountsSecuritySettingsAvailableIpsByAccountId.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAccountsSecuritySettingsAvailableIpsByAccountId.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAccountsSecuritySettingsAvailableIpsByAccountId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Endpoint to asure the App is up and working. If is not, nginx will return a 502 Bad Gateway exception.
@@ -1040,14 +927,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/mail" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostMail.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostMail.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostMail.Unauthorized(Serializer.deserialize content)
-        else
-            PostMail.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostMail.OK(Serializer.deserialize content)
+        | 400 -> PostMail.BadRequest(Serializer.deserialize content)
+        | 401 -> PostMail.Unauthorized(Serializer.deserialize content)
+        | _ -> PostMail.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///General endpoint to send files
@@ -1220,18 +1104,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/products" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetProducts.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetProducts.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            GetProducts.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            GetProducts.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            GetProducts.InternalServerError
-        else
-            GetProducts.ServiceUnavailable
+        match int status with
+        | 200 -> GetProducts.OK(Serializer.deserialize content)
+        | 400 -> GetProducts.BadRequest
+        | 401 -> GetProducts.Unauthorized
+        | 403 -> GetProducts.Forbidden
+        | 500 -> GetProducts.InternalServerError
+        | _ -> GetProducts.ServiceUnavailable
 
     ///<summary>
     ///Creates a new product taking a token, an accountId and the new product data. Returns the new product data.
@@ -1249,14 +1128,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/products" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostProducts.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostProducts.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostProducts.Unauthorized(Serializer.deserialize content)
-        else
-            PostProducts.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostProducts.OK(Serializer.deserialize content)
+        | 400 -> PostProducts.BadRequest(Serializer.deserialize content)
+        | 401 -> PostProducts.Unauthorized(Serializer.deserialize content)
+        | _ -> PostProducts.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get a product of an account
@@ -1268,18 +1144,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/products/{productId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetProductsByProductId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetProductsByProductId.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            GetProductsByProductId.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            GetProductsByProductId.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            GetProductsByProductId.InternalServerError
-        else
-            GetProductsByProductId.ServiceUnavailable
+        match int status with
+        | 200 -> GetProductsByProductId.OK(Serializer.deserialize content)
+        | 400 -> GetProductsByProductId.BadRequest
+        | 401 -> GetProductsByProductId.Unauthorized
+        | 403 -> GetProductsByProductId.Forbidden
+        | 500 -> GetProductsByProductId.InternalServerError
+        | _ -> GetProductsByProductId.ServiceUnavailable
 
     ///<summary>
     ///Updates a product taking a token, an accountId and the updated product data. Returns the updated product data.
@@ -1297,14 +1168,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.patch httpClient "/products/{productId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PatchProductsByProductId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PatchProductsByProductId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PatchProductsByProductId.Unauthorized(Serializer.deserialize content)
-        else
-            PatchProductsByProductId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PatchProductsByProductId.OK(Serializer.deserialize content)
+        | 400 -> PatchProductsByProductId.BadRequest(Serializer.deserialize content)
+        | 401 -> PatchProductsByProductId.Unauthorized(Serializer.deserialize content)
+        | _ -> PatchProductsByProductId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Delete product by ID
@@ -1316,14 +1184,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/products/{productId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteProductsByProductId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            DeleteProductsByProductId.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteProductsByProductId.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteProductsByProductId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> DeleteProductsByProductId.OK(Serializer.deserialize content)
+        | 400 -> DeleteProductsByProductId.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteProductsByProductId.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteProductsByProductId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all the availables schemas for creating a product.
@@ -1339,14 +1204,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/schema/product" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetSchemaProduct.OK
-        else if status = HttpStatusCode.BadRequest then
-            GetSchemaProduct.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetSchemaProduct.Unauthorized(Serializer.deserialize content)
-        else
-            GetSchemaProduct.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetSchemaProduct.OK
+        | 400 -> GetSchemaProduct.BadRequest(Serializer.deserialize content)
+        | 401 -> GetSchemaProduct.Unauthorized(Serializer.deserialize content)
+        | _ -> GetSchemaProduct.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Transfer products from an account to another
@@ -1364,18 +1226,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/products/{productId}/transfer" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostProductsTransferByProductId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostProductsTransferByProductId.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PostProductsTransferByProductId.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            PostProductsTransferByProductId.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            PostProductsTransferByProductId.InternalServerError
-        else
-            PostProductsTransferByProductId.ServiceUnavailable
+        match int status with
+        | 200 -> PostProductsTransferByProductId.OK(Serializer.deserialize content)
+        | 400 -> PostProductsTransferByProductId.BadRequest
+        | 401 -> PostProductsTransferByProductId.Unauthorized
+        | 403 -> PostProductsTransferByProductId.Forbidden
+        | 500 -> PostProductsTransferByProductId.InternalServerError
+        | _ -> PostProductsTransferByProductId.ServiceUnavailable
 
     ///<summary>
     ///Get cdrs on application. If param type is not set to sms, always returns data cdrs
@@ -1420,16 +1277,12 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/cdr" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetCdr.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetCdr.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetCdr.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            GetCdr.NotFound(Serializer.deserialize content)
-        else
-            GetCdr.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetCdr.OK(Serializer.deserialize content)
+        | 400 -> GetCdr.BadRequest(Serializer.deserialize content)
+        | 401 -> GetCdr.Unauthorized(Serializer.deserialize content)
+        | 404 -> GetCdr.NotFound(Serializer.deserialize content)
+        | _ -> GetCdr.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all cdrs on application. If type is not set to `sms` it returns data cdrs.
@@ -1465,14 +1318,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssets.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssets.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssets.Unauthorized(Serializer.deserialize content)
-        else
-            GetAssets.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssets.OK(Serializer.deserialize content)
+        | 400 -> GetAssets.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssets.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAssets.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Create a new Asset
@@ -1483,14 +1333,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssets.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAssets.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssets.Unauthorized(Serializer.deserialize content)
-        else
-            PostAssets.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAssets.OK(Serializer.deserialize content)
+        | 400 -> PostAssets.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAssets.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAssets.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Assets card Info (bulk)
@@ -1501,14 +1348,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assetsbulk" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsbulk.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsbulk.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsbulk.Unauthorized(Serializer.deserialize content)
-        else
-            PostAssetsbulk.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAssetsbulk.OK(Serializer.deserialize content)
+        | 400 -> PostAssetsbulk.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAssetsbulk.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAssetsbulk.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Assets get Info
@@ -1519,14 +1363,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssetsByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            GetAssetsByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssetsByIccid.OK(Serializer.deserialize content)
+        | 400 -> GetAssetsByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssetsByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAssetsByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Change the name of the asset for the specified accountId
@@ -1537,14 +1378,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Remove an Asset
@@ -1555,14 +1393,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/assets/{iccid}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            DeleteAssetsByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            DeleteAssetsByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteAssetsByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteAssetsByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> DeleteAssetsByIccid.OK(Serializer.deserialize content)
+        | 400 -> DeleteAssetsByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteAssetsByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteAssetsByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Update group name
@@ -1577,14 +1412,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/groupname" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsGroupnameByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsGroupnameByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsGroupnameByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsGroupnameByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsGroupnameByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsGroupnameByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsGroupnameByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsGroupnameByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Transfer an Asset from an account to another
@@ -1599,14 +1431,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/transfer" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsTransferByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsTransferByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsTransferByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PostAssetsTransferByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAssetsTransferByIccid.OK(Serializer.deserialize content)
+        | 400 -> PostAssetsTransferByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAssetsTransferByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAssetsTransferByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Activate an asset and subscribe the asset to the assigned product.
@@ -1621,14 +1450,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/subscribe" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsSubscribeByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsSubscribeByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsSubscribeByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsSubscribeByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsSubscribeByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsSubscribeByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsSubscribeByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsSubscribeByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Unsubscribe the asset to the assigned product
@@ -1643,14 +1469,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/unsubscribe" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsUnsubscribeByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsUnsubscribeByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsUnsubscribeByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsUnsubscribeByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsUnsubscribeByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsUnsubscribeByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsUnsubscribeByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsUnsubscribeByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Remove subscription and create a new subscribe the asset to the assigned product.
@@ -1665,14 +1488,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/resubscribe" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsResubscribeByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsResubscribeByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsResubscribeByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsResubscribeByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsResubscribeByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsResubscribeByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsResubscribeByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsResubscribeByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Suspend an assets
@@ -1687,14 +1507,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/suspend" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsSuspendByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsSuspendByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsSuspendByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsSuspendByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsSuspendByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsSuspendByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsSuspendByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsSuspendByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Reactive an assets. The assets should be suspended
@@ -1709,14 +1526,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/unsuspend" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsUnsuspendByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsUnsuspendByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsUnsuspendByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsUnsuspendByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsUnsuspendByIccid.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsUnsuspendByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsUnsuspendByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsUnsuspendByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///- You can set data alerts (alerts array) and sms alerts (smsAlerts array). You can set both or one of them.
@@ -1729,14 +1543,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/alerts" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsAlertsByIccid.OK
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsAlertsByIccid.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsAlertsByIccid.Unauthorized
-        else
-            PutAssetsAlertsByIccid.InternalServerError
+        match int status with
+        | 200 -> PutAssetsAlertsByIccid.OK
+        | 400 -> PutAssetsAlertsByIccid.BadRequest
+        | 401 -> PutAssetsAlertsByIccid.Unauthorized
+        | _ -> PutAssetsAlertsByIccid.InternalServerError
 
     ///<summary>
     ///Forces an update location on the SIM. Useful to remotely reset the network connection on a SIM (refresh connection).
@@ -1747,14 +1558,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/purge" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsPurgeByIccid.OK
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsPurgeByIccid.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsPurgeByIccid.Unauthorized
-        else
-            PostAssetsPurgeByIccid.InternalServerError
+        match int status with
+        | 200 -> PostAssetsPurgeByIccid.OK
+        | 400 -> PostAssetsPurgeByIccid.BadRequest
+        | 401 -> PostAssetsPurgeByIccid.Unauthorized
+        | _ -> PostAssetsPurgeByIccid.InternalServerError
 
     ///<summary>
     ///Sends a message to the SIM limited to 160 characters. A single SMS can hold up to 160 characters using "Stardard" coding, some special characters are allowed but they consume double space. Using characters out of the standard set requires UCS-2 coding and the message size is limited to 70 characters.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;Use data coding scheme 240 for a Flash SMS, and 0 for a Standard SMS. A Flash SMS is displayed on the screen immediately upon arrival but is not saved or stored on the device. A Standard SMS is displayed and saved to the device
@@ -1765,14 +1573,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/sms" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsSmsByIccid.OK
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsSmsByIccid.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsSmsByIccid.Unauthorized
-        else
-            PostAssetsSmsByIccid.InternalServerError
+        match int status with
+        | 200 -> PostAssetsSmsByIccid.OK
+        | 400 -> PostAssetsSmsByIccid.BadRequest
+        | 401 -> PostAssetsSmsByIccid.Unauthorized
+        | _ -> PostAssetsSmsByIccid.InternalServerError
 
     ///<summary>
     ///Set limits for a simcard. You can set the limit for data (limit or datalimit) or sms (smslimit). Is mandatory to set one of them at least, but you can set both.&amp;lt;br&amp;gt;Datalimit must be set on bytes.
@@ -1783,14 +1588,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/limit" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsLimitByIccid.OK
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsLimitByIccid.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsLimitByIccid.Unauthorized
-        else
-            PostAssetsLimitByIccid.InternalServerError
+        match int status with
+        | 200 -> PostAssetsLimitByIccid.OK
+        | 400 -> PostAssetsLimitByIccid.BadRequest
+        | 401 -> PostAssetsLimitByIccid.Unauthorized
+        | _ -> PostAssetsLimitByIccid.InternalServerError
 
     ///<summary>
     ///Set tags for a simcard. Each tag have an index  related with the order of the custom field.,  You need to add in each query as many values as tags have the simcard.   Example if you create three custom Fields  in this order  CF1, CF2 and CF3, you will need to add in the body 3 sections with the values that you need
@@ -1829,14 +1631,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/tags" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsTagsByIccid.OK
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsTagsByIccid.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsTagsByIccid.Unauthorized
-        else
-            PostAssetsTagsByIccid.InternalServerError
+        match int status with
+        | 200 -> PostAssetsTagsByIccid.OK
+        | 400 -> PostAssetsTagsByIccid.BadRequest
+        | 401 -> PostAssetsTagsByIccid.Unauthorized
+        | _ -> PostAssetsTagsByIccid.InternalServerError
 
     ///<summary>
     ///Checks the simcard status over the network, if the sim is correctly provisioned in the system, last connection, last data transmision, if it is online etc...
@@ -1847,14 +1646,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}/diagnostic" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsDiagnosticByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsDiagnosticByIccid.Unauthorized
-        else if status = HttpStatusCode.InternalServerError then
-            GetAssetsDiagnosticByIccid.InternalServerError
-        else
-            GetAssetsDiagnosticByIccid.ServiceUnavailable
+        match int status with
+        | 200 -> GetAssetsDiagnosticByIccid.OK(Serializer.deserialize content)
+        | 401 -> GetAssetsDiagnosticByIccid.Unauthorized
+        | 500 -> GetAssetsDiagnosticByIccid.InternalServerError
+        | _ -> GetAssetsDiagnosticByIccid.ServiceUnavailable
 
     ///<summary>
     ///Return assets location.
@@ -1865,16 +1661,12 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}/location" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsLocationByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssetsLocationByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsLocationByIccid.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            GetAssetsLocationByIccid.NotFound(Serializer.deserialize content)
-        else
-            GetAssetsLocationByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssetsLocationByIccid.OK(Serializer.deserialize content)
+        | 400 -> GetAssetsLocationByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssetsLocationByIccid.Unauthorized(Serializer.deserialize content)
+        | 404 -> GetAssetsLocationByIccid.NotFound(Serializer.deserialize content)
+        | _ -> GetAssetsLocationByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Return asset sessions.
@@ -1885,16 +1677,12 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}/sessions" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsSessionsByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssetsSessionsByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsSessionsByIccid.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            GetAssetsSessionsByIccid.NotFound(Serializer.deserialize content)
-        else
-            GetAssetsSessionsByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssetsSessionsByIccid.OK(Serializer.deserialize content)
+        | 400 -> GetAssetsSessionsByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssetsSessionsByIccid.Unauthorized(Serializer.deserialize content)
+        | 404 -> GetAssetsSessionsByIccid.NotFound(Serializer.deserialize content)
+        | _ -> GetAssetsSessionsByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Reassign a new IP to a single asset or a bulk of assets. You can choose to update the IP and assign a new Fixed IP from a security service or a dynamic IP.
@@ -1920,12 +1708,10 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/reports/custom" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetReportsCustom.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetReportsCustom.Unauthorized(Serializer.deserialize content)
-        else
-            GetReportsCustom.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetReportsCustom.OK(Serializer.deserialize content)
+        | 401 -> GetReportsCustom.Unauthorized(Serializer.deserialize content)
+        | _ -> GetReportsCustom.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Create a new custom report. &amp;lt;/br&amp;gt; Date filtering supports dates as `YYYY-MM-DDTHH:mm:SSZ`, for example `"2020-04-01T00:59:59Z"` &amp;lt;/br&amp;gt; The fileds requires are; accountId, dateFrom, dateTo
@@ -1936,16 +1722,12 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/reports/custom" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostReportsCustom.OK
-        else if status = HttpStatusCode.Unauthorized then
-            PostReportsCustom.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.Forbidden then
-            PostReportsCustom.Forbidden(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            PostReportsCustom.NotFound(Serializer.deserialize content)
-        else
-            PostReportsCustom.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostReportsCustom.OK
+        | 401 -> PostReportsCustom.Unauthorized(Serializer.deserialize content)
+        | 403 -> PostReportsCustom.Forbidden(Serializer.deserialize content)
+        | 404 -> PostReportsCustom.NotFound(Serializer.deserialize content)
+        | _ -> PostReportsCustom.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Delete all reports from an account
@@ -1956,12 +1738,10 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/reports/custom" requestParts cancellationToken
 
-        if status = HttpStatusCode.NoContent then
-            DeleteReportsCustom.NoContent
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteReportsCustom.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteReportsCustom.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 204 -> DeleteReportsCustom.NoContent
+        | 401 -> DeleteReportsCustom.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteReportsCustom.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get one reports from an account
@@ -1972,14 +1752,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/reports/custom/{reportId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetReportsCustomByReportId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            GetReportsCustomByReportId.NotFound(Serializer.deserialize content)
-        else
-            GetReportsCustomByReportId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetReportsCustomByReportId.OK(Serializer.deserialize content)
+        | 401 -> GetReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
+        | 404 -> GetReportsCustomByReportId.NotFound(Serializer.deserialize content)
+        | _ -> GetReportsCustomByReportId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Delete one report from an account
@@ -1990,14 +1767,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/reports/custom/{reportId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.NoContent then
-            DeleteReportsCustomByReportId.NoContent
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
-        else if status = HttpStatusCode.NotFound then
-            DeleteReportsCustomByReportId.NotFound(Serializer.deserialize content)
-        else
-            DeleteReportsCustomByReportId.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 204 -> DeleteReportsCustomByReportId.NoContent
+        | 401 -> DeleteReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
+        | 404 -> DeleteReportsCustomByReportId.NotFound(Serializer.deserialize content)
+        | _ -> DeleteReportsCustomByReportId.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Assets card Info (bulk)
@@ -2062,14 +1836,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/events" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetEvents.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetEvents.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetEvents.Unauthorized(Serializer.deserialize content)
-        else
-            GetEvents.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetEvents.OK(Serializer.deserialize content)
+        | 400 -> GetEvents.BadRequest(Serializer.deserialize content)
+        | 401 -> GetEvents.Unauthorized(Serializer.deserialize content)
+        | _ -> GetEvents.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get all zones schemes
@@ -2125,14 +1896,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/subscribe" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsSubscribe.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsSubscribe.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsSubscribe.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsSubscribe.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsSubscribe.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsSubscribe.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsSubscribe.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsSubscribe.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Transfer a Asset from a account to another in bulk
@@ -2143,14 +1911,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/transfer" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsTransfer.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsTransfer.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsTransfer.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsTransfer.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsTransfer.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsTransfer.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsTransfer.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsTransfer.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Return a Asset from a account to parent account in bulk
@@ -2161,14 +1926,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/return" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsReturn.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsReturn.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsReturn.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsReturn.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsReturn.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsReturn.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsReturn.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsReturn.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Suspend assets in a massive way by using different filters
@@ -2179,14 +1941,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/bulk/assets/suspend" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PutBulkAssetsSuspend.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutBulkAssetsSuspend.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutBulkAssetsSuspend.Unauthorized(Serializer.deserialize content)
-        else
-            PutBulkAssetsSuspend.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PutBulkAssetsSuspend.Accepted(Serializer.deserialize content)
+        | 400 -> PutBulkAssetsSuspend.BadRequest(Serializer.deserialize content)
+        | 401 -> PutBulkAssetsSuspend.Unauthorized(Serializer.deserialize content)
+        | _ -> PutBulkAssetsSuspend.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///This endpoint change in a massive way the suspend status of the assets which match with the filter setted.
@@ -2197,14 +1956,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/bulk/assets/unsuspend" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PutBulkAssetsUnsuspend.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutBulkAssetsUnsuspend.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutBulkAssetsUnsuspend.Unauthorized(Serializer.deserialize content)
-        else
-            PutBulkAssetsUnsuspend.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PutBulkAssetsUnsuspend.Accepted(Serializer.deserialize content)
+        | 400 -> PutBulkAssetsUnsuspend.BadRequest(Serializer.deserialize content)
+        | 401 -> PutBulkAssetsUnsuspend.Unauthorized(Serializer.deserialize content)
+        | _ -> PutBulkAssetsUnsuspend.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Resubscribe a bulk of assets to the assigned product.
@@ -2219,14 +1975,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/resubscribe" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsResubscribe.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsResubscribe.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsResubscribe.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsResubscribe.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsResubscribe.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsResubscribe.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsResubscribe.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsResubscribe.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Create Assets in bulk mode
@@ -2237,14 +1990,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssets.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssets.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssets.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssets.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssets.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssets.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssets.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssets.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Update Assets in bulk mode
@@ -2255,14 +2005,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/bulk/assets" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PutBulkAssets.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutBulkAssets.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutBulkAssets.Unauthorized(Serializer.deserialize content)
-        else
-            PutBulkAssets.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PutBulkAssets.Accepted(Serializer.deserialize content)
+        | 400 -> PutBulkAssets.BadRequest(Serializer.deserialize content)
+        | 401 -> PutBulkAssets.Unauthorized(Serializer.deserialize content)
+        | _ -> PutBulkAssets.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Update group name of Assets in bulk mode
@@ -2273,14 +2020,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/bulk/assets/groupname" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PutBulkAssetsGroupname.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutBulkAssetsGroupname.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutBulkAssetsGroupname.Unauthorized(Serializer.deserialize content)
-        else
-            PutBulkAssetsGroupname.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PutBulkAssetsGroupname.Accepted(Serializer.deserialize content)
+        | 400 -> PutBulkAssetsGroupname.BadRequest(Serializer.deserialize content)
+        | 401 -> PutBulkAssetsGroupname.Unauthorized(Serializer.deserialize content)
+        | _ -> PutBulkAssetsGroupname.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///You can set the limit for data (limit or datalimit) or sms (smslimit). Is mandatory to set one of them at least, but you can set both.&amp;lt;br&amp;gt;Datalimit must be set on bytes.
@@ -2291,14 +2035,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/limit" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsLimit.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsLimit.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsLimit.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsLimit.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsLimit.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsLimit.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsLimit.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsLimit.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///- A maximum of 3 alerts per SIM can be set in order to notify the user when the consumption of a  promotion  reaches or exceeds a certain limit, Alerts can also be used to notify the user of usage over their predefined bundle amount.
@@ -2311,14 +2052,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/bulk/assets/alerts" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PutBulkAssetsAlerts.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutBulkAssetsAlerts.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutBulkAssetsAlerts.Unauthorized(Serializer.deserialize content)
-        else
-            PutBulkAssetsAlerts.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PutBulkAssetsAlerts.Accepted(Serializer.deserialize content)
+        | 400 -> PutBulkAssetsAlerts.BadRequest(Serializer.deserialize content)
+        | 401 -> PutBulkAssetsAlerts.Unauthorized(Serializer.deserialize content)
+        | _ -> PutBulkAssetsAlerts.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Sends a message to the SIM limited to 160 characters. A single SMS can hold up to 160 characters using "Stardard" coding, some special characters are allowed but they consume double space. Using characters out of the standard set requires UCS-2 coding and the message size is limited to 70 characters.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;Use data coding scheme 240 for a Flash SMS, and 0 for a Standard SMS. A Flash SMS is displayed on the screen immediately upon arrival but is not saved or stored on the device. A Standard SMS is displayed and saved to the device
@@ -2329,14 +2067,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/sms" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsSms.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsSms.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsSms.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsSms.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsSms.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsSms.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsSms.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsSms.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Forces an update location on the SIM. Useful to remotely reset the network connection on a SIM (refresh connection).
@@ -2347,14 +2082,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/purge" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsPurge.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsPurge.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsPurge.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsPurge.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsPurge.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsPurge.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsPurge.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsPurge.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Download template for bulk update.
@@ -2395,14 +2127,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/bulk/assets/reallocate-ip" requestParts cancellationToken
 
-        if status = HttpStatusCode.Accepted then
-            PostBulkAssetsReallocateIp.Accepted(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostBulkAssetsReallocateIp.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostBulkAssetsReallocateIp.Unauthorized(Serializer.deserialize content)
-        else
-            PostBulkAssetsReallocateIp.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 202 -> PostBulkAssetsReallocateIp.Accepted(Serializer.deserialize content)
+        | 400 -> PostBulkAssetsReallocateIp.BadRequest(Serializer.deserialize content)
+        | 401 -> PostBulkAssetsReallocateIp.Unauthorized(Serializer.deserialize content)
+        | _ -> PostBulkAssetsReallocateIp.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieve the URL and params for the redirection.
@@ -2473,14 +2202,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/payments/topupPaypal" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostPaymentsTopupPaypal.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostPaymentsTopupPaypal.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostPaymentsTopupPaypal.Unauthorized(Serializer.deserialize content)
-        else
-            PostPaymentsTopupPaypal.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostPaymentsTopupPaypal.OK(Serializer.deserialize content)
+        | 400 -> PostPaymentsTopupPaypal.BadRequest(Serializer.deserialize content)
+        | 401 -> PostPaymentsTopupPaypal.Unauthorized(Serializer.deserialize content)
+        | _ -> PostPaymentsTopupPaypal.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Confirms a Paypal transaction
@@ -2498,14 +2224,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/payments/confirmTopupPaypal" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostPaymentsConfirmTopupPaypal.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostPaymentsConfirmTopupPaypal.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostPaymentsConfirmTopupPaypal.Unauthorized(Serializer.deserialize content)
-        else
-            PostPaymentsConfirmTopupPaypal.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostPaymentsConfirmTopupPaypal.OK(Serializer.deserialize content)
+        | 400 -> PostPaymentsConfirmTopupPaypal.BadRequest(Serializer.deserialize content)
+        | 401 -> PostPaymentsConfirmTopupPaypal.Unauthorized(Serializer.deserialize content)
+        | _ -> PostPaymentsConfirmTopupPaypal.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrieves security alerts for an account
@@ -2606,18 +2329,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/security/alerts" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetSecurityAlerts.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetSecurityAlerts.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            GetSecurityAlerts.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            GetSecurityAlerts.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            GetSecurityAlerts.InternalServerError
-        else
-            GetSecurityAlerts.ServiceUnavailable
+        match int status with
+        | 200 -> GetSecurityAlerts.OK(Serializer.deserialize content)
+        | 400 -> GetSecurityAlerts.BadRequest
+        | 401 -> GetSecurityAlerts.Unauthorized
+        | 403 -> GetSecurityAlerts.Forbidden
+        | 500 -> GetSecurityAlerts.InternalServerError
+        | _ -> GetSecurityAlerts.ServiceUnavailable
 
     ///<summary>
     ///Fetches security alerts for an account
@@ -2641,18 +2359,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/security/alerts/{alertId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetSecurityAlertsByAlertId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetSecurityAlertsByAlertId.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            GetSecurityAlertsByAlertId.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            GetSecurityAlertsByAlertId.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            GetSecurityAlertsByAlertId.InternalServerError
-        else
-            GetSecurityAlertsByAlertId.ServiceUnavailable
+        match int status with
+        | 200 -> GetSecurityAlertsByAlertId.OK(Serializer.deserialize content)
+        | 400 -> GetSecurityAlertsByAlertId.BadRequest
+        | 401 -> GetSecurityAlertsByAlertId.Unauthorized
+        | 403 -> GetSecurityAlertsByAlertId.Forbidden
+        | 500 -> GetSecurityAlertsByAlertId.InternalServerError
+        | _ -> GetSecurityAlertsByAlertId.ServiceUnavailable
 
     ///<summary>
     ///Edits security alerts for an account
@@ -2679,18 +2392,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/security/alerts/{alertId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutSecurityAlertsByAlertId.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutSecurityAlertsByAlertId.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            PutSecurityAlertsByAlertId.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            PutSecurityAlertsByAlertId.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            PutSecurityAlertsByAlertId.InternalServerError
-        else
-            PutSecurityAlertsByAlertId.ServiceUnavailable
+        match int status with
+        | 200 -> PutSecurityAlertsByAlertId.OK(Serializer.deserialize content)
+        | 400 -> PutSecurityAlertsByAlertId.BadRequest
+        | 401 -> PutSecurityAlertsByAlertId.Unauthorized
+        | 403 -> PutSecurityAlertsByAlertId.Forbidden
+        | 500 -> PutSecurityAlertsByAlertId.InternalServerError
+        | _ -> PutSecurityAlertsByAlertId.ServiceUnavailable
 
     ///<summary>
     ///Deletes security alerts for an account
@@ -2714,18 +2422,13 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/security/alerts/{alertId}" requestParts cancellationToken
 
-        if status = HttpStatusCode.NoContent then
-            DeleteSecurityAlertsByAlertId.NoContent
-        else if status = HttpStatusCode.BadRequest then
-            DeleteSecurityAlertsByAlertId.BadRequest
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteSecurityAlertsByAlertId.Unauthorized
-        else if status = HttpStatusCode.Forbidden then
-            DeleteSecurityAlertsByAlertId.Forbidden
-        else if status = HttpStatusCode.InternalServerError then
-            DeleteSecurityAlertsByAlertId.InternalServerError
-        else
-            DeleteSecurityAlertsByAlertId.ServiceUnavailable
+        match int status with
+        | 204 -> DeleteSecurityAlertsByAlertId.NoContent
+        | 400 -> DeleteSecurityAlertsByAlertId.BadRequest
+        | 401 -> DeleteSecurityAlertsByAlertId.Unauthorized
+        | 403 -> DeleteSecurityAlertsByAlertId.Forbidden
+        | 500 -> DeleteSecurityAlertsByAlertId.InternalServerError
+        | _ -> DeleteSecurityAlertsByAlertId.ServiceUnavailable
 
     ///<summary>
     ///Get Top 10 subscribers threatened. Type Table
@@ -2758,14 +2461,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/security/topthreaten" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraphSecurityTopthreaten.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraphSecurityTopthreaten.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraphSecurityTopthreaten.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraphSecurityTopthreaten.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraphSecurityTopthreaten.OK(Serializer.deserialize content)
+        | 400 -> GetGraphSecurityTopthreaten.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraphSecurityTopthreaten.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraphSecurityTopthreaten.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get Counter of alert grouped by type of security alert. Type Pie
@@ -2798,14 +2498,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/security/byalarmtype" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraphSecurityByalarmtype.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraphSecurityByalarmtype.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraphSecurityByalarmtype.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraphSecurityByalarmtype.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraphSecurityByalarmtype.OK(Serializer.deserialize content)
+        | 400 -> GetGraphSecurityByalarmtype.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraphSecurityByalarmtype.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraphSecurityByalarmtype.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrive the information stored about eSIMs for an account and below.
@@ -2831,14 +2528,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/esims" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostEsims.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostEsims.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostEsims.Unauthorized(Serializer.deserialize content)
-        else
-            PostEsims.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostEsims.OK(Serializer.deserialize content)
+        | 400 -> PostEsims.BadRequest(Serializer.deserialize content)
+        | 401 -> PostEsims.Unauthorized(Serializer.deserialize content)
+        | _ -> PostEsims.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrive the information stored about eSIMs for an account and below.
@@ -2882,14 +2576,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/esims/{eid}/transfer" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostEsimsTransferByEid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostEsimsTransferByEid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostEsimsTransferByEid.Unauthorized(Serializer.deserialize content)
-        else
-            PostEsimsTransferByEid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostEsimsTransferByEid.OK(Serializer.deserialize content)
+        | 400 -> PostEsimsTransferByEid.BadRequest(Serializer.deserialize content)
+        | 401 -> PostEsimsTransferByEid.Unauthorized(Serializer.deserialize content)
+        | _ -> PostEsimsTransferByEid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Return a ESim from a account to parent account
@@ -2900,14 +2591,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/esims/{eid}/return" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostEsimsReturnByEid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostEsimsReturnByEid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostEsimsReturnByEid.Unauthorized(Serializer.deserialize content)
-        else
-            PostEsimsReturnByEid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostEsimsReturnByEid.OK(Serializer.deserialize content)
+        | 400 -> PostEsimsReturnByEid.BadRequest(Serializer.deserialize content)
+        | 401 -> PostEsimsReturnByEid.Unauthorized(Serializer.deserialize content)
+        | _ -> PostEsimsReturnByEid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Activate the enabled profile and subscribe it to the assigned product.
@@ -3204,14 +2892,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/1" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph1.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph1.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph1.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph1.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph1.OK(Serializer.deserialize content)
+        | 400 -> GetGraph1.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph1.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph1.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get amount of cdrs by an account.Type Line
@@ -3240,14 +2925,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/2" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph2.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph2.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph2.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph2.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph2.OK(Serializer.deserialize content)
+        | 400 -> GetGraph2.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph2.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph2.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get amount of cdrs aggregated by the mcc in an account. Type Pie
@@ -3276,14 +2958,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/3" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph3.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph3.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph3.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph3.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph3.OK(Serializer.deserialize content)
+        | 400 -> GetGraph3.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph3.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph3.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get amount of cdrs aggregated by the mcc and the mnc in an account. Type Pie
@@ -3312,14 +2991,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/4" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph4.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph4.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph4.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph4.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph4.OK(Serializer.deserialize content)
+        | 400 -> GetGraph4.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph4.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph4.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get CDRs aggregated by Products in an account. Type Line
@@ -3348,14 +3024,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/5" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph5.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph5.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph5.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph5.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph5.OK(Serializer.deserialize content)
+        | 400 -> GetGraph5.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph5.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph5.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get bytes consumed and aggregated by ICCID in an account. Type Table
@@ -3384,14 +3057,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/6" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph6.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph6.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph6.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph6.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph6.OK(Serializer.deserialize content)
+        | 400 -> GetGraph6.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph6.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph6.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get CDRs aggregated by ICCID in an account. Type Table
@@ -3420,14 +3090,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/7" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph7.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph7.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph7.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph7.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph7.OK(Serializer.deserialize content)
+        | 400 -> GetGraph7.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph7.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph7.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get bytes consumed and aggregated by account for the current month and the previous month. Type Line
@@ -3456,14 +3123,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/8" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph8.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph8.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph8.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph8.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph8.OK(Serializer.deserialize content)
+        | 400 -> GetGraph8.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph8.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph8.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get CDRs aggregated by account for the current month and the previous month. Type Line
@@ -3492,14 +3156,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/9" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph9.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph9.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph9.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph9.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph9.OK(Serializer.deserialize content)
+        | 400 -> GetGraph9.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph9.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph9.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get stats of products by account for the current month. The period is from the first day of the current month to today. Type Table
@@ -3512,14 +3173,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/10" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph10.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph10.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph10.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph10.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph10.OK(Serializer.deserialize content)
+        | 400 -> GetGraph10.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph10.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph10.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get status of simcards by account. Type Pie
@@ -3548,14 +3206,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/11" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph11.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph11.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph11.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph11.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph11.OK(Serializer.deserialize content)
+        | 400 -> GetGraph11.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph11.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph11.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get cost consumed by an account. Type Line
@@ -3584,14 +3239,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/12" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraph12.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraph12.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraph12.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraph12.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraph12.OK(Serializer.deserialize content)
+        | 400 -> GetGraph12.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraph12.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraph12.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get the simcard status per day by an account. Type Line
@@ -3620,14 +3272,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/graph/statusesperday" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetGraphStatusesperday.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetGraphStatusesperday.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetGraphStatusesperday.Unauthorized(Serializer.deserialize content)
-        else
-            GetGraphStatusesperday.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetGraphStatusesperday.OK(Serializer.deserialize content)
+        | 400 -> GetGraphStatusesperday.BadRequest(Serializer.deserialize content)
+        | 401 -> GetGraphStatusesperday.Unauthorized(Serializer.deserialize content)
+        | _ -> GetGraphStatusesperday.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get components that are not fully operational and are being used in this account
@@ -3655,14 +3304,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/quick-dial" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsQuickDialByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PostAssetsQuickDialByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAssetsQuickDialByIccid.OK(Serializer.deserialize content)
+        | 400 -> PostAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAssetsQuickDialByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Get a list of all quick dial entries for the SIM
@@ -3673,14 +3319,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}/quick-dial" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsQuickDialByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            GetAssetsQuickDialByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssetsQuickDialByIccid.OK(Serializer.deserialize content)
+        | 400 -> GetAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAssetsQuickDialByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Show an individual quick dial entry in the SIM
@@ -3691,14 +3334,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/assets/{iccid}/quick-dial/{location}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            GetAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            GetAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            GetAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
-        else
-            GetAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
+        | 400 -> GetAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
+        | 401 -> GetAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
+        | _ -> GetAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Update a short dial entry
@@ -3713,14 +3353,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/assets/{iccid}/quick-dial/{location}" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PutAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PutAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PutAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
-        else
-            PutAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PutAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
+        | 400 -> PutAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
+        | 401 -> PutAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
+        | _ -> PutAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Remove a short dial entry. Use "all" as location param if all locations for an user need to be removed.
@@ -3731,14 +3368,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/assets/{iccid}/quick-dial/{location}" requestParts cancellationToken
 
-        if status = HttpStatusCode.NoContent then
-            DeleteAssetsQuickDialByIccidAndLocation.NoContent
-        else if status = HttpStatusCode.BadRequest then
-            DeleteAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            DeleteAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
-        else
-            DeleteAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 204 -> DeleteAssetsQuickDialByIccidAndLocation.NoContent
+        | 400 -> DeleteAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
+        | 401 -> DeleteAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
+        | _ -> DeleteAssetsQuickDialByIccidAndLocation.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Forces to make a MT voice call to a SIM. This function is used to make the client perform a task when it gets a call.
@@ -3749,14 +3383,11 @@ type SyncPodiosuiteClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/assets/{iccid}/dial" requestParts cancellationToken
 
-        if status = HttpStatusCode.OK then
-            PostAssetsDialByIccid.OK(Serializer.deserialize content)
-        else if status = HttpStatusCode.BadRequest then
-            PostAssetsDialByIccid.BadRequest(Serializer.deserialize content)
-        else if status = HttpStatusCode.Unauthorized then
-            PostAssetsDialByIccid.Unauthorized(Serializer.deserialize content)
-        else
-            PostAssetsDialByIccid.InternalServerError(Serializer.deserialize content)
+        match int status with
+        | 200 -> PostAssetsDialByIccid.OK(Serializer.deserialize content)
+        | 400 -> PostAssetsDialByIccid.BadRequest(Serializer.deserialize content)
+        | 401 -> PostAssetsDialByIccid.Unauthorized(Serializer.deserialize content)
+        | _ -> PostAssetsDialByIccid.InternalServerError(Serializer.deserialize content)
 
     ///<summary>
     ///Retrive the information stored about all steering lists for an account.

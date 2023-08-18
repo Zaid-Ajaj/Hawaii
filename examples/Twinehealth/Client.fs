@@ -52,14 +52,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/action" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return CreateAction.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateAction.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateAction.Forbidden(Serializer.deserialize content)
-            else
-                return CreateAction.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return CreateAction.Created(Serializer.deserialize content)
+            | 401 -> return CreateAction.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateAction.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateAction.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -72,12 +69,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/action/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchAction.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchAction.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchAction.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchAction.OK(Serializer.deserialize content)
+            | 401 -> return FetchAction.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchAction.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -94,14 +89,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.patchAsync httpClient "/action/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdateAction.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpdateAction.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpdateAction.Forbidden(Serializer.deserialize content)
-            else
-                return UpdateAction.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpdateAction.OK(Serializer.deserialize content)
+            | 401 -> return UpdateAction.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpdateAction.Forbidden(Serializer.deserialize content)
+            | _ -> return UpdateAction.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -112,14 +104,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/bundle" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateBundle.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateBundle.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateBundle.Forbidden(Serializer.deserialize content)
-            else
-                return CreateBundle.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateBundle.OK(Serializer.deserialize content)
+            | 401 -> return CreateBundle.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateBundle.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateBundle.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -132,12 +121,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/bundle/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchBundle.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchBundle.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchBundle.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchBundle.OK(Serializer.deserialize content)
+            | 401 -> return FetchBundle.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchBundle.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -154,14 +141,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.patchAsync httpClient "/bundle/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdateBundle.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpdateBundle.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpdateBundle.Forbidden(Serializer.deserialize content)
-            else
-                return UpdateBundle.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpdateBundle.OK(Serializer.deserialize content)
+            | 401 -> return UpdateBundle.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpdateBundle.Forbidden(Serializer.deserialize content)
+            | _ -> return UpdateBundle.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -241,14 +225,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/calendar_event" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchCalendarEvents.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchCalendarEvents.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchCalendarEvents.Forbidden(Serializer.deserialize content)
-            else
-                return FetchCalendarEvents.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchCalendarEvents.OK(Serializer.deserialize content)
+            | 401 -> return FetchCalendarEvents.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchCalendarEvents.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchCalendarEvents.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -259,14 +240,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/calendar_event" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return CreateCalendarEvent.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateCalendarEvent.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateCalendarEvent.Forbidden(Serializer.deserialize content)
-            else
-                return CreateCalendarEvent.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return CreateCalendarEvent.Created(Serializer.deserialize content)
+            | 401 -> return CreateCalendarEvent.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateCalendarEvent.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateCalendarEvent.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -281,12 +259,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync httpClient "/calendar_event/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return DeleteCalendarEvent.OK
-            else if status = HttpStatusCode.Unauthorized then
-                return DeleteCalendarEvent.Unauthorized(Serializer.deserialize content)
-            else
-                return DeleteCalendarEvent.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return DeleteCalendarEvent.OK
+            | 401 -> return DeleteCalendarEvent.Unauthorized(Serializer.deserialize content)
+            | _ -> return DeleteCalendarEvent.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -301,12 +277,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/calendar_event/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchCalendarEvent.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchCalendarEvent.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchCalendarEvent.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchCalendarEvent.OK(Serializer.deserialize content)
+            | 401 -> return FetchCalendarEvent.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchCalendarEvent.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -329,14 +303,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.patchAsync httpClient "/calendar_event/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdateCalendarEvent.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpdateCalendarEvent.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpdateCalendarEvent.Forbidden(Serializer.deserialize content)
-            else
-                return UpdateCalendarEvent.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpdateCalendarEvent.OK(Serializer.deserialize content)
+            | 401 -> return UpdateCalendarEvent.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpdateCalendarEvent.Forbidden(Serializer.deserialize content)
+            | _ -> return UpdateCalendarEvent.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -353,14 +324,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/calendar_event_response" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return PostCreateCalendarEventResponse.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return PostCreateCalendarEventResponse.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return PostCreateCalendarEventResponse.Forbidden(Serializer.deserialize content)
-            else
-                return PostCreateCalendarEventResponse.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return PostCreateCalendarEventResponse.Created(Serializer.deserialize content)
+            | 401 -> return PostCreateCalendarEventResponse.Unauthorized(Serializer.deserialize content)
+            | 403 -> return PostCreateCalendarEventResponse.Forbidden(Serializer.deserialize content)
+            | _ -> return PostCreateCalendarEventResponse.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -384,12 +352,10 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/coach" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchCoaches.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchCoaches.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchCoaches.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchCoaches.OK(Serializer.deserialize content)
+            | 401 -> return FetchCoaches.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchCoaches.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -402,12 +368,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/coach/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchCoach.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchCoach.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchCoach.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchCoach.OK(Serializer.deserialize content)
+            | 401 -> return FetchCoach.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchCoach.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -443,14 +407,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/email_history" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchEmailHistories.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchEmailHistories.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchEmailHistories.Forbidden(Serializer.deserialize content)
-            else
-                return FetchEmailHistories.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchEmailHistories.OK(Serializer.deserialize content)
+            | 401 -> return FetchEmailHistories.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchEmailHistories.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchEmailHistories.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -465,12 +426,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/email_history/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchEmailHistory.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchEmailHistory.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchEmailHistory.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchEmailHistory.OK(Serializer.deserialize content)
+            | 401 -> return FetchEmailHistory.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchEmailHistory.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -488,12 +447,10 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/group" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchGroups.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchGroups.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchGroups.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchGroups.OK(Serializer.deserialize content)
+            | 401 -> return FetchGroups.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchGroups.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -504,14 +461,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/group" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return CreateGroup.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateGroup.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateGroup.Forbidden(Serializer.deserialize content)
-            else
-                return CreateGroup.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return CreateGroup.Created(Serializer.deserialize content)
+            | 401 -> return CreateGroup.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateGroup.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateGroup.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -524,12 +478,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/group/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchGroup.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchGroup.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchGroup.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchGroup.OK(Serializer.deserialize content)
+            | 401 -> return FetchGroup.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchGroup.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -577,14 +529,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/health_profile" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfiles.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfiles.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchHealthProfiles.Forbidden(Serializer.deserialize content)
-            else
-                return FetchHealthProfiles.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfiles.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfiles.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchHealthProfiles.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchHealthProfiles.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -603,12 +552,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_profile/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfile.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfile.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchHealthProfile.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfile.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfile.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchHealthProfile.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -657,14 +604,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_profile_answer" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfileAnswers.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfileAnswers.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchHealthProfileAnswers.Forbidden(Serializer.deserialize content)
-            else
-                return FetchHealthProfileAnswers.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfileAnswers.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfileAnswers.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchHealthProfileAnswers.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchHealthProfileAnswers.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -683,12 +627,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_profile_answer/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfileAnswer.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfileAnswer.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchHealthProfileAnswer.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfileAnswer.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfileAnswer.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchHealthProfileAnswer.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -721,14 +663,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_profile_question" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfileQuestions.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfileQuestions.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchHealthProfileQuestions.Forbidden(Serializer.deserialize content)
-            else
-                return FetchHealthProfileQuestions.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfileQuestions.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfileQuestions.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchHealthProfileQuestions.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchHealthProfileQuestions.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -747,12 +686,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_profile_question/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthProfileQuestion.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthProfileQuestion.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchHealthProfileQuestion.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthProfileQuestion.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthProfileQuestion.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchHealthProfileQuestion.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -765,14 +702,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_question_definition" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthQuestionDefinitions.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthQuestionDefinitions.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchHealthQuestionDefinitions.Forbidden(Serializer.deserialize content)
-            else
-                return FetchHealthQuestionDefinitions.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthQuestionDefinitions.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthQuestionDefinitions.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchHealthQuestionDefinitions.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchHealthQuestionDefinitions.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -787,12 +721,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/health_question_definition/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchHealthQuestionDefinition.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchHealthQuestionDefinition.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchHealthQuestionDefinition.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchHealthQuestionDefinition.OK(Serializer.deserialize content)
+            | 401 -> return FetchHealthQuestionDefinition.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchHealthQuestionDefinition.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -821,14 +753,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/oauth/token" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return CreateToken.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateToken.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateToken.Forbidden(Serializer.deserialize content)
-            else
-                return CreateToken.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return CreateToken.Created(Serializer.deserialize content)
+            | 401 -> return CreateToken.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateToken.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateToken.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -843,12 +772,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/oauth/token/{id}/groups" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchTokenGroups.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchTokenGroups.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchTokenGroups.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchTokenGroups.OK(Serializer.deserialize content)
+            | 401 -> return FetchTokenGroups.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchTokenGroups.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -863,12 +790,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/oauth/token/{id}/organization" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchTokenOrganization.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchTokenOrganization.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchTokenOrganization.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchTokenOrganization.OK(Serializer.deserialize content)
+            | 401 -> return FetchTokenOrganization.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchTokenOrganization.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -881,12 +806,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/organization/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchOrganization.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchOrganization.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchOrganization.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchOrganization.OK(Serializer.deserialize content)
+            | 401 -> return FetchOrganization.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchOrganization.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -946,14 +869,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/patient" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatients.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatients.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchPatients.Forbidden(Serializer.deserialize content)
-            else
-                return FetchPatients.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatients.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatients.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchPatients.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchPatients.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -991,14 +911,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/patient" requestParts cancellationToken
 
-            if status = HttpStatusCode.Created then
-                return CreatePatient.Created(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreatePatient.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreatePatient.Forbidden(Serializer.deserialize content)
-            else
-                return CreatePatient.Conflict(Serializer.deserialize content)
+            match int status with
+            | 201 -> return CreatePatient.Created(Serializer.deserialize content)
+            | 401 -> return CreatePatient.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreatePatient.Forbidden(Serializer.deserialize content)
+            | _ -> return CreatePatient.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1009,14 +926,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync httpClient "/patient" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpsertPatient.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpsertPatient.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpsertPatient.Forbidden(Serializer.deserialize content)
-            else
-                return UpsertPatient.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpsertPatient.OK(Serializer.deserialize content)
+            | 401 -> return UpsertPatient.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpsertPatient.Forbidden(Serializer.deserialize content)
+            | _ -> return UpsertPatient.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1029,12 +943,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/patient/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatient.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatient.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatient.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatient.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatient.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatient.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1051,14 +963,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.patchAsync httpClient "/patient/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdatePatient.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpdatePatient.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpdatePatient.Forbidden(Serializer.deserialize content)
-            else
-                return UpdatePatient.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpdatePatient.OK(Serializer.deserialize content)
+            | 401 -> return UpdatePatient.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpdatePatient.Forbidden(Serializer.deserialize content)
+            | _ -> return UpdatePatient.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1073,12 +982,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient/{id}/coaches" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientCoaches.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientCoaches.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientCoaches.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientCoaches.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientCoaches.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientCoaches.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1093,12 +1000,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient/{id}/groups" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientGroups.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientGroups.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientGroups.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientGroups.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientGroups.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientGroups.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1143,14 +1048,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient_health_metric" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientHealthMetrics.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientHealthMetrics.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchPatientHealthMetrics.Forbidden(Serializer.deserialize content)
-            else
-                return FetchPatientHealthMetrics.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientHealthMetrics.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientHealthMetrics.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchPatientHealthMetrics.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchPatientHealthMetrics.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1201,14 +1103,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/patient_health_metric" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreatePatientHealthMetric.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreatePatientHealthMetric.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreatePatientHealthMetric.Forbidden(Serializer.deserialize content)
-            else
-                return CreatePatientHealthMetric.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreatePatientHealthMetric.OK(Serializer.deserialize content)
+            | 401 -> return CreatePatientHealthMetric.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreatePatientHealthMetric.Forbidden(Serializer.deserialize content)
+            | _ -> return CreatePatientHealthMetric.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1223,12 +1122,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient_health_metric/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientHealthMetric.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientHealthMetric.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientHealthMetric.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientHealthMetric.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientHealthMetric.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientHealthMetric.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1261,12 +1158,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient_plan_summary" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientPlanSummaries.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientPlanSummaries.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientPlanSummaries.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientPlanSummaries.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientPlanSummaries.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientPlanSummaries.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1285,12 +1180,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/patient_plan_summary/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientPlanSummary.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientPlanSummary.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientPlanSummary.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientPlanSummary.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientPlanSummary.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientPlanSummary.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1313,14 +1206,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.patchAsync httpClient "/patient_plan_summary/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return UpdatePatientPlanSummary.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return UpdatePatientPlanSummary.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return UpdatePatientPlanSummary.Forbidden(Serializer.deserialize content)
-            else
-                return UpdatePatientPlanSummary.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UpdatePatientPlanSummary.OK(Serializer.deserialize content)
+            | 401 -> return UpdatePatientPlanSummary.Unauthorized(Serializer.deserialize content)
+            | 403 -> return UpdatePatientPlanSummary.Forbidden(Serializer.deserialize content)
+            | _ -> return UpdatePatientPlanSummary.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1379,14 +1269,11 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/result" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientHealthResults.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientHealthResults.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return FetchPatientHealthResults.Forbidden(Serializer.deserialize content)
-            else
-                return FetchPatientHealthResults.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientHealthResults.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientHealthResults.Unauthorized(Serializer.deserialize content)
+            | 403 -> return FetchPatientHealthResults.Forbidden(Serializer.deserialize content)
+            | _ -> return FetchPatientHealthResults.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1399,12 +1286,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/result/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchPatientHealthResult.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchPatientHealthResult.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchPatientHealthResult.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchPatientHealthResult.OK(Serializer.deserialize content)
+            | 401 -> return FetchPatientHealthResult.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchPatientHealthResult.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1440,12 +1325,10 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/reward" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewards.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewards.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewards.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewards.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewards.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewards.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1456,14 +1339,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/reward" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateReward.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateReward.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateReward.Forbidden(Serializer.deserialize content)
-            else
-                return CreateReward.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateReward.OK(Serializer.deserialize content)
+            | 401 -> return CreateReward.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateReward.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateReward.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1476,12 +1356,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/reward/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchReward.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchReward.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchReward.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchReward.OK(Serializer.deserialize content)
+            | 401 -> return FetchReward.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchReward.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1507,12 +1385,10 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/reward_earning" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardEarnings.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardEarnings.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardEarnings.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardEarnings.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardEarnings.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardEarnings.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1523,14 +1399,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/reward_earning" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateRewardEarning.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateRewardEarning.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateRewardEarning.Forbidden(Serializer.deserialize content)
-            else
-                return CreateRewardEarning.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateRewardEarning.OK(Serializer.deserialize content)
+            | 401 -> return CreateRewardEarning.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateRewardEarning.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateRewardEarning.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1545,12 +1418,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_earning/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardEarning.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardEarning.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardEarning.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardEarning.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardEarning.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardEarning.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1566,12 +1437,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_earning_fulfillment" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardEarningFulfillments.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardEarningFulfillments.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardEarningFulfillments.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardEarningFulfillments.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardEarningFulfillments.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardEarningFulfillments.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1588,14 +1457,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/reward_earning_fulfillment" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateRewardEarningFulfillment.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
-            else
-                return CreateRewardEarningFulfillment.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateRewardEarningFulfillment.OK(Serializer.deserialize content)
+            | 401 -> return CreateRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateRewardEarningFulfillment.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1610,12 +1476,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_earning_fulfillment/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardEarningFulfillment.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardEarningFulfillment.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1639,12 +1503,10 @@ type TwinehealthClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/reward_program" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardPrograms.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardPrograms.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardPrograms.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardPrograms.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardPrograms.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardPrograms.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1655,14 +1517,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/reward_program" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateRewardProgram.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateRewardProgram.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateRewardProgram.Forbidden(Serializer.deserialize content)
-            else
-                return CreateRewardProgram.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateRewardProgram.OK(Serializer.deserialize content)
+            | 401 -> return CreateRewardProgram.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateRewardProgram.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateRewardProgram.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1677,12 +1536,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_program/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardProgram.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardProgram.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardProgram.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardProgram.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardProgram.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardProgram.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1697,12 +1554,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_program/{id}/group" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardProgramGroup.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardProgramGroup.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardProgramGroup.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardProgramGroup.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardProgramGroup.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardProgramGroup.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1731,12 +1586,10 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_program_activation" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardProgramActivations.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardProgramActivations.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardProgramActivations.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardProgramActivations.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardProgramActivations.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardProgramActivations.Forbidden(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1753,14 +1606,11 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/reward_program_activation" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return CreateRewardProgramActivation.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return CreateRewardProgramActivation.Unauthorized(Serializer.deserialize content)
-            else if status = HttpStatusCode.Forbidden then
-                return CreateRewardProgramActivation.Forbidden(Serializer.deserialize content)
-            else
-                return CreateRewardProgramActivation.Conflict(Serializer.deserialize content)
+            match int status with
+            | 200 -> return CreateRewardProgramActivation.OK(Serializer.deserialize content)
+            | 401 -> return CreateRewardProgramActivation.Unauthorized(Serializer.deserialize content)
+            | 403 -> return CreateRewardProgramActivation.Forbidden(Serializer.deserialize content)
+            | _ -> return CreateRewardProgramActivation.Conflict(Serializer.deserialize content)
         }
 
     ///<summary>
@@ -1775,10 +1625,8 @@ type TwinehealthClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/reward_program_activation/{id}" requestParts cancellationToken
 
-            if status = HttpStatusCode.OK then
-                return FetchRewardProgramActivation.OK(Serializer.deserialize content)
-            else if status = HttpStatusCode.Unauthorized then
-                return FetchRewardProgramActivation.Unauthorized(Serializer.deserialize content)
-            else
-                return FetchRewardProgramActivation.Forbidden(Serializer.deserialize content)
+            match int status with
+            | 200 -> return FetchRewardProgramActivation.OK(Serializer.deserialize content)
+            | 401 -> return FetchRewardProgramActivation.Unauthorized(Serializer.deserialize content)
+            | _ -> return FetchRewardProgramActivation.Forbidden(Serializer.deserialize content)
         }
