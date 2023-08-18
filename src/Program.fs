@@ -2461,17 +2461,7 @@ let createOpenApiClient
 
                     let matchClause openApiResponse =
                         let (status, _) = openApiResponse
-                        let ident =
-                            if config.target = Target.FSharp then
-                                SynPat.LongIdent(
-                                    LongIdentWithDots.Create [ "HttpStatusCode"; status ],
-                                    None,
-                                    None,
-                                    SynArgPats.Empty,
-                                    None,
-                                    range0)
-                            else
-                                SynPat.Const(SynConst.Int32 (statusCode status), range0)
+                        let ident = SynPat.Const(SynConst.Int32 (statusCode status), range0)
 
                         SynMatchClause.Clause (
                             ident,
@@ -2509,7 +2499,13 @@ let createOpenApiClient
                             responsesRevSorted |> List.head |> matchWildClause
 
                         let clausesSorted = defaultClause :: allClausesButFirst |> List.rev
-                        SynExpr.CreateMatch(createIdent [ "status" ], clausesSorted)
+
+                        SynExpr.CreateMatch(
+                            SynExpr.CreateApp(
+                                SynExpr.CreateIdent(
+                                    Ident.Create "int") ,
+                                createIdent [ "status" ]),
+                            clausesSorted)
 
                 let asyncBuilder expr =
                     if config.target = Target.Fable then

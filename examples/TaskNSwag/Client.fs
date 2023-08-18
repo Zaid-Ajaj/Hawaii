@@ -37,9 +37,9 @@ type TaskNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Brandings/upload" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UploadBrandingImage.OK
-        | HttpStatusCode.BadRequest -> UploadBrandingImage.BadRequest(Serializer.deserialize content)
+        match int status with
+        | 200 -> UploadBrandingImage.OK
+        | 400 -> UploadBrandingImage.BadRequest(Serializer.deserialize content)
         | _ -> UploadBrandingImage.Unauthorized(Serializer.deserialize content)
 
     ///<summary>
@@ -71,8 +71,8 @@ type TaskNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/api/Datahub/datasources" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetDataSources.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetDataSources.OK(Serializer.deserialize content)
         | _ -> GetDataSources.Unauthorized content
 
     ///<summary>
@@ -102,8 +102,8 @@ type TaskNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Datahub/import" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> ImportData.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> ImportData.OK(Serializer.deserialize content)
         | _ -> ImportData.Unauthorized content
 
     member this.UploadFile(nodeId: int, ?path: string, ?cancellationToken: CancellationToken) =
@@ -115,9 +115,9 @@ type TaskNSwagClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/api/Documents/upload" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UploadFile.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> UploadFile.BadRequest(Serializer.deserialize content)
+        match int status with
+        | 200 -> UploadFile.OK(Serializer.deserialize content)
+        | 400 -> UploadFile.BadRequest(Serializer.deserialize content)
         | _ -> UploadFile.Unauthorized(Serializer.deserialize content)
 
     member this.DownloadFile(nodeId: int, ?path: string, ?cancellationToken: CancellationToken) =
@@ -129,9 +129,9 @@ type TaskNSwagClient(httpClient: HttpClient) =
         let (status, contentBinary) =
             OpenApiHttp.postBinary httpClient "/api/Documents/download" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DownloadFile.OK contentBinary
-        | HttpStatusCode.BadRequest ->
+        match int status with
+        | 200 -> DownloadFile.OK contentBinary
+        | 400 ->
             let content = Encoding.UTF8.GetString contentBinary
             DownloadFile.BadRequest(Serializer.deserialize content)
         | _ ->

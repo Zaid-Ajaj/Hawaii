@@ -28,7 +28,7 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Brandings/upload" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UploadBrandingImage.OK
             | 400 -> return UploadBrandingImage.BadRequest(Serializer.deserialize content)
             | _ -> return UploadBrandingImage.Unauthorized(Serializer.deserialize content)
@@ -56,7 +56,7 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/api/Datahub/datasources" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetDataSources.OK(Serializer.deserialize content)
             | _ -> return GetDataSources.Unauthorized content
         }
@@ -87,7 +87,7 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Datahub/import" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return ImportData.OK(Serializer.deserialize content)
             | _ -> return ImportData.Unauthorized content
         }
@@ -101,7 +101,7 @@ type FableNSwagClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/api/Documents/upload" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UploadFile.OK(Serializer.deserialize content)
             | 400 -> return UploadFile.BadRequest(Serializer.deserialize content)
             | _ -> return UploadFile.Unauthorized(Serializer.deserialize content)
@@ -117,7 +117,7 @@ type FableNSwagClient(url: string, headers: list<Header>) =
             let! (status, contentBinary) =
                 OpenApiHttp.postBinaryAsync url "/api/Documents/download" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DownloadFile.OK contentBinary
             | 400 ->
                 let! content = Utilities.readBytesAsText contentBinary

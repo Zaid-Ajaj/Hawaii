@@ -23,7 +23,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync url "/pet" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdatePet.OK(Serializer.deserialize content)
             | 400 -> return UpdatePet.BadRequest
             | 404 -> return UpdatePet.NotFound
@@ -38,7 +38,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/pet" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return AddPet.OK(Serializer.deserialize content)
             | _ -> return AddPet.MethodNotAllowed
         }
@@ -55,7 +55,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/pet/findByStatus" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FindPetsByStatus.OK(Serializer.deserialize content)
             | _ -> return FindPetsByStatus.BadRequest
         }
@@ -72,7 +72,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/pet/findByTags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FindPetsByTags.OK(Serializer.deserialize content)
             | _ -> return FindPetsByTags.BadRequest
         }
@@ -86,7 +86,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("petId", petId) ]
             let! (status, content) = OpenApiHttp.getAsync url "/pet/{petId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetPetById.OK(Serializer.deserialize content)
             | 400 -> return GetPetById.BadRequest
             | _ -> return GetPetById.NotFound
@@ -109,7 +109,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/pet/{petId}" headers requestParts
 
-            match status with
+            match int status with
             | 405 -> return UpdatePetWithForm.MethodNotAllowed
             | _ -> return UpdatePetWithForm.DefaultResponse
         }
@@ -128,7 +128,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/pet/{petId}" headers requestParts
 
-            match status with
+            match int status with
             | 400 -> return DeletePet.BadRequest
             | _ -> return DeletePet.DefaultResponse
         }
@@ -170,7 +170,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/store/order" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PlaceOrder.OK(Serializer.deserialize content)
             | _ -> return PlaceOrder.MethodNotAllowed
         }
@@ -186,7 +186,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/store/order/{orderId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetOrderById.OK(Serializer.deserialize content)
             | 400 -> return GetOrderById.BadRequest
             | _ -> return GetOrderById.NotFound
@@ -203,7 +203,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/store/order/{orderId}" headers requestParts
 
-            match status with
+            match int status with
             | 400 -> return DeleteOrder.BadRequest
             | 404 -> return DeleteOrder.NotFound
             | _ -> return DeleteOrder.DefaultResponse
@@ -227,7 +227,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/user/createWithList" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateUsersWithListInput.OK(Serializer.deserialize content)
             | _ -> return CreateUsersWithListInput.DefaultResponse
         }
@@ -247,7 +247,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/user/login" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return LoginUser.OK content
             | _ -> return LoginUser.BadRequest
         }
@@ -273,7 +273,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/user/{username}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetUserByName.OK(Serializer.deserialize content)
             | 400 -> return GetUserByName.BadRequest
             | _ -> return GetUserByName.NotFound
@@ -305,7 +305,7 @@ type FablePetStoreClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/user/{username}" headers requestParts
 
-            match status with
+            match int status with
             | 400 -> return DeleteUser.BadRequest
             | 404 -> return DeleteUser.NotFound
             | _ -> return DeleteUser.DefaultResponse

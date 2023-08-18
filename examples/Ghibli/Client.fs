@@ -104,9 +104,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/films" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetFilms.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetFilms.BadRequest
+            match int status with
+            | 200 -> return GetFilms.OK(Serializer.deserialize content)
+            | 400 -> return GetFilms.BadRequest
             | _ -> return GetFilms.NotFound
         }
 
@@ -125,9 +125,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/films/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetFilmsById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetFilmsById.BadRequest
+            match int status with
+            | 200 -> return GetFilmsById.OK(Serializer.deserialize content)
+            | 400 -> return GetFilmsById.BadRequest
             | _ -> return GetFilmsById.NotFound
         }
 
@@ -147,9 +147,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/people" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetPeople.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetPeople.BadRequest
+            match int status with
+            | 200 -> return GetPeople.OK(Serializer.deserialize content)
+            | 400 -> return GetPeople.BadRequest
             | _ -> return GetPeople.NotFound
         }
 
@@ -168,9 +168,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/people/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetPeopleById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetPeopleById.BadRequest
+            match int status with
+            | 200 -> return GetPeopleById.OK(Serializer.deserialize content)
+            | 400 -> return GetPeopleById.BadRequest
             | _ -> return GetPeopleById.NotFound
         }
 
@@ -190,9 +190,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/locations" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetLocations.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetLocations.BadRequest
+            match int status with
+            | 200 -> return GetLocations.OK(Serializer.deserialize content)
+            | 400 -> return GetLocations.BadRequest
             | _ -> return GetLocations.NotFound
         }
 
@@ -211,9 +211,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/locations/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetLocationsById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetLocationsById.BadRequest
+            match int status with
+            | 200 -> return GetLocationsById.OK(Serializer.deserialize content)
+            | 400 -> return GetLocationsById.BadRequest
             | _ -> return GetLocationsById.NotFound
         }
 
@@ -233,9 +233,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/species" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSpecies.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetSpecies.BadRequest
+            match int status with
+            | 200 -> return GetSpecies.OK(Serializer.deserialize content)
+            | 400 -> return GetSpecies.BadRequest
             | _ -> return GetSpecies.NotFound
         }
 
@@ -254,9 +254,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/species/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSpeciesById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetSpeciesById.BadRequest
+            match int status with
+            | 200 -> return GetSpeciesById.OK(Serializer.deserialize content)
+            | 400 -> return GetSpeciesById.BadRequest
             | _ -> return GetSpeciesById.NotFound
         }
 
@@ -276,9 +276,9 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/vehicles" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetVehicles.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetVehicles.BadRequest
+            match int status with
+            | 200 -> return GetVehicles.OK(Serializer.deserialize content)
+            | 400 -> return GetVehicles.BadRequest
             | _ -> return GetVehicles.NotFound
         }
 
@@ -297,8 +297,8 @@ type GhibliClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/vehicles/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetVehiclesById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetVehiclesById.BadRequest
+            match int status with
+            | 200 -> return GetVehiclesById.OK(Serializer.deserialize content)
+            | 400 -> return GetVehiclesById.BadRequest
             | _ -> return GetVehiclesById.NotFound
         }

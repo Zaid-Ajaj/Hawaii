@@ -27,8 +27,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/audits" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetAudits.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetAudits.OK(Serializer.deserialize content)
             | _ -> return GetAudits.Forbidden
         }
 
@@ -52,9 +52,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/audits/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteAuditById.OK content
-            | HttpStatusCode.Forbidden -> return DeleteAuditById.Forbidden
+            match int status with
+            | 200 -> return DeleteAuditById.OK content
+            | 403 -> return DeleteAuditById.Forbidden
             | _ -> return DeleteAuditById.NotFound
         }
 
@@ -73,9 +73,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/audits/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetAuditById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetAuditById.BadRequest
+            match int status with
+            | 200 -> return GetAuditById.OK(Serializer.deserialize content)
+            | 400 -> return GetAuditById.BadRequest
             | _ -> return GetAuditById.Forbidden
         }
 
@@ -128,9 +128,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/extensions" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetExtensions.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetExtensions.Forbidden
+            match int status with
+            | 200 -> return GetExtensions.OK(Serializer.deserialize content)
+            | 403 -> return GetExtensions.Forbidden
             | _ -> return GetExtensions.NotFound
         }
 
@@ -159,8 +159,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/extensions/{id}/ignore" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return IgnoreExtensionUpdate.OK content
+            match int status with
+            | 200 -> return IgnoreExtensionUpdate.OK content
             | _ -> return IgnoreExtensionUpdate.NotFound
         }
 
@@ -176,8 +176,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/extensions/{id}/unignore" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UnignoreExtensionUpdate.OK content
+            match int status with
+            | 200 -> return UnignoreExtensionUpdate.OK content
             | _ -> return UnignoreExtensionUpdate.NotFound
         }
 
@@ -193,8 +193,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/extensions/{id}/update" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UpdateExtension.OK content
+            match int status with
+            | 200 -> return UpdateExtension.OK content
             | _ -> return UpdateExtension.NotFound
         }
 
@@ -211,8 +211,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/feedbacks" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetFeedbacks.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetFeedbacks.OK(Serializer.deserialize content)
             | _ -> return GetFeedbacks.Forbidden
         }
 
@@ -224,11 +224,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/feedbacks" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateFeedbacks.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateFeedbacks.Created
-            | HttpStatusCode.BadRequest -> return CreateFeedbacks.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateFeedbacks.Forbidden
+            match int status with
+            | 200 -> return CreateFeedbacks.OK(Serializer.deserialize content)
+            | 201 -> return CreateFeedbacks.Created
+            | 400 -> return CreateFeedbacks.BadRequest
+            | 403 -> return CreateFeedbacks.Forbidden
             | _ -> return CreateFeedbacks.NotFound
         }
 
@@ -290,8 +290,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/logs" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetLogs.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetLogs.OK(Serializer.deserialize content)
             | _ -> return GetLogs.Forbidden
         }
 
@@ -339,8 +339,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/logs/export" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetExportLogs.OK
+            match int status with
+            | 200 -> return GetExportLogs.OK
             | _ -> return GetExportLogs.Forbidden
         }
 
@@ -374,9 +374,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/logs/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteLogById.OK content
-            | HttpStatusCode.Forbidden -> return DeleteLogById.Forbidden
+            match int status with
+            | 200 -> return DeleteLogById.OK content
+            | 403 -> return DeleteLogById.Forbidden
             | _ -> return DeleteLogById.NotFound
         }
 
@@ -424,9 +424,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync httpClient "/reports/sites/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetReportsSitesById.OK contentBinary
-            | HttpStatusCode.Forbidden -> return GetReportsSitesById.Forbidden contentBinary
+            match int status with
+            | 200 -> return GetReportsSitesById.OK contentBinary
+            | 403 -> return GetReportsSitesById.Forbidden contentBinary
             | _ -> return GetReportsSitesById.NotFound contentBinary
         }
 
@@ -467,9 +467,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.getBinaryAsync httpClient "/reports/tags/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetReportsTagsById.OK contentBinary
-            | HttpStatusCode.Forbidden -> return GetReportsTagsById.Forbidden contentBinary
+            match int status with
+            | 200 -> return GetReportsTagsById.OK contentBinary
+            | 403 -> return GetReportsTagsById.Forbidden contentBinary
             | _ -> return GetReportsTagsById.NotFound contentBinary
         }
 
@@ -546,9 +546,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSites.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSites.Forbidden
+            match int status with
+            | 200 -> return GetSites.OK(Serializer.deserialize content)
+            | 403 -> return GetSites.Forbidden
             | _ -> return GetSites.NotFound
         }
 
@@ -560,11 +560,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/sites" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateSite.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateSite.Created
-            | HttpStatusCode.BadRequest -> return CreateSite.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateSite.Forbidden
+            match int status with
+            | 200 -> return CreateSite.OK(Serializer.deserialize content)
+            | 201 -> return CreateSite.Created
+            | 400 -> return CreateSite.BadRequest
+            | 403 -> return CreateSite.Forbidden
             | _ -> return CreateSite.NotFound
         }
 
@@ -588,9 +588,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/sites/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteSitesById.OK content
-            | HttpStatusCode.Forbidden -> return DeleteSitesById.Forbidden
+            match int status with
+            | 200 -> return DeleteSitesById.OK content
+            | 403 -> return DeleteSitesById.Forbidden
             | _ -> return DeleteSitesById.NotFound
         }
 
@@ -609,9 +609,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSiteById.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSiteById.Forbidden
+            match int status with
+            | 200 -> return GetSiteById.OK(Serializer.deserialize content)
+            | 403 -> return GetSiteById.Forbidden
             | _ -> return GetSiteById.NotFound
         }
 
@@ -629,10 +629,10 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.putAsync httpClient "/sites/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return PutSitesById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return PutSitesById.BadRequest
-            | HttpStatusCode.Forbidden -> return PutSitesById.Forbidden
+            match int status with
+            | 200 -> return PutSitesById.OK(Serializer.deserialize content)
+            | 400 -> return PutSitesById.BadRequest
+            | 403 -> return PutSitesById.Forbidden
             | _ -> return PutSitesById.NotFound
         }
 
@@ -668,9 +668,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}/audits" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSiteAudits.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSiteAudits.Forbidden
+            match int status with
+            | 200 -> return GetSiteAudits.OK(Serializer.deserialize content)
+            | 403 -> return GetSiteAudits.Forbidden
             | _ -> return GetSiteAudits.NotFound
         }
 
@@ -686,11 +686,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/audits" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateAudits.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateAudits.Created
-            | HttpStatusCode.BadRequest -> return CreateAudits.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateAudits.Forbidden
+            match int status with
+            | 200 -> return CreateAudits.OK(Serializer.deserialize content)
+            | 201 -> return CreateAudits.Created
+            | 400 -> return CreateAudits.BadRequest
+            | 403 -> return CreateAudits.Forbidden
             | _ -> return CreateAudits.NotFound
         }
 
@@ -706,9 +706,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/backupnow" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return AddSiteToBackupQueue.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return AddSiteToBackupQueue.Forbidden
+            match int status with
+            | 200 -> return AddSiteToBackupQueue.OK(Serializer.deserialize content)
+            | 403 -> return AddSiteToBackupQueue.Forbidden
             | _ -> return AddSiteToBackupQueue.NotFound
         }
 
@@ -724,9 +724,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/backupprofiles" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetBackupProfiles.OK
-            | HttpStatusCode.Forbidden -> return GetBackupProfiles.Forbidden
+            match int status with
+            | 200 -> return GetBackupProfiles.OK
+            | 403 -> return GetBackupProfiles.Forbidden
             | _ -> return GetBackupProfiles.NotFound
         }
 
@@ -742,9 +742,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/backups" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetListBackups.OK
-            | HttpStatusCode.Forbidden -> return GetListBackups.Forbidden
+            match int status with
+            | 200 -> return GetListBackups.OK
+            | 403 -> return GetListBackups.Forbidden
             | _ -> return GetListBackups.NotFound
         }
 
@@ -760,9 +760,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/backupstart" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return StartSiteBackup.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return StartSiteBackup.Forbidden
+            match int status with
+            | 200 -> return StartSiteBackup.OK(Serializer.deserialize content)
+            | 403 -> return StartSiteBackup.Forbidden
             | _ -> return StartSiteBackup.NotFound
         }
 
@@ -778,9 +778,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/backupstep" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return StepSiteBackup.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return StepSiteBackup.Forbidden
+            match int status with
+            | 200 -> return StepSiteBackup.OK(Serializer.deserialize content)
+            | 403 -> return StepSiteBackup.Forbidden
             | _ -> return StepSiteBackup.NotFound
         }
 
@@ -817,9 +817,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/extensions" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSitesExtensionsById.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSitesExtensionsById.Forbidden
+            match int status with
+            | 200 -> return GetSitesExtensionsById.OK(Serializer.deserialize content)
+            | 403 -> return GetSitesExtensionsById.Forbidden
             | _ -> return GetSitesExtensionsById.NotFound
         }
 
@@ -838,9 +838,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/extensions" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return InstallExtension.OK
-            | HttpStatusCode.Forbidden -> return InstallExtension.Forbidden
+            match int status with
+            | 200 -> return InstallExtension.OK
+            | 403 -> return InstallExtension.Forbidden
             | _ -> return InstallExtension.NotFound
         }
 
@@ -892,9 +892,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}/logs" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSitesLogsById.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSitesLogsById.Forbidden
+            match int status with
+            | 200 -> return GetSitesLogsById.OK(Serializer.deserialize content)
+            | 403 -> return GetSitesLogsById.Forbidden
             | _ -> return GetSitesLogsById.NotFound
         }
 
@@ -912,11 +912,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/sites/{id}/logs" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateLog.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateLog.Created
-            | HttpStatusCode.BadRequest -> return CreateLog.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateLog.Forbidden
+            match int status with
+            | 200 -> return CreateLog.OK(Serializer.deserialize content)
+            | 201 -> return CreateLog.Created
+            | 400 -> return CreateLog.BadRequest
+            | 403 -> return CreateLog.Forbidden
             | _ -> return CreateLog.NotFound
         }
 
@@ -932,9 +932,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync httpClient "/sites/{id}/monitor" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteMonitor.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return DeleteMonitor.Forbidden
+            match int status with
+            | 200 -> return DeleteMonitor.OK(Serializer.deserialize content)
+            | 403 -> return DeleteMonitor.Forbidden
             | _ -> return DeleteMonitor.NotFound
         }
 
@@ -950,9 +950,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/monitor" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return PostMonitor.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return PostMonitor.Forbidden
+            match int status with
+            | 200 -> return PostMonitor.OK(Serializer.deserialize content)
+            | 403 -> return PostMonitor.Forbidden
             | _ -> return PostMonitor.NotFound
         }
 
@@ -968,9 +968,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/scanner" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return Scanner.OK content
-            | HttpStatusCode.Forbidden -> return Scanner.Forbidden
+            match int status with
+            | 200 -> return Scanner.OK content
+            | 403 -> return Scanner.Forbidden
             | _ -> return Scanner.NotFound
         }
 
@@ -984,9 +984,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}/seo" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return SeoAnalyze.OK content
-            | HttpStatusCode.Forbidden -> return SeoAnalyze.Forbidden
+            match int status with
+            | 200 -> return SeoAnalyze.OK content
+            | 403 -> return SeoAnalyze.Forbidden
             | _ -> return SeoAnalyze.NotFound
         }
 
@@ -1030,9 +1030,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}/tags" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSitesTagsById.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSitesTagsById.Forbidden
+            match int status with
+            | 200 -> return GetSitesTagsById.OK(Serializer.deserialize content)
+            | 403 -> return GetSitesTagsById.Forbidden
             | _ -> return GetSitesTagsById.NotFound
         }
 
@@ -1050,10 +1050,10 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.postAsync httpClient "/sites/{id}/tags" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return PostTags.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return PostTags.Created
-            | HttpStatusCode.Forbidden -> return PostTags.Forbidden
+            match int status with
+            | 200 -> return PostTags.OK(Serializer.deserialize content)
+            | 201 -> return PostTags.Created
+            | 403 -> return PostTags.Forbidden
             | _ -> return PostTags.NotFound
         }
 
@@ -1069,9 +1069,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/sites/{id}/updatejoomla" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UpdateJoomla.OK content
-            | HttpStatusCode.Forbidden -> return UpdateJoomla.Forbidden
+            match int status with
+            | 200 -> return UpdateJoomla.OK content
+            | 403 -> return UpdateJoomla.Forbidden
             | _ -> return UpdateJoomla.NotFound
         }
 
@@ -1085,9 +1085,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync httpClient "/sites/{id}/uptime" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetUptime.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetUptime.Forbidden
+            match int status with
+            | 200 -> return GetUptime.OK(Serializer.deserialize content)
+            | 403 -> return GetUptime.Forbidden
             | _ -> return GetUptime.NotFound
         }
 
@@ -1103,9 +1103,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/validate" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return ValidateSite.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return ValidateSite.Forbidden
+            match int status with
+            | 200 -> return ValidateSite.OK(Serializer.deserialize content)
+            | 403 -> return ValidateSite.Forbidden
             | _ -> return ValidateSite.NotFound
         }
 
@@ -1121,9 +1121,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/sites/{id}/validatedebug" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return ValidateDebugSite.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return ValidateDebugSite.Forbidden
+            match int status with
+            | 200 -> return ValidateDebugSite.OK(Serializer.deserialize content)
+            | 403 -> return ValidateDebugSite.Forbidden
             | _ -> return ValidateDebugSite.NotFound
         }
 
@@ -1135,8 +1135,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync httpClient "/ssousers" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSsoUsers.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetSsoUsers.OK(Serializer.deserialize content)
             | _ -> return GetSsoUsers.Forbidden
         }
 
@@ -1148,11 +1148,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/ssousers" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateSsoUsers.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateSsoUsers.Created
-            | HttpStatusCode.BadRequest -> return CreateSsoUsers.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateSsoUsers.Forbidden
+            match int status with
+            | 200 -> return CreateSsoUsers.OK(Serializer.deserialize content)
+            | 201 -> return CreateSsoUsers.Created
+            | 400 -> return CreateSsoUsers.BadRequest
+            | 403 -> return CreateSsoUsers.Forbidden
             | _ -> return CreateSsoUsers.NotFound
         }
 
@@ -1166,9 +1166,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/ssousers/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteSsoUserById.OK content
-            | HttpStatusCode.Forbidden -> return DeleteSsoUserById.Forbidden
+            match int status with
+            | 200 -> return DeleteSsoUserById.OK content
+            | 403 -> return DeleteSsoUserById.Forbidden
             | _ -> return DeleteSsoUserById.NotFound
         }
 
@@ -1187,9 +1187,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/ssousers/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSsoUsersById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetSsoUsersById.BadRequest
+            match int status with
+            | 200 -> return GetSsoUsersById.OK(Serializer.deserialize content)
+            | 400 -> return GetSsoUsersById.BadRequest
             | _ -> return GetSsoUsersById.Forbidden
         }
 
@@ -1207,11 +1207,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.putAsync httpClient "/ssousers/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UpdateSsoUsers.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return UpdateSsoUsers.Created
-            | HttpStatusCode.BadRequest -> return UpdateSsoUsers.BadRequest
-            | HttpStatusCode.Forbidden -> return UpdateSsoUsers.Forbidden
+            match int status with
+            | 200 -> return UpdateSsoUsers.OK(Serializer.deserialize content)
+            | 201 -> return UpdateSsoUsers.Created
+            | 400 -> return UpdateSsoUsers.BadRequest
+            | 403 -> return UpdateSsoUsers.Forbidden
             | _ -> return UpdateSsoUsers.NotFound
         }
 
@@ -1252,8 +1252,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/tags" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetTags.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetTags.OK(Serializer.deserialize content)
             | _ -> return GetTags.Forbidden
         }
 
@@ -1265,11 +1265,11 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync httpClient "/tags" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return CreateTags.OK(Serializer.deserialize content)
-            | HttpStatusCode.Created -> return CreateTags.Created
-            | HttpStatusCode.BadRequest -> return CreateTags.BadRequest
-            | HttpStatusCode.Forbidden -> return CreateTags.Forbidden
+            match int status with
+            | 200 -> return CreateTags.OK(Serializer.deserialize content)
+            | 201 -> return CreateTags.Created
+            | 400 -> return CreateTags.BadRequest
+            | 403 -> return CreateTags.Forbidden
             | _ -> return CreateTags.NotFound
         }
 
@@ -1293,9 +1293,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync httpClient "/tags/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DeleteTagsById.OK content
-            | HttpStatusCode.Forbidden -> return DeleteTagsById.Forbidden
+            match int status with
+            | 200 -> return DeleteTagsById.OK content
+            | 403 -> return DeleteTagsById.Forbidden
             | _ -> return DeleteTagsById.NotFound
         }
 
@@ -1314,9 +1314,9 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/tags/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetTagById.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetTagById.BadRequest
+            match int status with
+            | 200 -> return GetTagById.OK(Serializer.deserialize content)
+            | 400 -> return GetTagById.BadRequest
             | _ -> return GetTagById.Forbidden
         }
 
@@ -1334,10 +1334,10 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.putAsync httpClient "/tags/{id}" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UpdateTag.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return UpdateTag.BadRequest
-            | HttpStatusCode.Forbidden -> return UpdateTag.Forbidden
+            match int status with
+            | 200 -> return UpdateTag.OK(Serializer.deserialize content)
+            | 400 -> return UpdateTag.BadRequest
+            | 403 -> return UpdateTag.Forbidden
             | _ -> return UpdateTag.NotFound
         }
 
@@ -1409,8 +1409,8 @@ type FreeFormWatchfulClient(httpClient: HttpClient) =
 
             let! (status, content) = OpenApiHttp.getAsync httpClient "/tags/{id}/sites" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetSitesByTags.OK(Serializer.deserialize content)
-            | HttpStatusCode.Forbidden -> return GetSitesByTags.Forbidden
+            match int status with
+            | 200 -> return GetSitesByTags.OK(Serializer.deserialize content)
+            | 403 -> return GetSitesByTags.Forbidden
             | _ -> return GetSitesByTags.NotFound
         }

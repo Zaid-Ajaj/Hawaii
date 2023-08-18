@@ -27,8 +27,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/audits" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetAudits.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetAudits.OK(Serializer.deserialize content)
         | _ -> GetAudits.Forbidden
 
     ///<summary>
@@ -53,9 +53,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/audits/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteAuditById.OK content
-        | HttpStatusCode.Forbidden -> DeleteAuditById.Forbidden
+        match int status with
+        | 200 -> DeleteAuditById.OK content
+        | 403 -> DeleteAuditById.Forbidden
         | _ -> DeleteAuditById.NotFound
 
     ///<summary>
@@ -73,9 +73,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/audits/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetAuditById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetAuditById.BadRequest
+        match int status with
+        | 200 -> GetAuditById.OK(Serializer.deserialize content)
+        | 400 -> GetAuditById.BadRequest
         | _ -> GetAuditById.Forbidden
 
     ///<summary>
@@ -127,9 +127,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/extensions" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetExtensions.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetExtensions.Forbidden
+        match int status with
+        | 200 -> GetExtensions.OK(Serializer.deserialize content)
+        | 403 -> GetExtensions.Forbidden
         | _ -> GetExtensions.NotFound
 
     ///<summary>
@@ -154,8 +154,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/extensions/{id}/ignore" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> IgnoreExtensionUpdate.OK content
+        match int status with
+        | 200 -> IgnoreExtensionUpdate.OK content
         | _ -> IgnoreExtensionUpdate.NotFound
 
     ///<summary>
@@ -169,8 +169,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/extensions/{id}/unignore" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UnignoreExtensionUpdate.OK content
+        match int status with
+        | 200 -> UnignoreExtensionUpdate.OK content
         | _ -> UnignoreExtensionUpdate.NotFound
 
     ///<summary>
@@ -184,8 +184,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/extensions/{id}/update" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UpdateExtension.OK content
+        match int status with
+        | 200 -> UpdateExtension.OK content
         | _ -> UpdateExtension.NotFound
 
     ///<summary>
@@ -201,8 +201,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/feedbacks" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetFeedbacks.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetFeedbacks.OK(Serializer.deserialize content)
         | _ -> GetFeedbacks.Forbidden
 
     ///<summary>
@@ -214,11 +214,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/feedbacks" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateFeedbacks.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateFeedbacks.Created
-        | HttpStatusCode.BadRequest -> CreateFeedbacks.BadRequest
-        | HttpStatusCode.Forbidden -> CreateFeedbacks.Forbidden
+        match int status with
+        | 200 -> CreateFeedbacks.OK(Serializer.deserialize content)
+        | 201 -> CreateFeedbacks.Created
+        | 400 -> CreateFeedbacks.BadRequest
+        | 403 -> CreateFeedbacks.Forbidden
         | _ -> CreateFeedbacks.NotFound
 
     ///<summary>
@@ -277,8 +277,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/logs" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetLogs.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetLogs.OK(Serializer.deserialize content)
         | _ -> GetLogs.Forbidden
 
     ///<summary>
@@ -325,8 +325,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/logs/export" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetExportLogs.OK
+        match int status with
+        | 200 -> GetExportLogs.OK
         | _ -> GetExportLogs.Forbidden
 
     ///<summary>
@@ -362,9 +362,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/logs/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteLogById.OK content
-        | HttpStatusCode.Forbidden -> DeleteLogById.Forbidden
+        match int status with
+        | 200 -> DeleteLogById.OK content
+        | 403 -> DeleteLogById.Forbidden
         | _ -> DeleteLogById.NotFound
 
     member this.PostPackages(?cancellationToken: CancellationToken) =
@@ -411,9 +411,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, contentBinary) =
             OpenApiHttp.getBinary httpClient "/reports/sites/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetReportsSitesById.OK contentBinary
-        | HttpStatusCode.Forbidden -> GetReportsSitesById.Forbidden contentBinary
+        match int status with
+        | 200 -> GetReportsSitesById.OK contentBinary
+        | 403 -> GetReportsSitesById.Forbidden contentBinary
         | _ -> GetReportsSitesById.NotFound contentBinary
 
     ///<summary>
@@ -452,9 +452,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, contentBinary) =
             OpenApiHttp.getBinary httpClient "/reports/tags/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetReportsTagsById.OK contentBinary
-        | HttpStatusCode.Forbidden -> GetReportsTagsById.Forbidden contentBinary
+        match int status with
+        | 200 -> GetReportsTagsById.OK contentBinary
+        | 403 -> GetReportsTagsById.Forbidden contentBinary
         | _ -> GetReportsTagsById.NotFound contentBinary
 
     ///<summary>
@@ -530,9 +530,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSites.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSites.Forbidden
+        match int status with
+        | 200 -> GetSites.OK(Serializer.deserialize content)
+        | 403 -> GetSites.Forbidden
         | _ -> GetSites.NotFound
 
     ///<summary>
@@ -544,11 +544,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateSite.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateSite.Created
-        | HttpStatusCode.BadRequest -> CreateSite.BadRequest
-        | HttpStatusCode.Forbidden -> CreateSite.Forbidden
+        match int status with
+        | 200 -> CreateSite.OK(Serializer.deserialize content)
+        | 201 -> CreateSite.Created
+        | 400 -> CreateSite.BadRequest
+        | 403 -> CreateSite.Forbidden
         | _ -> CreateSite.NotFound
 
     ///<summary>
@@ -573,9 +573,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/sites/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteSitesById.OK content
-        | HttpStatusCode.Forbidden -> DeleteSitesById.Forbidden
+        match int status with
+        | 200 -> DeleteSitesById.OK content
+        | 403 -> DeleteSitesById.Forbidden
         | _ -> DeleteSitesById.NotFound
 
     ///<summary>
@@ -593,9 +593,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSiteById.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSiteById.Forbidden
+        match int status with
+        | 200 -> GetSiteById.OK(Serializer.deserialize content)
+        | 403 -> GetSiteById.Forbidden
         | _ -> GetSiteById.NotFound
 
     ///<summary>
@@ -612,10 +612,10 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/sites/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> PutSitesById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> PutSitesById.BadRequest
-        | HttpStatusCode.Forbidden -> PutSitesById.Forbidden
+        match int status with
+        | 200 -> PutSitesById.OK(Serializer.deserialize content)
+        | 400 -> PutSitesById.BadRequest
+        | 403 -> PutSitesById.Forbidden
         | _ -> PutSitesById.NotFound
 
     ///<summary>
@@ -650,9 +650,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/audits" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSiteAudits.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSiteAudits.Forbidden
+        match int status with
+        | 200 -> GetSiteAudits.OK(Serializer.deserialize content)
+        | 403 -> GetSiteAudits.Forbidden
         | _ -> GetSiteAudits.NotFound
 
     ///<summary>
@@ -666,11 +666,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/audits" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateAudits.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateAudits.Created
-        | HttpStatusCode.BadRequest -> CreateAudits.BadRequest
-        | HttpStatusCode.Forbidden -> CreateAudits.Forbidden
+        match int status with
+        | 200 -> CreateAudits.OK(Serializer.deserialize content)
+        | 201 -> CreateAudits.Created
+        | 400 -> CreateAudits.BadRequest
+        | 403 -> CreateAudits.Forbidden
         | _ -> CreateAudits.NotFound
 
     ///<summary>
@@ -684,9 +684,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/backupnow" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> AddSiteToBackupQueue.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> AddSiteToBackupQueue.Forbidden
+        match int status with
+        | 200 -> AddSiteToBackupQueue.OK(Serializer.deserialize content)
+        | 403 -> AddSiteToBackupQueue.Forbidden
         | _ -> AddSiteToBackupQueue.NotFound
 
     ///<summary>
@@ -700,9 +700,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/backupprofiles" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetBackupProfiles.OK
-        | HttpStatusCode.Forbidden -> GetBackupProfiles.Forbidden
+        match int status with
+        | 200 -> GetBackupProfiles.OK
+        | 403 -> GetBackupProfiles.Forbidden
         | _ -> GetBackupProfiles.NotFound
 
     ///<summary>
@@ -716,9 +716,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/backups" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetListBackups.OK
-        | HttpStatusCode.Forbidden -> GetListBackups.Forbidden
+        match int status with
+        | 200 -> GetListBackups.OK
+        | 403 -> GetListBackups.Forbidden
         | _ -> GetListBackups.NotFound
 
     ///<summary>
@@ -732,9 +732,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/backupstart" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> StartSiteBackup.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> StartSiteBackup.Forbidden
+        match int status with
+        | 200 -> StartSiteBackup.OK(Serializer.deserialize content)
+        | 403 -> StartSiteBackup.Forbidden
         | _ -> StartSiteBackup.NotFound
 
     ///<summary>
@@ -748,9 +748,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/backupstep" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> StepSiteBackup.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> StepSiteBackup.Forbidden
+        match int status with
+        | 200 -> StepSiteBackup.OK(Serializer.deserialize content)
+        | 403 -> StepSiteBackup.Forbidden
         | _ -> StepSiteBackup.NotFound
 
     ///<summary>
@@ -785,9 +785,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/extensions" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSitesExtensionsById.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSitesExtensionsById.Forbidden
+        match int status with
+        | 200 -> GetSitesExtensionsById.OK(Serializer.deserialize content)
+        | 403 -> GetSitesExtensionsById.Forbidden
         | _ -> GetSitesExtensionsById.NotFound
 
     ///<summary>
@@ -804,9 +804,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/extensions" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> InstallExtension.OK
-        | HttpStatusCode.Forbidden -> InstallExtension.Forbidden
+        match int status with
+        | 200 -> InstallExtension.OK
+        | 403 -> InstallExtension.Forbidden
         | _ -> InstallExtension.NotFound
 
     ///<summary>
@@ -857,9 +857,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/logs" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSitesLogsById.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSitesLogsById.Forbidden
+        match int status with
+        | 200 -> GetSitesLogsById.OK(Serializer.deserialize content)
+        | 403 -> GetSitesLogsById.Forbidden
         | _ -> GetSitesLogsById.NotFound
 
     ///<summary>
@@ -876,11 +876,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/logs" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateLog.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateLog.Created
-        | HttpStatusCode.BadRequest -> CreateLog.BadRequest
-        | HttpStatusCode.Forbidden -> CreateLog.Forbidden
+        match int status with
+        | 200 -> CreateLog.OK(Serializer.deserialize content)
+        | 201 -> CreateLog.Created
+        | 400 -> CreateLog.BadRequest
+        | 403 -> CreateLog.Forbidden
         | _ -> CreateLog.NotFound
 
     ///<summary>
@@ -894,9 +894,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/sites/{id}/monitor" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteMonitor.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> DeleteMonitor.Forbidden
+        match int status with
+        | 200 -> DeleteMonitor.OK(Serializer.deserialize content)
+        | 403 -> DeleteMonitor.Forbidden
         | _ -> DeleteMonitor.NotFound
 
     ///<summary>
@@ -910,9 +910,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/monitor" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> PostMonitor.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> PostMonitor.Forbidden
+        match int status with
+        | 200 -> PostMonitor.OK(Serializer.deserialize content)
+        | 403 -> PostMonitor.Forbidden
         | _ -> PostMonitor.NotFound
 
     ///<summary>
@@ -926,9 +926,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/scanner" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> Scanner.OK content
-        | HttpStatusCode.Forbidden -> Scanner.Forbidden
+        match int status with
+        | 200 -> Scanner.OK content
+        | 403 -> Scanner.Forbidden
         | _ -> Scanner.NotFound
 
     ///<summary>
@@ -942,9 +942,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/seo" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> SeoAnalyze.OK content
-        | HttpStatusCode.Forbidden -> SeoAnalyze.Forbidden
+        match int status with
+        | 200 -> SeoAnalyze.OK content
+        | 403 -> SeoAnalyze.Forbidden
         | _ -> SeoAnalyze.NotFound
 
     ///<summary>
@@ -987,9 +987,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/tags" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSitesTagsById.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSitesTagsById.Forbidden
+        match int status with
+        | 200 -> GetSitesTagsById.OK(Serializer.deserialize content)
+        | 403 -> GetSitesTagsById.Forbidden
         | _ -> GetSitesTagsById.NotFound
 
     ///<summary>
@@ -1006,10 +1006,10 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/tags" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> PostTags.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> PostTags.Created
-        | HttpStatusCode.Forbidden -> PostTags.Forbidden
+        match int status with
+        | 200 -> PostTags.OK(Serializer.deserialize content)
+        | 201 -> PostTags.Created
+        | 403 -> PostTags.Forbidden
         | _ -> PostTags.NotFound
 
     ///<summary>
@@ -1023,9 +1023,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/sites/{id}/updatejoomla" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UpdateJoomla.OK content
-        | HttpStatusCode.Forbidden -> UpdateJoomla.Forbidden
+        match int status with
+        | 200 -> UpdateJoomla.OK content
+        | 403 -> UpdateJoomla.Forbidden
         | _ -> UpdateJoomla.NotFound
 
     ///<summary>
@@ -1039,9 +1039,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/uptime" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetUptime.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetUptime.Forbidden
+        match int status with
+        | 200 -> GetUptime.OK(Serializer.deserialize content)
+        | 403 -> GetUptime.Forbidden
         | _ -> GetUptime.NotFound
 
     ///<summary>
@@ -1055,9 +1055,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/validate" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> ValidateSite.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> ValidateSite.Forbidden
+        match int status with
+        | 200 -> ValidateSite.OK(Serializer.deserialize content)
+        | 403 -> ValidateSite.Forbidden
         | _ -> ValidateSite.NotFound
 
     ///<summary>
@@ -1071,9 +1071,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/sites/{id}/validatedebug" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> ValidateDebugSite.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> ValidateDebugSite.Forbidden
+        match int status with
+        | 200 -> ValidateDebugSite.OK(Serializer.deserialize content)
+        | 403 -> ValidateDebugSite.Forbidden
         | _ -> ValidateDebugSite.NotFound
 
     ///<summary>
@@ -1085,8 +1085,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/ssousers" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSsoUsers.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetSsoUsers.OK(Serializer.deserialize content)
         | _ -> GetSsoUsers.Forbidden
 
     ///<summary>
@@ -1098,11 +1098,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/ssousers" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateSsoUsers.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateSsoUsers.Created
-        | HttpStatusCode.BadRequest -> CreateSsoUsers.BadRequest
-        | HttpStatusCode.Forbidden -> CreateSsoUsers.Forbidden
+        match int status with
+        | 200 -> CreateSsoUsers.OK(Serializer.deserialize content)
+        | 201 -> CreateSsoUsers.Created
+        | 400 -> CreateSsoUsers.BadRequest
+        | 403 -> CreateSsoUsers.Forbidden
         | _ -> CreateSsoUsers.NotFound
 
     ///<summary>
@@ -1116,9 +1116,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/ssousers/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteSsoUserById.OK content
-        | HttpStatusCode.Forbidden -> DeleteSsoUserById.Forbidden
+        match int status with
+        | 200 -> DeleteSsoUserById.OK content
+        | 403 -> DeleteSsoUserById.Forbidden
         | _ -> DeleteSsoUserById.NotFound
 
     ///<summary>
@@ -1136,9 +1136,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/ssousers/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSsoUsersById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetSsoUsersById.BadRequest
+        match int status with
+        | 200 -> GetSsoUsersById.OK(Serializer.deserialize content)
+        | 400 -> GetSsoUsersById.BadRequest
         | _ -> GetSsoUsersById.Forbidden
 
     ///<summary>
@@ -1155,11 +1155,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/ssousers/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UpdateSsoUsers.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> UpdateSsoUsers.Created
-        | HttpStatusCode.BadRequest -> UpdateSsoUsers.BadRequest
-        | HttpStatusCode.Forbidden -> UpdateSsoUsers.Forbidden
+        match int status with
+        | 200 -> UpdateSsoUsers.OK(Serializer.deserialize content)
+        | 201 -> UpdateSsoUsers.Created
+        | 400 -> UpdateSsoUsers.BadRequest
+        | 403 -> UpdateSsoUsers.Forbidden
         | _ -> UpdateSsoUsers.NotFound
 
     ///<summary>
@@ -1199,8 +1199,8 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/tags" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetTags.OK(Serializer.deserialize content)
+        match int status with
+        | 200 -> GetTags.OK(Serializer.deserialize content)
         | _ -> GetTags.Forbidden
 
     ///<summary>
@@ -1212,11 +1212,11 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.post httpClient "/tags" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> CreateTags.OK(Serializer.deserialize content)
-        | HttpStatusCode.Created -> CreateTags.Created
-        | HttpStatusCode.BadRequest -> CreateTags.BadRequest
-        | HttpStatusCode.Forbidden -> CreateTags.Forbidden
+        match int status with
+        | 200 -> CreateTags.OK(Serializer.deserialize content)
+        | 201 -> CreateTags.Created
+        | 400 -> CreateTags.BadRequest
+        | 403 -> CreateTags.Forbidden
         | _ -> CreateTags.NotFound
 
     ///<summary>
@@ -1241,9 +1241,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.delete httpClient "/tags/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> DeleteTagsById.OK content
-        | HttpStatusCode.Forbidden -> DeleteTagsById.Forbidden
+        match int status with
+        | 200 -> DeleteTagsById.OK content
+        | 403 -> DeleteTagsById.Forbidden
         | _ -> DeleteTagsById.NotFound
 
     ///<summary>
@@ -1261,9 +1261,9 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/tags/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetTagById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetTagById.BadRequest
+        match int status with
+        | 200 -> GetTagById.OK(Serializer.deserialize content)
+        | 400 -> GetTagById.BadRequest
         | _ -> GetTagById.Forbidden
 
     ///<summary>
@@ -1280,10 +1280,10 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.put httpClient "/tags/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> UpdateTag.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> UpdateTag.BadRequest
-        | HttpStatusCode.Forbidden -> UpdateTag.Forbidden
+        match int status with
+        | 200 -> UpdateTag.OK(Serializer.deserialize content)
+        | 400 -> UpdateTag.BadRequest
+        | 403 -> UpdateTag.Forbidden
         | _ -> UpdateTag.NotFound
 
     ///<summary>
@@ -1354,7 +1354,7 @@ type SyncWatchfulClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/tags/{id}/sites" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSitesByTags.OK(Serializer.deserialize content)
-        | HttpStatusCode.Forbidden -> GetSitesByTags.Forbidden
+        match int status with
+        | 200 -> GetSitesByTags.OK(Serializer.deserialize content)
+        | 403 -> GetSitesByTags.Forbidden
         | _ -> GetSitesByTags.NotFound

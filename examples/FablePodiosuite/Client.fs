@@ -16,7 +16,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/auth/token" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAuthToken.OK(Serializer.deserialize content)
             | 400 -> return PostAuthToken.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAuthToken.Unauthorized(Serializer.deserialize content)
@@ -31,7 +31,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/auth/recover-password" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAuthRecoverPassword.OK(Serializer.deserialize content)
             | 400 -> return PostAuthRecoverPassword.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAuthRecoverPassword.Unauthorized(Serializer.deserialize content)
@@ -51,7 +51,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/auth/reset/{mailtoken}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAuthResetByMailtoken.OK(Serializer.deserialize content)
             | 400 -> return PostAuthResetByMailtoken.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAuthResetByMailtoken.Unauthorized(Serializer.deserialize content)
@@ -69,7 +69,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/auth/revoke-token" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAuthRevokeToken.OK(Serializer.deserialize content)
             | 400 -> return PostAuthRevokeToken.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAuthRevokeToken.Unauthorized(Serializer.deserialize content)
@@ -87,7 +87,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/auth/change-password" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAuthChangePassword.OK(Serializer.deserialize content)
             | 400 -> return PostAuthChangePassword.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAuthChangePassword.Unauthorized(Serializer.deserialize content)
@@ -105,7 +105,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/users" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostUsers.OK(Serializer.deserialize content)
             | 400 -> return PostUsers.BadRequest(Serializer.deserialize content)
             | 401 -> return PostUsers.Unauthorized(Serializer.deserialize content)
@@ -173,7 +173,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/users" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetUsers.OK(Serializer.deserialize content)
             | 400 -> return GetUsers.BadRequest(Serializer.deserialize content)
             | 401 -> return GetUsers.Unauthorized(Serializer.deserialize content)
@@ -244,7 +244,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/usersbulk" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostUsersbulk.OK(Serializer.deserialize content)
             | 400 -> return PostUsersbulk.BadRequest(Serializer.deserialize content)
             | 401 -> return PostUsersbulk.Unauthorized(Serializer.deserialize content)
@@ -264,7 +264,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/users/me" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetUsersMe.OK(Serializer.deserialize content)
             | 400 -> return GetUsersMe.BadRequest(Serializer.deserialize content)
             | 401 -> return GetUsersMe.Unauthorized(Serializer.deserialize content)
@@ -281,7 +281,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/users/me/accept-tc" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return PostUsersMeAcceptTc.Created
             | 400 -> return PostUsersMeAcceptTc.BadRequest(Serializer.deserialize content)
             | 401 -> return PostUsersMeAcceptTc.Unauthorized(Serializer.deserialize content)
@@ -303,7 +303,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/users/{userId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetUsersByUserId.OK(Serializer.deserialize content)
             | 400 -> return GetUsersByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetUsersByUserId.Unauthorized(Serializer.deserialize content)
@@ -325,7 +325,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/users/{userId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutUsersByUserId.OK(Serializer.deserialize content)
             | 400 -> return PutUsersByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutUsersByUserId.Unauthorized(Serializer.deserialize content)
@@ -347,7 +347,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/users/{userId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteUsersByUserId.OK(Serializer.deserialize content)
             | 400 -> return DeleteUsersByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteUsersByUserId.Unauthorized(Serializer.deserialize content)
@@ -367,7 +367,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/users/{userId}/change-password" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutUsersChangePasswordByUserId.OK(Serializer.deserialize content)
             | 400 -> return PutUsersChangePasswordByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutUsersChangePasswordByUserId.Unauthorized(Serializer.deserialize content)
@@ -391,7 +391,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/users/{userId}/favorites" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutUsersFavoritesByUserId.OK(Serializer.deserialize content)
             | 400 -> return PutUsersFavoritesByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutUsersFavoritesByUserId.Unauthorized(Serializer.deserialize content)
@@ -415,7 +415,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/users/{userId}/customization" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutUsersCustomizationByUserId.OK(Serializer.deserialize content)
             | 400 -> return PutUsersCustomizationByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutUsersCustomizationByUserId.Unauthorized(Serializer.deserialize content)
@@ -433,7 +433,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/users/{userId}/permissions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutUsersPermissionsByUserId.OK(Serializer.deserialize content)
             | 400 -> return PutUsersPermissionsByUserId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutUsersPermissionsByUserId.Unauthorized(Serializer.deserialize content)
@@ -448,7 +448,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/accounts/notifications" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsNotifications.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsNotifications.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsNotifications.Unauthorized(Serializer.deserialize content)
@@ -465,7 +465,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.putAsync url "/accounts/notifications/{notificationId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsNotificationsByNotificationId.OK
             | 400 -> return PutAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
@@ -482,7 +482,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync url "/accounts/notifications/{notificationId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteAccountsNotificationsByNotificationId.OK(Serializer.deserialize content)
             | 400 -> return DeleteAccountsNotificationsByNotificationId.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteAccountsNotificationsByNotificationId.Unauthorized(Serializer.deserialize content)
@@ -498,7 +498,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/accounts" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccounts.OK(Serializer.deserialize content)
             | 400 -> return GetAccounts.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccounts.Unauthorized(Serializer.deserialize content)
@@ -513,7 +513,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent account ]
             let! (status, content) = OpenApiHttp.postAsync url "/accounts" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAccounts.OK(Serializer.deserialize content)
             | 400 -> return PostAccounts.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAccounts.Unauthorized(Serializer.deserialize content)
@@ -528,7 +528,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.postAsync url "/accountsbulk" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAccountsbulk.OK(Serializer.deserialize content)
             | 400 -> return PostAccountsbulk.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAccountsbulk.Unauthorized(Serializer.deserialize content)
@@ -543,7 +543,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/accounts/{accountId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsByAccountId.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsByAccountId.Unauthorized(Serializer.deserialize content)
@@ -558,7 +558,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent account ]
             let! (status, content) = OpenApiHttp.putAsync url "/accounts/{accountId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsByAccountId.OK(Serializer.deserialize content)
             | 400 -> return PutAccountsByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAccountsByAccountId.Unauthorized(Serializer.deserialize content)
@@ -573,7 +573,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/accounts/{accountId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteAccountsByAccountId.OK(Serializer.deserialize content)
             | 400 -> return DeleteAccountsByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteAccountsByAccountId.Unauthorized(Serializer.deserialize content)
@@ -588,7 +588,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent account ]
             let! (status, content) = OpenApiHttp.putAsync url "/accounts/{accountId}/branding" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsBrandingByAccountId.OK(Serializer.deserialize content)
             | 400 -> return PutAccountsBrandingByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAccountsBrandingByAccountId.Unauthorized(Serializer.deserialize content)
@@ -605,7 +605,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/accounts/{accountId}/branding/verify" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsBrandingVerifyByAccountId.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsBrandingVerifyByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsBrandingVerifyByAccountId.Unauthorized(Serializer.deserialize content)
@@ -620,7 +620,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/accounts/{accountId}/roles" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsRolesByAccountId.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsRolesByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsRolesByAccountId.Unauthorized(Serializer.deserialize content)
@@ -637,7 +637,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/accounts/{accountId}/roles/{rolename}/actions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsRolesActionsByAccountIdAndRolename.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsRolesActionsByAccountIdAndRolename.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsRolesActionsByAccountIdAndRolename.Unauthorized(Serializer.deserialize content)
@@ -653,7 +653,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/accounts/{accountId}/notifications" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsNotificationsByAccountId.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsNotificationsByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsNotificationsByAccountId.Unauthorized(Serializer.deserialize content)
@@ -670,7 +670,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.putAsync url "/accounts/{accountId}/notifications/{notificationId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsNotificationsByAccountIdAndNotificationId.OK
             | 400 ->
                 return PutAccountsNotificationsByAccountIdAndNotificationId.BadRequest(Serializer.deserialize content)
@@ -693,7 +693,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync url "/accounts/{accountId}/notifications/{notificationId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteAccountsNotificationsByAccountIdAndNotificationId.OK
             | 400 ->
                 return
@@ -719,7 +719,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/accounts/{accountId}/products" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsProductsByAccountId.OK(Serializer.deserialize content)
             | 400 -> return GetAccountsProductsByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAccountsProductsByAccountId.Unauthorized(Serializer.deserialize content)
@@ -736,7 +736,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/accounts/products/alerts" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsProductsAlerts.OK
             | 400 -> return PutAccountsProductsAlerts.BadRequest
             | 401 -> return PutAccountsProductsAlerts.Unauthorized
@@ -751,7 +751,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/accounts/{accountId}/topup-direct" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAccountsTopupDirectByAccountId.OK(Serializer.deserialize content)
             | 400 -> return PutAccountsTopupDirectByAccountId.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAccountsTopupDirectByAccountId.Unauthorized(Serializer.deserialize content)
@@ -825,7 +825,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/accounts/{accountId}/security-settings/available-gaps" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsSecuritySettingsAvailableGapsByAccountId.OK(Serializer.deserialize content)
             | 400 ->
                 return GetAccountsSecuritySettingsAvailableGapsByAccountId.BadRequest(Serializer.deserialize content)
@@ -856,7 +856,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/accounts/{accountId}/security-settings/available-ips" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAccountsSecuritySettingsAvailableIpsByAccountId.OK(Serializer.deserialize content)
             | 400 ->
                 return GetAccountsSecuritySettingsAvailableIpsByAccountId.BadRequest(Serializer.deserialize content)
@@ -890,7 +890,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/mail" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostMail.OK(Serializer.deserialize content)
             | 400 -> return PostMail.BadRequest(Serializer.deserialize content)
             | 401 -> return PostMail.Unauthorized(Serializer.deserialize content)
@@ -1060,7 +1060,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/products" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetProducts.OK(Serializer.deserialize content)
             | 400 -> return GetProducts.BadRequest
             | 401 -> return GetProducts.Unauthorized
@@ -1080,7 +1080,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/products" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostProducts.OK(Serializer.deserialize content)
             | 400 -> return PostProducts.BadRequest(Serializer.deserialize content)
             | 401 -> return PostProducts.Unauthorized(Serializer.deserialize content)
@@ -1097,7 +1097,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/products/{productId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetProductsByProductId.OK(Serializer.deserialize content)
             | 400 -> return GetProductsByProductId.BadRequest
             | 401 -> return GetProductsByProductId.Unauthorized
@@ -1117,7 +1117,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/products/{productId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PatchProductsByProductId.OK(Serializer.deserialize content)
             | 400 -> return PatchProductsByProductId.BadRequest(Serializer.deserialize content)
             | 401 -> return PatchProductsByProductId.Unauthorized(Serializer.deserialize content)
@@ -1134,7 +1134,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/products/{productId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteProductsByProductId.OK(Serializer.deserialize content)
             | 400 -> return DeleteProductsByProductId.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteProductsByProductId.Unauthorized(Serializer.deserialize content)
@@ -1154,7 +1154,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/schema/product" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSchemaProduct.OK
             | 400 -> return GetSchemaProduct.BadRequest(Serializer.deserialize content)
             | 401 -> return GetSchemaProduct.Unauthorized(Serializer.deserialize content)
@@ -1172,7 +1172,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/products/{productId}/transfer" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostProductsTransferByProductId.OK(Serializer.deserialize content)
             | 400 -> return PostProductsTransferByProductId.BadRequest
             | 401 -> return PostProductsTransferByProductId.Unauthorized
@@ -1222,7 +1222,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/cdr" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetCdr.OK(Serializer.deserialize content)
             | 400 -> return GetCdr.BadRequest(Serializer.deserialize content)
             | 401 -> return GetCdr.Unauthorized(Serializer.deserialize content)
@@ -1256,7 +1256,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssets.OK(Serializer.deserialize content)
             | 400 -> return GetAssets.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssets.Unauthorized(Serializer.deserialize content)
@@ -1271,7 +1271,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssets.OK(Serializer.deserialize content)
             | 400 -> return PostAssets.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAssets.Unauthorized(Serializer.deserialize content)
@@ -1286,7 +1286,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/assetsbulk" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsbulk.OK(Serializer.deserialize content)
             | 400 -> return PostAssetsbulk.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAssetsbulk.Unauthorized(Serializer.deserialize content)
@@ -1301,7 +1301,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets/{iccid}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsByIccid.OK(Serializer.deserialize content)
             | 400 -> return GetAssetsByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssetsByIccid.Unauthorized(Serializer.deserialize content)
@@ -1316,7 +1316,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent asset ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsByIccid.Unauthorized(Serializer.deserialize content)
@@ -1331,7 +1331,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent asset ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/assets/{iccid}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteAssetsByIccid.OK(Serializer.deserialize content)
             | 400 -> return DeleteAssetsByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteAssetsByIccid.Unauthorized(Serializer.deserialize content)
@@ -1346,7 +1346,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent asset ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/groupname" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsGroupnameByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsGroupnameByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsGroupnameByIccid.Unauthorized(Serializer.deserialize content)
@@ -1361,7 +1361,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent asset ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/transfer" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsTransferByIccid.OK(Serializer.deserialize content)
             | 400 -> return PostAssetsTransferByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAssetsTransferByIccid.Unauthorized(Serializer.deserialize content)
@@ -1376,7 +1376,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/subscribe" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsSubscribeByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsSubscribeByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsSubscribeByIccid.Unauthorized(Serializer.deserialize content)
@@ -1391,7 +1391,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/unsubscribe" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsUnsubscribeByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsUnsubscribeByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsUnsubscribeByIccid.Unauthorized(Serializer.deserialize content)
@@ -1406,7 +1406,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/resubscribe" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsResubscribeByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsResubscribeByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsResubscribeByIccid.Unauthorized(Serializer.deserialize content)
@@ -1421,7 +1421,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/suspend" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsSuspendByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsSuspendByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsSuspendByIccid.Unauthorized(Serializer.deserialize content)
@@ -1436,7 +1436,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/unsuspend" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsUnsuspendByIccid.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsUnsuspendByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsUnsuspendByIccid.Unauthorized(Serializer.deserialize content)
@@ -1453,7 +1453,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.putAsync url "/assets/{iccid}/alerts" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsAlertsByIccid.OK
             | 400 -> return PutAssetsAlertsByIccid.BadRequest
             | 401 -> return PutAssetsAlertsByIccid.Unauthorized
@@ -1468,7 +1468,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/purge" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsPurgeByIccid.OK
             | 400 -> return PostAssetsPurgeByIccid.BadRequest
             | 401 -> return PostAssetsPurgeByIccid.Unauthorized
@@ -1483,7 +1483,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent message ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/sms" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsSmsByIccid.OK
             | 400 -> return PostAssetsSmsByIccid.BadRequest
             | 401 -> return PostAssetsSmsByIccid.Unauthorized
@@ -1498,7 +1498,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent message ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/limit" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsLimitByIccid.OK
             | 400 -> return PostAssetsLimitByIccid.BadRequest
             | 401 -> return PostAssetsLimitByIccid.Unauthorized
@@ -1535,7 +1535,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/tags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsTagsByIccid.OK
             | 400 -> return PostAssetsTagsByIccid.BadRequest
             | 401 -> return PostAssetsTagsByIccid.Unauthorized
@@ -1550,7 +1550,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets/{iccid}/diagnostic" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsDiagnosticByIccid.OK(Serializer.deserialize content)
             | 401 -> return GetAssetsDiagnosticByIccid.Unauthorized
             | 500 -> return GetAssetsDiagnosticByIccid.InternalServerError
@@ -1565,7 +1565,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets/{iccid}/location" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsLocationByIccid.OK(Serializer.deserialize content)
             | 400 -> return GetAssetsLocationByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssetsLocationByIccid.Unauthorized(Serializer.deserialize content)
@@ -1581,7 +1581,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets/{iccid}/sessions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsSessionsByIccid.OK(Serializer.deserialize content)
             | 400 -> return GetAssetsSessionsByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssetsSessionsByIccid.Unauthorized(Serializer.deserialize content)
@@ -1607,7 +1607,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/reports/custom" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetReportsCustom.OK(Serializer.deserialize content)
             | 401 -> return GetReportsCustom.Unauthorized(Serializer.deserialize content)
             | _ -> return GetReportsCustom.InternalServerError(Serializer.deserialize content)
@@ -1621,7 +1621,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent report ]
             let! (status, content) = OpenApiHttp.postAsync url "/reports/custom" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostReportsCustom.OK
             | 401 -> return PostReportsCustom.Unauthorized(Serializer.deserialize content)
             | 403 -> return PostReportsCustom.Forbidden(Serializer.deserialize content)
@@ -1637,7 +1637,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.deleteAsync url "/reports/custom" headers requestParts
 
-            match status with
+            match int status with
             | 204 -> return DeleteReportsCustom.NoContent
             | 401 -> return DeleteReportsCustom.Unauthorized(Serializer.deserialize content)
             | _ -> return DeleteReportsCustom.InternalServerError(Serializer.deserialize content)
@@ -1651,7 +1651,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/reports/custom/{reportId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetReportsCustomByReportId.OK(Serializer.deserialize content)
             | 401 -> return GetReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
             | 404 -> return GetReportsCustomByReportId.NotFound(Serializer.deserialize content)
@@ -1666,7 +1666,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.deleteAsync url "/reports/custom/{reportId}" headers requestParts
 
-            match status with
+            match int status with
             | 204 -> return DeleteReportsCustomByReportId.NoContent
             | 401 -> return DeleteReportsCustomByReportId.Unauthorized(Serializer.deserialize content)
             | 404 -> return DeleteReportsCustomByReportId.NotFound(Serializer.deserialize content)
@@ -1734,7 +1734,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/events" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetEvents.OK(Serializer.deserialize content)
             | 400 -> return GetEvents.BadRequest(Serializer.deserialize content)
             | 401 -> return GetEvents.Unauthorized(Serializer.deserialize content)
@@ -1781,7 +1781,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/subscribe" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsSubscribe.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsSubscribe.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsSubscribe.Unauthorized(Serializer.deserialize content)
@@ -1796,7 +1796,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/transfer" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsTransfer.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsTransfer.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsTransfer.Unauthorized(Serializer.deserialize content)
@@ -1811,7 +1811,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/return" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsReturn.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsReturn.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsReturn.Unauthorized(Serializer.deserialize content)
@@ -1826,7 +1826,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.putAsync url "/bulk/assets/suspend" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PutBulkAssetsSuspend.Accepted(Serializer.deserialize content)
             | 400 -> return PutBulkAssetsSuspend.BadRequest(Serializer.deserialize content)
             | 401 -> return PutBulkAssetsSuspend.Unauthorized(Serializer.deserialize content)
@@ -1841,7 +1841,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.putAsync url "/bulk/assets/unsuspend" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PutBulkAssetsUnsuspend.Accepted(Serializer.deserialize content)
             | 400 -> return PutBulkAssetsUnsuspend.BadRequest(Serializer.deserialize content)
             | 401 -> return PutBulkAssetsUnsuspend.Unauthorized(Serializer.deserialize content)
@@ -1856,7 +1856,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/resubscribe" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsResubscribe.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsResubscribe.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsResubscribe.Unauthorized(Serializer.deserialize content)
@@ -1871,7 +1871,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssets.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssets.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssets.Unauthorized(Serializer.deserialize content)
@@ -1886,7 +1886,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync url "/bulk/assets" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PutBulkAssets.Accepted(Serializer.deserialize content)
             | 400 -> return PutBulkAssets.BadRequest(Serializer.deserialize content)
             | 401 -> return PutBulkAssets.Unauthorized(Serializer.deserialize content)
@@ -1901,7 +1901,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync url "/bulk/assets/groupname" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PutBulkAssetsGroupname.Accepted(Serializer.deserialize content)
             | 400 -> return PutBulkAssetsGroupname.BadRequest(Serializer.deserialize content)
             | 401 -> return PutBulkAssetsGroupname.Unauthorized(Serializer.deserialize content)
@@ -1916,7 +1916,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/limit" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsLimit.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsLimit.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsLimit.Unauthorized(Serializer.deserialize content)
@@ -1933,7 +1933,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync url "/bulk/assets/alerts" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PutBulkAssetsAlerts.Accepted(Serializer.deserialize content)
             | 400 -> return PutBulkAssetsAlerts.BadRequest(Serializer.deserialize content)
             | 401 -> return PutBulkAssetsAlerts.Unauthorized(Serializer.deserialize content)
@@ -1948,7 +1948,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/sms" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsSms.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsSms.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsSms.Unauthorized(Serializer.deserialize content)
@@ -1963,7 +1963,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/purge" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsPurge.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsPurge.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsPurge.Unauthorized(Serializer.deserialize content)
@@ -2002,7 +2002,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/bulk/assets/reallocate-ip" headers requestParts
 
-            match status with
+            match int status with
             | 202 -> return PostBulkAssetsReallocateIp.Accepted(Serializer.deserialize content)
             | 400 -> return PostBulkAssetsReallocateIp.BadRequest(Serializer.deserialize content)
             | 401 -> return PostBulkAssetsReallocateIp.Unauthorized(Serializer.deserialize content)
@@ -2073,7 +2073,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/payments/topupPaypal" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostPaymentsTopupPaypal.OK(Serializer.deserialize content)
             | 400 -> return PostPaymentsTopupPaypal.BadRequest(Serializer.deserialize content)
             | 401 -> return PostPaymentsTopupPaypal.Unauthorized(Serializer.deserialize content)
@@ -2091,7 +2091,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/payments/confirmTopupPaypal" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostPaymentsConfirmTopupPaypal.OK(Serializer.deserialize content)
             | 400 -> return PostPaymentsConfirmTopupPaypal.BadRequest(Serializer.deserialize content)
             | 401 -> return PostPaymentsConfirmTopupPaypal.Unauthorized(Serializer.deserialize content)
@@ -2195,7 +2195,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/security/alerts" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSecurityAlerts.OK(Serializer.deserialize content)
             | 400 -> return GetSecurityAlerts.BadRequest
             | 401 -> return GetSecurityAlerts.Unauthorized
@@ -2219,7 +2219,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/security/alerts/{alertId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSecurityAlertsByAlertId.OK(Serializer.deserialize content)
             | 400 -> return GetSecurityAlertsByAlertId.BadRequest
             | 401 -> return GetSecurityAlertsByAlertId.Unauthorized
@@ -2251,7 +2251,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/security/alerts/{alertId}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutSecurityAlertsByAlertId.OK(Serializer.deserialize content)
             | 400 -> return PutSecurityAlertsByAlertId.BadRequest
             | 401 -> return PutSecurityAlertsByAlertId.Unauthorized
@@ -2275,7 +2275,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.deleteAsync url "/security/alerts/{alertId}" headers requestParts
 
-            match status with
+            match int status with
             | 204 -> return DeleteSecurityAlertsByAlertId.NoContent
             | 400 -> return DeleteSecurityAlertsByAlertId.BadRequest
             | 401 -> return DeleteSecurityAlertsByAlertId.Unauthorized
@@ -2313,7 +2313,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/security/topthreaten" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraphSecurityTopthreaten.OK(Serializer.deserialize content)
             | 400 -> return GetGraphSecurityTopthreaten.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraphSecurityTopthreaten.Unauthorized(Serializer.deserialize content)
@@ -2349,7 +2349,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/security/byalarmtype" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraphSecurityByalarmtype.OK(Serializer.deserialize content)
             | 400 -> return GetGraphSecurityByalarmtype.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraphSecurityByalarmtype.Unauthorized(Serializer.deserialize content)
@@ -2378,7 +2378,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/esims" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostEsims.OK(Serializer.deserialize content)
             | 400 -> return PostEsims.BadRequest(Serializer.deserialize content)
             | 401 -> return PostEsims.Unauthorized(Serializer.deserialize content)
@@ -2423,7 +2423,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/esims/{eid}/transfer" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostEsimsTransferByEid.OK(Serializer.deserialize content)
             | 400 -> return PostEsimsTransferByEid.BadRequest(Serializer.deserialize content)
             | 401 -> return PostEsimsTransferByEid.Unauthorized(Serializer.deserialize content)
@@ -2438,7 +2438,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/esims/{eid}/return" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostEsimsReturnByEid.OK(Serializer.deserialize content)
             | 400 -> return PostEsimsReturnByEid.BadRequest(Serializer.deserialize content)
             | 401 -> return PostEsimsReturnByEid.Unauthorized(Serializer.deserialize content)
@@ -2694,7 +2694,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/1" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph1.OK(Serializer.deserialize content)
             | 400 -> return GetGraph1.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph1.Unauthorized(Serializer.deserialize content)
@@ -2720,7 +2720,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/2" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph2.OK(Serializer.deserialize content)
             | 400 -> return GetGraph2.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph2.Unauthorized(Serializer.deserialize content)
@@ -2746,7 +2746,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/3" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph3.OK(Serializer.deserialize content)
             | 400 -> return GetGraph3.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph3.Unauthorized(Serializer.deserialize content)
@@ -2772,7 +2772,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/4" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph4.OK(Serializer.deserialize content)
             | 400 -> return GetGraph4.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph4.Unauthorized(Serializer.deserialize content)
@@ -2798,7 +2798,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/5" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph5.OK(Serializer.deserialize content)
             | 400 -> return GetGraph5.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph5.Unauthorized(Serializer.deserialize content)
@@ -2824,7 +2824,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/6" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph6.OK(Serializer.deserialize content)
             | 400 -> return GetGraph6.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph6.Unauthorized(Serializer.deserialize content)
@@ -2850,7 +2850,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/7" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph7.OK(Serializer.deserialize content)
             | 400 -> return GetGraph7.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph7.Unauthorized(Serializer.deserialize content)
@@ -2876,7 +2876,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/8" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph8.OK(Serializer.deserialize content)
             | 400 -> return GetGraph8.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph8.Unauthorized(Serializer.deserialize content)
@@ -2902,7 +2902,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/9" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph9.OK(Serializer.deserialize content)
             | 400 -> return GetGraph9.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph9.Unauthorized(Serializer.deserialize content)
@@ -2920,7 +2920,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/10" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph10.OK(Serializer.deserialize content)
             | 400 -> return GetGraph10.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph10.Unauthorized(Serializer.deserialize content)
@@ -2946,7 +2946,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/11" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph11.OK(Serializer.deserialize content)
             | 400 -> return GetGraph11.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph11.Unauthorized(Serializer.deserialize content)
@@ -2972,7 +2972,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/12" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraph12.OK(Serializer.deserialize content)
             | 400 -> return GetGraph12.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraph12.Unauthorized(Serializer.deserialize content)
@@ -2998,7 +2998,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/graph/statusesperday" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetGraphStatusesperday.OK(Serializer.deserialize content)
             | 400 -> return GetGraphStatusesperday.BadRequest(Serializer.deserialize content)
             | 401 -> return GetGraphStatusesperday.Unauthorized(Serializer.deserialize content)
@@ -3026,7 +3026,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/quick-dial" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsQuickDialByIccid.OK(Serializer.deserialize content)
             | 400 -> return PostAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
@@ -3041,7 +3041,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/assets/{iccid}/quick-dial" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsQuickDialByIccid.OK(Serializer.deserialize content)
             | 400 -> return GetAssetsQuickDialByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssetsQuickDialByIccid.Unauthorized(Serializer.deserialize content)
@@ -3058,7 +3058,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.getAsync url "/assets/{iccid}/quick-dial/{location}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
             | 400 -> return GetAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
             | 401 -> return GetAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
@@ -3075,7 +3075,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.putAsync url "/assets/{iccid}/quick-dial/{location}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutAssetsQuickDialByIccidAndLocation.OK(Serializer.deserialize content)
             | 400 -> return PutAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
             | 401 -> return PutAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
@@ -3092,7 +3092,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let! (status, content) =
                 OpenApiHttp.deleteAsync url "/assets/{iccid}/quick-dial/{location}" headers requestParts
 
-            match status with
+            match int status with
             | 204 -> return DeleteAssetsQuickDialByIccidAndLocation.NoContent
             | 400 -> return DeleteAssetsQuickDialByIccidAndLocation.BadRequest(Serializer.deserialize content)
             | 401 -> return DeleteAssetsQuickDialByIccidAndLocation.Unauthorized(Serializer.deserialize content)
@@ -3107,7 +3107,7 @@ type FablePodiosuiteClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent payload ]
             let! (status, content) = OpenApiHttp.postAsync url "/assets/{iccid}/dial" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostAssetsDialByIccid.OK(Serializer.deserialize content)
             | 400 -> return PostAssetsDialByIccid.BadRequest(Serializer.deserialize content)
             | 401 -> return PostAssetsDialByIccid.Unauthorized(Serializer.deserialize content)

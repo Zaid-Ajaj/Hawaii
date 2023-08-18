@@ -13,7 +13,7 @@ type FablewashbuckleClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/Time" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetTime.OK(Serializer.deserialize content)
             | 400 -> return GetTime.BadRequest(Serializer.deserialize content)
             | _ -> return GetTime.Forbidden(Serializer.deserialize content)

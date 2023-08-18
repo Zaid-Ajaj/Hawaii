@@ -37,9 +37,9 @@ type NSwagWithFilesClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/api/Brandings/upload" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UploadBrandingImage.OK
-            | HttpStatusCode.BadRequest -> return UploadBrandingImage.BadRequest(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UploadBrandingImage.OK
+            | 400 -> return UploadBrandingImage.BadRequest(Serializer.deserialize content)
             | _ -> return UploadBrandingImage.Unauthorized(Serializer.deserialize content)
         }
 
@@ -73,8 +73,8 @@ type NSwagWithFilesClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.getAsync httpClient "/api/Datahub/datasources" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetDataSources.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetDataSources.OK(Serializer.deserialize content)
             | _ -> return GetDataSources.Unauthorized content
         }
 
@@ -106,8 +106,8 @@ type NSwagWithFilesClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/api/Datahub/import" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return ImportData.OK(Serializer.deserialize content)
+            match int status with
+            | 200 -> return ImportData.OK(Serializer.deserialize content)
             | _ -> return ImportData.Unauthorized content
         }
 
@@ -121,9 +121,9 @@ type NSwagWithFilesClient(httpClient: HttpClient) =
             let! (status, content) =
                 OpenApiHttp.postAsync httpClient "/api/Documents/upload" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return UploadFile.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return UploadFile.BadRequest(Serializer.deserialize content)
+            match int status with
+            | 200 -> return UploadFile.OK(Serializer.deserialize content)
+            | 400 -> return UploadFile.BadRequest(Serializer.deserialize content)
             | _ -> return UploadFile.Unauthorized(Serializer.deserialize content)
         }
 
@@ -137,9 +137,9 @@ type NSwagWithFilesClient(httpClient: HttpClient) =
             let! (status, contentBinary) =
                 OpenApiHttp.postBinaryAsync httpClient "/api/Documents/download" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return DownloadFile.OK contentBinary
-            | HttpStatusCode.BadRequest ->
+            match int status with
+            | 200 -> return DownloadFile.OK contentBinary
+            | 400 ->
                 let content = Encoding.UTF8.GetString contentBinary
                 return DownloadFile.BadRequest(Serializer.deserialize content)
             | _ ->

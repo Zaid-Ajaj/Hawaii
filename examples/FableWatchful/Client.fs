@@ -26,7 +26,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/audits" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAudits.OK(Serializer.deserialize content)
             | _ -> return GetAudits.Forbidden
         }
@@ -50,7 +50,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/audits/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteAuditById.OK content
             | 403 -> return DeleteAuditById.Forbidden
             | _ -> return DeleteAuditById.NotFound
@@ -70,7 +70,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/audits/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetAuditById.OK(Serializer.deserialize content)
             | 400 -> return GetAuditById.BadRequest
             | _ -> return GetAuditById.Forbidden
@@ -123,7 +123,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/extensions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetExtensions.OK(Serializer.deserialize content)
             | 403 -> return GetExtensions.Forbidden
             | _ -> return GetExtensions.NotFound
@@ -148,7 +148,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/extensions/{id}/ignore" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return IgnoreExtensionUpdate.OK content
             | _ -> return IgnoreExtensionUpdate.NotFound
         }
@@ -162,7 +162,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/extensions/{id}/unignore" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UnignoreExtensionUpdate.OK content
             | _ -> return UnignoreExtensionUpdate.NotFound
         }
@@ -176,7 +176,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/extensions/{id}/update" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateExtension.OK content
             | _ -> return UpdateExtension.NotFound
         }
@@ -193,7 +193,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/feedbacks" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetFeedbacks.OK(Serializer.deserialize content)
             | _ -> return GetFeedbacks.Forbidden
         }
@@ -206,7 +206,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/feedbacks" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateFeedbacks.OK(Serializer.deserialize content)
             | 201 -> return CreateFeedbacks.Created
             | 400 -> return CreateFeedbacks.BadRequest
@@ -267,7 +267,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/logs" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetLogs.OK(Serializer.deserialize content)
             | _ -> return GetLogs.Forbidden
         }
@@ -314,7 +314,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/logs/export" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetExportLogs.OK
             | _ -> return GetExportLogs.Forbidden
         }
@@ -348,7 +348,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/logs/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteLogById.OK content
             | 403 -> return DeleteLogById.Forbidden
             | _ -> return DeleteLogById.NotFound
@@ -395,7 +395,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, contentBinary) = OpenApiHttp.getBinaryAsync url "/reports/sites/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetReportsSitesById.OK contentBinary
             | 403 -> return GetReportsSitesById.Forbidden contentBinary
             | _ -> return GetReportsSitesById.NotFound contentBinary
@@ -435,7 +435,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, contentBinary) = OpenApiHttp.getBinaryAsync url "/reports/tags/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetReportsTagsById.OK contentBinary
             | 403 -> return GetReportsTagsById.Forbidden contentBinary
             | _ -> return GetReportsTagsById.NotFound contentBinary
@@ -512,7 +512,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSites.OK(Serializer.deserialize content)
             | 403 -> return GetSites.Forbidden
             | _ -> return GetSites.NotFound
@@ -526,7 +526,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateSite.OK(Serializer.deserialize content)
             | 201 -> return CreateSite.Created
             | 400 -> return CreateSite.BadRequest
@@ -553,7 +553,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/sites/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteSitesById.OK content
             | 403 -> return DeleteSitesById.Forbidden
             | _ -> return DeleteSitesById.NotFound
@@ -573,7 +573,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSiteById.OK(Serializer.deserialize content)
             | 403 -> return GetSiteById.Forbidden
             | _ -> return GetSiteById.NotFound
@@ -592,7 +592,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/sites/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PutSitesById.OK(Serializer.deserialize content)
             | 400 -> return PutSitesById.BadRequest
             | 403 -> return PutSitesById.Forbidden
@@ -622,7 +622,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/audits" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSiteAudits.OK(Serializer.deserialize content)
             | 403 -> return GetSiteAudits.Forbidden
             | _ -> return GetSiteAudits.NotFound
@@ -637,7 +637,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/audits" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateAudits.OK(Serializer.deserialize content)
             | 201 -> return CreateAudits.Created
             | 400 -> return CreateAudits.BadRequest
@@ -654,7 +654,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/backupnow" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return AddSiteToBackupQueue.OK(Serializer.deserialize content)
             | 403 -> return AddSiteToBackupQueue.Forbidden
             | _ -> return AddSiteToBackupQueue.NotFound
@@ -669,7 +669,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/backupprofiles" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetBackupProfiles.OK
             | 403 -> return GetBackupProfiles.Forbidden
             | _ -> return GetBackupProfiles.NotFound
@@ -684,7 +684,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/backups" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetListBackups.OK
             | 403 -> return GetListBackups.Forbidden
             | _ -> return GetListBackups.NotFound
@@ -699,7 +699,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/backupstart" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return StartSiteBackup.OK(Serializer.deserialize content)
             | 403 -> return StartSiteBackup.Forbidden
             | _ -> return StartSiteBackup.NotFound
@@ -714,7 +714,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/backupstep" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return StepSiteBackup.OK(Serializer.deserialize content)
             | 403 -> return StepSiteBackup.Forbidden
             | _ -> return StepSiteBackup.NotFound
@@ -743,7 +743,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/extensions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSitesExtensionsById.OK(Serializer.deserialize content)
             | 403 -> return GetSitesExtensionsById.Forbidden
             | _ -> return GetSitesExtensionsById.NotFound
@@ -762,7 +762,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/extensions" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return InstallExtension.OK
             | 403 -> return InstallExtension.Forbidden
             | _ -> return InstallExtension.NotFound
@@ -814,7 +814,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/logs" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSitesLogsById.OK(Serializer.deserialize content)
             | 403 -> return GetSitesLogsById.Forbidden
             | _ -> return GetSitesLogsById.NotFound
@@ -833,7 +833,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/logs" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateLog.OK(Serializer.deserialize content)
             | 201 -> return CreateLog.Created
             | 400 -> return CreateLog.BadRequest
@@ -850,7 +850,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/sites/{id}/monitor" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteMonitor.OK(Serializer.deserialize content)
             | 403 -> return DeleteMonitor.Forbidden
             | _ -> return DeleteMonitor.NotFound
@@ -865,7 +865,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/monitor" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostMonitor.OK(Serializer.deserialize content)
             | 403 -> return PostMonitor.Forbidden
             | _ -> return PostMonitor.NotFound
@@ -880,7 +880,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/scanner" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return Scanner.OK content
             | 403 -> return Scanner.Forbidden
             | _ -> return Scanner.NotFound
@@ -895,7 +895,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/seo" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return SeoAnalyze.OK content
             | 403 -> return SeoAnalyze.Forbidden
             | _ -> return SeoAnalyze.NotFound
@@ -939,7 +939,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/tags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSitesTagsById.OK(Serializer.deserialize content)
             | 403 -> return GetSitesTagsById.Forbidden
             | _ -> return GetSitesTagsById.NotFound
@@ -958,7 +958,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/tags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return PostTags.OK(Serializer.deserialize content)
             | 201 -> return PostTags.Created
             | 403 -> return PostTags.Forbidden
@@ -974,7 +974,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.postAsync url "/sites/{id}/updatejoomla" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateJoomla.OK content
             | 403 -> return UpdateJoomla.Forbidden
             | _ -> return UpdateJoomla.NotFound
@@ -989,7 +989,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/uptime" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetUptime.OK(Serializer.deserialize content)
             | 403 -> return GetUptime.Forbidden
             | _ -> return GetUptime.NotFound
@@ -1004,7 +1004,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/validate" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return ValidateSite.OK(Serializer.deserialize content)
             | 403 -> return ValidateSite.Forbidden
             | _ -> return ValidateSite.NotFound
@@ -1019,7 +1019,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/sites/{id}/validatedebug" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return ValidateDebugSite.OK(Serializer.deserialize content)
             | 403 -> return ValidateDebugSite.Forbidden
             | _ -> return ValidateDebugSite.NotFound
@@ -1033,7 +1033,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/ssousers" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSsoUsers.OK(Serializer.deserialize content)
             | _ -> return GetSsoUsers.Forbidden
         }
@@ -1046,7 +1046,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/ssousers" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateSsoUsers.OK(Serializer.deserialize content)
             | 201 -> return CreateSsoUsers.Created
             | 400 -> return CreateSsoUsers.BadRequest
@@ -1063,7 +1063,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/ssousers/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteSsoUserById.OK content
             | 403 -> return DeleteSsoUserById.Forbidden
             | _ -> return DeleteSsoUserById.NotFound
@@ -1083,7 +1083,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/ssousers/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSsoUsersById.OK(Serializer.deserialize content)
             | 400 -> return GetSsoUsersById.BadRequest
             | _ -> return GetSsoUsersById.Forbidden
@@ -1102,7 +1102,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/ssousers/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateSsoUsers.OK(Serializer.deserialize content)
             | 201 -> return UpdateSsoUsers.Created
             | 400 -> return UpdateSsoUsers.BadRequest
@@ -1145,7 +1145,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/tags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetTags.OK(Serializer.deserialize content)
             | _ -> return GetTags.Forbidden
         }
@@ -1158,7 +1158,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/tags" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateTags.OK(Serializer.deserialize content)
             | 201 -> return CreateTags.Created
             | 400 -> return CreateTags.BadRequest
@@ -1185,7 +1185,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/tags/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteTagsById.OK content
             | 403 -> return DeleteTagsById.Forbidden
             | _ -> return DeleteTagsById.NotFound
@@ -1205,7 +1205,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/tags/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetTagById.OK(Serializer.deserialize content)
             | 400 -> return GetTagById.BadRequest
             | _ -> return GetTagById.Forbidden
@@ -1224,7 +1224,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.putAsync url "/tags/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateTag.OK(Serializer.deserialize content)
             | 400 -> return UpdateTag.BadRequest
             | 403 -> return UpdateTag.Forbidden
@@ -1297,7 +1297,7 @@ type FableWatchfulClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/tags/{id}/sites" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSitesByTags.OK(Serializer.deserialize content)
             | 403 -> return GetSitesByTags.Forbidden
             | _ -> return GetSitesByTags.NotFound

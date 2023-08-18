@@ -52,7 +52,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/action" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return CreateAction.Created(Serializer.deserialize content)
             | 401 -> return CreateAction.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateAction.Forbidden(Serializer.deserialize content)
@@ -68,7 +68,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/action/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchAction.OK(Serializer.deserialize content)
             | 401 -> return FetchAction.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchAction.Forbidden(Serializer.deserialize content)
@@ -87,7 +87,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/action/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateAction.OK(Serializer.deserialize content)
             | 401 -> return UpdateAction.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpdateAction.Forbidden(Serializer.deserialize content)
@@ -102,7 +102,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/bundle" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateBundle.OK(Serializer.deserialize content)
             | 401 -> return CreateBundle.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateBundle.Forbidden(Serializer.deserialize content)
@@ -118,7 +118,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/bundle/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchBundle.OK(Serializer.deserialize content)
             | 401 -> return FetchBundle.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchBundle.Forbidden(Serializer.deserialize content)
@@ -137,7 +137,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/bundle/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateBundle.OK(Serializer.deserialize content)
             | 401 -> return UpdateBundle.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpdateBundle.Forbidden(Serializer.deserialize content)
@@ -219,7 +219,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/calendar_event" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchCalendarEvents.OK(Serializer.deserialize content)
             | 401 -> return FetchCalendarEvents.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchCalendarEvents.Forbidden(Serializer.deserialize content)
@@ -234,7 +234,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/calendar_event" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return CreateCalendarEvent.Created(Serializer.deserialize content)
             | 401 -> return CreateCalendarEvent.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateCalendarEvent.Forbidden(Serializer.deserialize content)
@@ -250,7 +250,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.deleteAsync url "/calendar_event/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return DeleteCalendarEvent.OK
             | 401 -> return DeleteCalendarEvent.Unauthorized(Serializer.deserialize content)
             | _ -> return DeleteCalendarEvent.Forbidden(Serializer.deserialize content)
@@ -265,7 +265,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/calendar_event/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchCalendarEvent.OK(Serializer.deserialize content)
             | 401 -> return FetchCalendarEvent.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchCalendarEvent.Forbidden(Serializer.deserialize content)
@@ -284,7 +284,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/calendar_event/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdateCalendarEvent.OK(Serializer.deserialize content)
             | 401 -> return UpdateCalendarEvent.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpdateCalendarEvent.Forbidden(Serializer.deserialize content)
@@ -299,7 +299,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/calendar_event_response" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return PostCreateCalendarEventResponse.Created(Serializer.deserialize content)
             | 401 -> return PostCreateCalendarEventResponse.Unauthorized(Serializer.deserialize content)
             | 403 -> return PostCreateCalendarEventResponse.Forbidden(Serializer.deserialize content)
@@ -321,7 +321,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/coach" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchCoaches.OK(Serializer.deserialize content)
             | 401 -> return FetchCoaches.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchCoaches.Forbidden(Serializer.deserialize content)
@@ -336,7 +336,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/coach/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchCoach.OK(Serializer.deserialize content)
             | 401 -> return FetchCoach.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchCoach.Forbidden(Serializer.deserialize content)
@@ -373,7 +373,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/email_history" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchEmailHistories.OK(Serializer.deserialize content)
             | 401 -> return FetchEmailHistories.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchEmailHistories.Forbidden(Serializer.deserialize content)
@@ -389,7 +389,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/email_history/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchEmailHistory.OK(Serializer.deserialize content)
             | 401 -> return FetchEmailHistory.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchEmailHistory.Forbidden(Serializer.deserialize content)
@@ -409,7 +409,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/group" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchGroups.OK(Serializer.deserialize content)
             | 401 -> return FetchGroups.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchGroups.Forbidden(Serializer.deserialize content)
@@ -423,7 +423,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/group" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return CreateGroup.Created(Serializer.deserialize content)
             | 401 -> return CreateGroup.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateGroup.Forbidden(Serializer.deserialize content)
@@ -439,7 +439,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/group/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchGroup.OK(Serializer.deserialize content)
             | 401 -> return FetchGroup.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchGroup.Forbidden(Serializer.deserialize content)
@@ -488,7 +488,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfiles.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfiles.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchHealthProfiles.Forbidden(Serializer.deserialize content)
@@ -509,7 +509,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfile.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfile.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchHealthProfile.Forbidden(Serializer.deserialize content)
@@ -558,7 +558,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile_answer" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfileAnswers.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfileAnswers.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchHealthProfileAnswers.Forbidden(Serializer.deserialize content)
@@ -579,7 +579,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile_answer/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfileAnswer.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfileAnswer.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchHealthProfileAnswer.Forbidden(Serializer.deserialize content)
@@ -612,7 +612,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile_question" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfileQuestions.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfileQuestions.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchHealthProfileQuestions.Forbidden(Serializer.deserialize content)
@@ -633,7 +633,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/health_profile_question/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthProfileQuestion.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthProfileQuestion.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchHealthProfileQuestion.Forbidden(Serializer.deserialize content)
@@ -647,7 +647,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync url "/health_question_definition" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthQuestionDefinitions.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthQuestionDefinitions.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchHealthQuestionDefinitions.Forbidden(Serializer.deserialize content)
@@ -663,7 +663,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/health_question_definition/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchHealthQuestionDefinition.OK(Serializer.deserialize content)
             | 401 -> return FetchHealthQuestionDefinition.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchHealthQuestionDefinition.Forbidden(Serializer.deserialize content)
@@ -694,7 +694,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.postAsync url "/oauth/token" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return CreateToken.Created(Serializer.deserialize content)
             | 401 -> return CreateToken.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateToken.Forbidden(Serializer.deserialize content)
@@ -710,7 +710,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/oauth/token/{id}/groups" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchTokenGroups.OK(Serializer.deserialize content)
             | 401 -> return FetchTokenGroups.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchTokenGroups.Forbidden(Serializer.deserialize content)
@@ -725,7 +725,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/oauth/token/{id}/organization" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchTokenOrganization.OK(Serializer.deserialize content)
             | 401 -> return FetchTokenOrganization.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchTokenOrganization.Forbidden(Serializer.deserialize content)
@@ -740,7 +740,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/organization/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchOrganization.OK(Serializer.deserialize content)
             | 401 -> return FetchOrganization.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchOrganization.Forbidden(Serializer.deserialize content)
@@ -801,7 +801,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/patient" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatients.OK(Serializer.deserialize content)
             | 401 -> return FetchPatients.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchPatients.Forbidden(Serializer.deserialize content)
@@ -843,7 +843,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/patient" headers requestParts
 
-            match status with
+            match int status with
             | 201 -> return CreatePatient.Created(Serializer.deserialize content)
             | 401 -> return CreatePatient.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreatePatient.Forbidden(Serializer.deserialize content)
@@ -858,7 +858,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.putAsync url "/patient" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpsertPatient.OK(Serializer.deserialize content)
             | 401 -> return UpsertPatient.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpsertPatient.Forbidden(Serializer.deserialize content)
@@ -874,7 +874,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/patient/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatient.OK(Serializer.deserialize content)
             | 401 -> return FetchPatient.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatient.Forbidden(Serializer.deserialize content)
@@ -893,7 +893,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/patient/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdatePatient.OK(Serializer.deserialize content)
             | 401 -> return UpdatePatient.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpdatePatient.Forbidden(Serializer.deserialize content)
@@ -909,7 +909,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/patient/{id}/coaches" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientCoaches.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientCoaches.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientCoaches.Forbidden(Serializer.deserialize content)
@@ -924,7 +924,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/patient/{id}/groups" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientGroups.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientGroups.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientGroups.Forbidden(Serializer.deserialize content)
@@ -969,7 +969,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/patient_health_metric" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientHealthMetrics.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientHealthMetrics.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchPatientHealthMetrics.Forbidden(Serializer.deserialize content)
@@ -1018,7 +1018,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/patient_health_metric" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreatePatientHealthMetric.OK(Serializer.deserialize content)
             | 401 -> return CreatePatientHealthMetric.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreatePatientHealthMetric.Forbidden(Serializer.deserialize content)
@@ -1034,7 +1034,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/patient_health_metric/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientHealthMetric.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientHealthMetric.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientHealthMetric.Forbidden(Serializer.deserialize content)
@@ -1067,7 +1067,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/patient_plan_summary" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientPlanSummaries.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientPlanSummaries.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientPlanSummaries.Forbidden(Serializer.deserialize content)
@@ -1087,7 +1087,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/patient_plan_summary/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientPlanSummary.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientPlanSummary.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientPlanSummary.Forbidden(Serializer.deserialize content)
@@ -1106,7 +1106,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.patchAsync url "/patient_plan_summary/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return UpdatePatientPlanSummary.OK(Serializer.deserialize content)
             | 401 -> return UpdatePatientPlanSummary.Unauthorized(Serializer.deserialize content)
             | 403 -> return UpdatePatientPlanSummary.Forbidden(Serializer.deserialize content)
@@ -1167,7 +1167,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/result" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientHealthResults.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientHealthResults.Unauthorized(Serializer.deserialize content)
             | 403 -> return FetchPatientHealthResults.Forbidden(Serializer.deserialize content)
@@ -1183,7 +1183,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/result/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchPatientHealthResult.OK(Serializer.deserialize content)
             | 401 -> return FetchPatientHealthResult.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchPatientHealthResult.Forbidden(Serializer.deserialize content)
@@ -1220,7 +1220,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/reward" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewards.OK(Serializer.deserialize content)
             | 401 -> return FetchRewards.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewards.Forbidden(Serializer.deserialize content)
@@ -1234,7 +1234,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/reward" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateReward.OK(Serializer.deserialize content)
             | 401 -> return CreateReward.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateReward.Forbidden(Serializer.deserialize content)
@@ -1250,7 +1250,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchReward.OK(Serializer.deserialize content)
             | 401 -> return FetchReward.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchReward.Forbidden(Serializer.deserialize content)
@@ -1272,7 +1272,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/reward_earning" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardEarnings.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardEarnings.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardEarnings.Forbidden(Serializer.deserialize content)
@@ -1286,7 +1286,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/reward_earning" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateRewardEarning.OK(Serializer.deserialize content)
             | 401 -> return CreateRewardEarning.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateRewardEarning.Forbidden(Serializer.deserialize content)
@@ -1302,7 +1302,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward_earning/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardEarning.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardEarning.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardEarning.Forbidden(Serializer.deserialize content)
@@ -1319,7 +1319,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/reward_earning_fulfillment" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardEarningFulfillments.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardEarningFulfillments.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardEarningFulfillments.Forbidden(Serializer.deserialize content)
@@ -1333,7 +1333,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/reward_earning_fulfillment" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateRewardEarningFulfillment.OK(Serializer.deserialize content)
             | 401 -> return CreateRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
@@ -1349,7 +1349,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward_earning_fulfillment/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardEarningFulfillment.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardEarningFulfillment.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardEarningFulfillment.Forbidden(Serializer.deserialize content)
@@ -1370,7 +1370,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/reward_program" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardPrograms.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardPrograms.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardPrograms.Forbidden(Serializer.deserialize content)
@@ -1384,7 +1384,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/reward_program" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateRewardProgram.OK(Serializer.deserialize content)
             | 401 -> return CreateRewardProgram.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateRewardProgram.Forbidden(Serializer.deserialize content)
@@ -1400,7 +1400,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward_program/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardProgram.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardProgram.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardProgram.Forbidden(Serializer.deserialize content)
@@ -1415,7 +1415,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward_program/{id}/group" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardProgramGroup.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardProgramGroup.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardProgramGroup.Forbidden(Serializer.deserialize content)
@@ -1444,7 +1444,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/reward_program_activation" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardProgramActivations.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardProgramActivations.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardProgramActivations.Forbidden(Serializer.deserialize content)
@@ -1458,7 +1458,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.jsonContent body ]
             let! (status, content) = OpenApiHttp.postAsync url "/reward_program_activation" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return CreateRewardProgramActivation.OK(Serializer.deserialize content)
             | 401 -> return CreateRewardProgramActivation.Unauthorized(Serializer.deserialize content)
             | 403 -> return CreateRewardProgramActivation.Forbidden(Serializer.deserialize content)
@@ -1474,7 +1474,7 @@ type FableTwinehealthClient(url: string, headers: list<Header>) =
             let requestParts = [ RequestPart.path ("id", id) ]
             let! (status, content) = OpenApiHttp.getAsync url "/reward_program_activation/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return FetchRewardProgramActivation.OK(Serializer.deserialize content)
             | 401 -> return FetchRewardProgramActivation.Unauthorized(Serializer.deserialize content)
             | _ -> return FetchRewardProgramActivation.Forbidden(Serializer.deserialize content)

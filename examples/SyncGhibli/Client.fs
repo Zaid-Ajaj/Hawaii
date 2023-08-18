@@ -104,9 +104,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/films" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetFilms.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetFilms.BadRequest
+        match int status with
+        | 200 -> GetFilms.OK(Serializer.deserialize content)
+        | 400 -> GetFilms.BadRequest
         | _ -> GetFilms.NotFound
 
     ///<summary>
@@ -124,9 +124,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/films/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetFilmsById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetFilmsById.BadRequest
+        match int status with
+        | 200 -> GetFilmsById.OK(Serializer.deserialize content)
+        | 400 -> GetFilmsById.BadRequest
         | _ -> GetFilmsById.NotFound
 
     ///<summary>
@@ -145,9 +145,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/people" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetPeople.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetPeople.BadRequest
+        match int status with
+        | 200 -> GetPeople.OK(Serializer.deserialize content)
+        | 400 -> GetPeople.BadRequest
         | _ -> GetPeople.NotFound
 
     ///<summary>
@@ -165,9 +165,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/people/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetPeopleById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetPeopleById.BadRequest
+        match int status with
+        | 200 -> GetPeopleById.OK(Serializer.deserialize content)
+        | 400 -> GetPeopleById.BadRequest
         | _ -> GetPeopleById.NotFound
 
     ///<summary>
@@ -186,9 +186,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/locations" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetLocations.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetLocations.BadRequest
+        match int status with
+        | 200 -> GetLocations.OK(Serializer.deserialize content)
+        | 400 -> GetLocations.BadRequest
         | _ -> GetLocations.NotFound
 
     ///<summary>
@@ -206,9 +206,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/locations/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetLocationsById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetLocationsById.BadRequest
+        match int status with
+        | 200 -> GetLocationsById.OK(Serializer.deserialize content)
+        | 400 -> GetLocationsById.BadRequest
         | _ -> GetLocationsById.NotFound
 
     ///<summary>
@@ -227,9 +227,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/species" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSpecies.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetSpecies.BadRequest
+        match int status with
+        | 200 -> GetSpecies.OK(Serializer.deserialize content)
+        | 400 -> GetSpecies.BadRequest
         | _ -> GetSpecies.NotFound
 
     ///<summary>
@@ -247,9 +247,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/species/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetSpeciesById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetSpeciesById.BadRequest
+        match int status with
+        | 200 -> GetSpeciesById.OK(Serializer.deserialize content)
+        | 400 -> GetSpeciesById.BadRequest
         | _ -> GetSpeciesById.NotFound
 
     ///<summary>
@@ -268,9 +268,9 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/vehicles" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetVehicles.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetVehicles.BadRequest
+        match int status with
+        | 200 -> GetVehicles.OK(Serializer.deserialize content)
+        | 400 -> GetVehicles.BadRequest
         | _ -> GetVehicles.NotFound
 
     ///<summary>
@@ -288,7 +288,7 @@ type SyncGhibliClient(httpClient: HttpClient) =
         let (status, content) =
             OpenApiHttp.get httpClient "/vehicles/{id}" requestParts cancellationToken
 
-        match status with
-        | HttpStatusCode.OK -> GetVehiclesById.OK(Serializer.deserialize content)
-        | HttpStatusCode.BadRequest -> GetVehiclesById.BadRequest
+        match int status with
+        | 200 -> GetVehiclesById.OK(Serializer.deserialize content)
+        | 400 -> GetVehiclesById.BadRequest
         | _ -> GetVehiclesById.NotFound

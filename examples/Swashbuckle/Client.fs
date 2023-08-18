@@ -13,8 +13,8 @@ type SwashbuckleClient(httpClient: HttpClient) =
             let requestParts = []
             let! (status, content) = OpenApiHttp.getAsync httpClient "/Time" requestParts cancellationToken
 
-            match status with
-            | HttpStatusCode.OK -> return GetTime.OK(Serializer.deserialize content)
-            | HttpStatusCode.BadRequest -> return GetTime.BadRequest(Serializer.deserialize content)
+            match int status with
+            | 200 -> return GetTime.OK(Serializer.deserialize content)
+            | 400 -> return GetTime.BadRequest(Serializer.deserialize content)
             | _ -> return GetTime.Forbidden(Serializer.deserialize content)
         }

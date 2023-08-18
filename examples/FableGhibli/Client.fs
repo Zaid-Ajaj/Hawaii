@@ -103,7 +103,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/films" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetFilms.OK(Serializer.deserialize content)
             | 400 -> return GetFilms.BadRequest
             | _ -> return GetFilms.NotFound
@@ -123,7 +123,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/films/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetFilmsById.OK(Serializer.deserialize content)
             | 400 -> return GetFilmsById.BadRequest
             | _ -> return GetFilmsById.NotFound
@@ -144,7 +144,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/people" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetPeople.OK(Serializer.deserialize content)
             | 400 -> return GetPeople.BadRequest
             | _ -> return GetPeople.NotFound
@@ -164,7 +164,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/people/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetPeopleById.OK(Serializer.deserialize content)
             | 400 -> return GetPeopleById.BadRequest
             | _ -> return GetPeopleById.NotFound
@@ -185,7 +185,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/locations" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetLocations.OK(Serializer.deserialize content)
             | 400 -> return GetLocations.BadRequest
             | _ -> return GetLocations.NotFound
@@ -205,7 +205,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/locations/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetLocationsById.OK(Serializer.deserialize content)
             | 400 -> return GetLocationsById.BadRequest
             | _ -> return GetLocationsById.NotFound
@@ -226,7 +226,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/species" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSpecies.OK(Serializer.deserialize content)
             | 400 -> return GetSpecies.BadRequest
             | _ -> return GetSpecies.NotFound
@@ -246,7 +246,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/species/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetSpeciesById.OK(Serializer.deserialize content)
             | 400 -> return GetSpeciesById.BadRequest
             | _ -> return GetSpeciesById.NotFound
@@ -267,7 +267,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/vehicles" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetVehicles.OK(Serializer.deserialize content)
             | 400 -> return GetVehicles.BadRequest
             | _ -> return GetVehicles.NotFound
@@ -287,7 +287,7 @@ type FableGhibliClient(url: string, headers: list<Header>) =
 
             let! (status, content) = OpenApiHttp.getAsync url "/vehicles/{id}" headers requestParts
 
-            match status with
+            match int status with
             | 200 -> return GetVehiclesById.OK(Serializer.deserialize content)
             | 400 -> return GetVehiclesById.BadRequest
             | _ -> return GetVehiclesById.NotFound
