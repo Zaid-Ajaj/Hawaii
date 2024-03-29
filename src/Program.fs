@@ -1880,7 +1880,8 @@ let createOpenApiClient
     (config: CodegenConfig) =
 
     let extraTypes = ResizeArray<SynModuleDecl>()
-    let clientTypeName = $"{config.project}Client"
+    let lastProjectName = config.project.Split('.') |> Seq.last
+    let clientTypeName = $"{lastProjectName}Client"
     let info : SynComponentInfoRcd = {
         Access = None
         Attributes = [ ]
