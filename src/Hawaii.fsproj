@@ -7,8 +7,8 @@
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <RollForward>Major</RollForward>
-    <Version>0.67.0</Version>
-    <PackageReleaseNotes>Handle unlimited responses from operations</PackageReleaseNotes>
+    <Version>0.68.0</Version>
+    <PackageReleaseNotes>Fix generating clients when project name contains a dot</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="./storage.json">
