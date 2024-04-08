@@ -232,6 +232,7 @@ module OpenApiHttp =
                 match part with
                 | Primitive value ->
                     let content = new StringContent(serializeValue value, Encoding.UTF8)
+                    content.Headers.Add("Content-Disposition", $"form-data; name=\"{key}\"")
                     multipartFormData.Add(content, key)
                 | File file ->
                     let content = new ByteArrayContent(file)
